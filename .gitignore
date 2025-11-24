@@ -7,12 +7,12 @@ __pycache__/
 *.so
 
 # Files
-.mp3
-.mp4
-.png
-.jpg
-.jpeg
-.mov
+*.mp3
+*.mp4
+*.png
+*.jpg
+*.jpeg
+*.mov
 
 
 # Distribution / packaging
