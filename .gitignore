@@ -120,6 +120,4 @@ output/
 *.pem
 *.pkl
 
-# Subrepo: Ignore everything in the subrepo directory except the .git file
-# Replace 'subrepo/' with your actual subrepo directory name
-handball-computer-vision/*
+segment-anything-2-real-time/
