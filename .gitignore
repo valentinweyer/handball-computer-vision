@@ -121,5 +121,3 @@ output/
 *.pkl
 
 segment-anything-2-real-time/
-sam3/
-decord/
