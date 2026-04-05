@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Jupyter Notebooks
+*.ipynb
+.ipynb_checkpoints/
+
 # C extensions
 *.so
 
@@ -14,6 +18,14 @@ __pycache__/
 *.jpeg
 *.mov
 
+# Ignore fonts (if any)
+notebooks/fonts/
+
+# Notebook artifacts / models / dependencies
+notebooks/keypointv333-1/
+onnxruntime/
+sam3/
+sam3-checkpoints/
 
 # Distribution / packaging
 .Python
