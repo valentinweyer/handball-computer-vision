@@ -1,0 +1,25 @@
+paths:
+  data_root: data
+  cache_root: data/cache
+  model_root: models
+  run_root: runs
+
+detection:
+  player_model_id: player-and-handball-detection-3z9xf/3
+  confidence: 0.5
+  iou_threshold: 0.9
+
+tracking:
+  implementation: mcbyte
+  masks: true
+  team_gated_association: false
+
+team_classification:
+  scope: per_video
+  field_player_class_id: 2
+  goalkeeper_class_id: 1
+  clean_torso_first: true
+  temporal_labels_are_reversible: true
+  mask_fallback:
+    enabled: true
+    only_when_clean_crop_rejected: true

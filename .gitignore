@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 
 # Jupyter Notebooks
-*.ipynb
+# Notebooks are project source and may be tracked.
 .ipynb_checkpoints/
 
 # C extensions
@@ -23,6 +23,8 @@ notebooks/fonts/
 
 # Notebook artifacts / models / dependencies
 notebooks/keypointv333-1/
+notebooks/Player-and-Handball-detection-1/
+notebooks/models/
 onnxruntime/
 sam3/
 sam3-checkpoints/
@@ -84,9 +86,12 @@ env.bak/
 venv.bak/
 conda.env
 
-# Data and models (store these on DGX or cloud storage)
-data/
-models/
+# Data and models. Small human annotations and the model README stay tracked.
+/data/raw/*
+/data/interim/*
+/data/cache/*
+/models/*
+!/models/README.md
 *.h5
 *.pth
 *.pt
@@ -107,6 +112,10 @@ Thumbs.db
 # Logs and outputs
 logs/
 output/
+/outputs/
+/source/
+/runs/*
+!/runs/README.md
 *.log
 *.out
 
@@ -133,3 +142,13 @@ output/
 *.pkl
 
 segment-anything-2-real-time/
+sam2-upstream/
+SAM-MT/
+
+# Non-destructive migration leftovers and local settings
+*.orig
+.claude/settings.local.json
+
+# Generated caches in otherwise tracked trees
+**/__pycache__/
+**/.pytest_cache/

@@ -1,0 +1,81 @@
+{
+  "reference_run": "sam2_identity_ref",
+  "team_a": "HAN",
+  "team_b": "BER",
+  "tracks": {
+    "1": {
+      "column": 0,
+      "code": "B",
+      "label": "BER"
+    },
+    "2": {
+      "column": 1,
+      "code": "B",
+      "label": "BER"
+    },
+    "3": {
+      "column": 2,
+      "code": "A",
+      "label": "HAN"
+    },
+    "4": {
+      "column": 3,
+      "code": "A",
+      "label": "HAN"
+    },
+    "5": {
+      "column": 4,
+      "code": "B",
+      "label": "BER"
+    },
+    "6": {
+      "column": 5,
+      "code": "K",
+      "label": "GK"
+    },
+    "7": {
+      "column": 6,
+      "code": "A",
+      "label": "HAN"
+    },
+    "8": {
+      "column": 7,
+      "code": "B",
+      "label": "BER"
+    },
+    "9": {
+      "column": 8,
+      "code": "B",
+      "label": "BER"
+    },
+    "10": {
+      "column": 9,
+      "code": "B",
+      "label": "BER",
+      "excluded_samples": [
+        185
+      ],
+      "note": "Final displayed crop contains essentially no player."
+    },
+    "11": {
+      "column": 10,
+      "code": "A",
+      "label": "HAN"
+    },
+    "12": {
+      "column": 11,
+      "code": "B",
+      "label": "BER"
+    },
+    "13": {
+      "column": 12,
+      "code": "A",
+      "label": "HAN"
+    },
+    "14": {
+      "column": 13,
+      "code": "O",
+      "label": "OTHER"
+    }
+  }
+}

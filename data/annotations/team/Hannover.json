@@ -1,0 +1,5205 @@
+{
+  "schema_version": 1,
+  "task": "tracker_independent_team_classification",
+  "video_id": "Hannover",
+  "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+  "video_size": 20427979,
+  "video_mtime_ns": 1773009063396690906,
+  "detection_cache": "/home/valentinweyer/projects/handball-computer-vision/outputs/team_comparison/.Hannover_detections_v1.npz",
+  "detector_id": "player-and-handball-detection-3z9xf/3",
+  "annotation_guide": {
+    "A": "field player, anonymous team A within this video",
+    "B": "field player, anonymous team B within this video",
+    "G": "goalkeeper",
+    "R": "referee or official",
+    "O": "other person",
+    "M": "mixed crop; target jersey is contaminated by another person",
+    "X": "unusable or target absent"
+  },
+  "samples": [
+    {
+      "sample_id": "Hannover-f000000-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 0,
+      "flat_detection_index": 0,
+      "bbox_xyxy": [
+        3173.0,
+        1037.0,
+        3366.0,
+        1483.0
+      ],
+      "bbox_width": 193.0,
+      "bbox_height": 446.0,
+      "detector_confidence": 0.8821462392807007,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d000.jpg",
+      "torso_path": "torsos/Hannover-f000000-d000.jpg",
+      "preview_path": "previews/Hannover-f000000-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9624536194050474,
+        "width": 77,
+        "height": 178,
+        "contrast": 39.991014613714334,
+        "sharpness": 161.08171944366543
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 1,
+      "flat_detection_index": 1,
+      "bbox_xyxy": [
+        2157.0,
+        1003.0,
+        2294.0,
+        1475.0
+      ],
+      "bbox_width": 137.0,
+      "bbox_height": 472.0,
+      "detector_confidence": 0.8701543211936951,
+      "detector_class_id": 2,
+      "torso_contamination": 0.3826278918718296,
+      "crop_path": "crops/Hannover-f000000-d001.jpg",
+      "torso_path": "torsos/Hannover-f000000-d001.jpg",
+      "preview_path": "previews/Hannover-f000000-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8592153905689967,
+        "width": 55,
+        "height": 188,
+        "contrast": 27.504564702226023,
+        "sharpness": 99.14857715805738
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 2,
+      "flat_detection_index": 2,
+      "bbox_xyxy": [
+        738.0,
+        757.0,
+        880.0,
+        1152.0
+      ],
+      "bbox_width": 142.0,
+      "bbox_height": 395.0,
+      "detector_confidence": 0.8542535901069641,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0015042788375824517,
+      "crop_path": "crops/Hannover-f000000-d002.jpg",
+      "torso_path": "torsos/Hannover-f000000-d002.jpg",
+      "preview_path": "previews/Hannover-f000000-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9691143626744503,
+        "width": 56,
+        "height": 158,
+        "contrast": 63.37344078271,
+        "sharpness": 179.27281273554328
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 3,
+      "flat_detection_index": 3,
+      "bbox_xyxy": [
+        2984.0,
+        667.0,
+        3184.0,
+        1058.0
+      ],
+      "bbox_width": 200.0,
+      "bbox_height": 391.0,
+      "detector_confidence": 0.853141725063324,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d003.jpg",
+      "torso_path": "torsos/Hannover-f000000-d003.jpg",
+      "preview_path": "previews/Hannover-f000000-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9312142218826217,
+        "width": 80,
+        "height": 157,
+        "contrast": 63.567741871957466,
+        "sharpness": 99.3393624234249
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 4,
+      "flat_detection_index": 4,
+      "bbox_xyxy": [
+        1866.0,
+        535.0,
+        1971.0,
+        869.0
+      ],
+      "bbox_width": 105.0,
+      "bbox_height": 334.0,
+      "detector_confidence": 0.8452525734901428,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d004.jpg",
+      "torso_path": "torsos/Hannover-f000000-d004.jpg",
+      "preview_path": "previews/Hannover-f000000-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9555758613219952,
+        "width": 42,
+        "height": 134,
+        "contrast": 36.63712142641455,
+        "sharpness": 144.44508000534438
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 5,
+      "flat_detection_index": 5,
+      "bbox_xyxy": [
+        1297.0,
+        1171.0,
+        1471.0,
+        1712.0
+      ],
+      "bbox_width": 174.0,
+      "bbox_height": 541.0,
+      "detector_confidence": 0.8435390591621399,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d005.jpg",
+      "torso_path": "torsos/Hannover-f000000-d005.jpg",
+      "preview_path": "previews/Hannover-f000000-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9396870635818628,
+        "width": 70,
+        "height": 217,
+        "contrast": 47.12113006522671,
+        "sharpness": 112.92061182017031
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 6,
+      "flat_detection_index": 6,
+      "bbox_xyxy": [
+        1522.0,
+        725.0,
+        1669.0,
+        1147.0
+      ],
+      "bbox_width": 147.0,
+      "bbox_height": 422.0,
+      "detector_confidence": 0.8349516987800598,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d006.jpg",
+      "torso_path": "torsos/Hannover-f000000-d006.jpg",
+      "preview_path": "previews/Hannover-f000000-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9560701633485199,
+        "width": 59,
+        "height": 168,
+        "contrast": 42.96431790601962,
+        "sharpness": 145.57400205545687
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 7,
+      "flat_detection_index": 7,
+      "bbox_xyxy": [
+        2280.0,
+        896.0,
+        2400.0,
+        1357.0
+      ],
+      "bbox_width": 120.0,
+      "bbox_height": 461.0,
+      "detector_confidence": 0.8349379897117615,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d007.jpg",
+      "torso_path": "torsos/Hannover-f000000-d007.jpg",
+      "preview_path": "previews/Hannover-f000000-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 1.0,
+        "width": 48,
+        "height": 185,
+        "contrast": 45.749749292248005,
+        "sharpness": 311.0835421232043
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 8,
+      "flat_detection_index": 8,
+      "bbox_xyxy": [
+        1281.0,
+        630.0,
+        1411.0,
+        985.0
+      ],
+      "bbox_width": 130.0,
+      "bbox_height": 355.0,
+      "detector_confidence": 0.8310821056365967,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d008.jpg",
+      "torso_path": "torsos/Hannover-f000000-d008.jpg",
+      "preview_path": "previews/Hannover-f000000-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9545604530993879,
+        "width": 52,
+        "height": 142,
+        "contrast": 37.43076310234676,
+        "sharpness": 142.15681118966486
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 9,
+      "flat_detection_index": 9,
+      "bbox_xyxy": [
+        2052.0,
+        900.0,
+        2228.0,
+        1277.0
+      ],
+      "bbox_width": 176.0,
+      "bbox_height": 377.0,
+      "detector_confidence": 0.829076886177063,
+      "detector_class_id": 2,
+      "torso_contamination": 0.258522727272726,
+      "crop_path": "crops/Hannover-f000000-d009.jpg",
+      "torso_path": "torsos/Hannover-f000000-d009.jpg",
+      "preview_path": "previews/Hannover-f000000-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9488122820189288,
+        "width": 70,
+        "height": 151,
+        "contrast": 37.703194158543894,
+        "sharpness": 129.948482066218
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 10,
+      "flat_detection_index": 10,
+      "bbox_xyxy": [
+        2145.0,
+        442.0,
+        2267.0,
+        728.0
+      ],
+      "bbox_width": 122.0,
+      "bbox_height": 286.0,
+      "detector_confidence": 0.8099260330200195,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d010.jpg",
+      "torso_path": "torsos/Hannover-f000000-d010.jpg",
+      "preview_path": "previews/Hannover-f000000-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9798764237025775,
+        "width": 48,
+        "height": 114,
+        "contrast": 63.94671874126827,
+        "sharpness": 213.74575106309416
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 11,
+      "flat_detection_index": 11,
+      "bbox_xyxy": [
+        676.0,
+        542.0,
+        786.0,
+        878.0
+      ],
+      "bbox_width": 110.0,
+      "bbox_height": 336.0,
+      "detector_confidence": 0.8082321882247925,
+      "detector_class_id": 2,
+      "torso_contamination": 0.051237824675324756,
+      "crop_path": "crops/Hannover-f000000-d011.jpg",
+      "torso_path": "torsos/Hannover-f000000-d011.jpg",
+      "preview_path": "previews/Hannover-f000000-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9739268043950668,
+        "width": 44,
+        "height": 134,
+        "contrast": 50.36829846607525,
+        "sharpness": 193.85205499462413
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000000-d012",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 0,
+      "detection_index": 12,
+      "flat_detection_index": 12,
+      "bbox_xyxy": [
+        1205.0,
+        1707.0,
+        1419.0,
+        2002.0
+      ],
+      "bbox_width": 214.0,
+      "bbox_height": 295.0,
+      "detector_confidence": 0.7279094457626343,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000000-d012.jpg",
+      "torso_path": "torsos/Hannover-f000000-d012.jpg",
+      "preview_path": "previews/Hannover-f000000-d012.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.6544605804528555,
+        "width": 86,
+        "height": 118,
+        "contrast": 18.202006569166166,
+        "sharpness": 20.676023653631418
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 0,
+      "flat_detection_index": 1151,
+      "bbox_xyxy": [
+        3182.0,
+        1054.0,
+        3377.0,
+        1491.0
+      ],
+      "bbox_width": 195.0,
+      "bbox_height": 437.0,
+      "detector_confidence": 0.8843276500701904,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d000.jpg",
+      "torso_path": "torsos/Hannover-f000090-d000.jpg",
+      "preview_path": "previews/Hannover-f000090-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9301000054347536,
+        "width": 78,
+        "height": 175,
+        "contrast": 38.6697291302164,
+        "sharpness": 97.69508569281756
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 1,
+      "flat_detection_index": 1152,
+      "bbox_xyxy": [
+        733.0,
+        744.0,
+        869.0,
+        1159.0
+      ],
+      "bbox_width": 136.0,
+      "bbox_height": 415.0,
+      "detector_confidence": 0.8743868470191956,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d001.jpg",
+      "torso_path": "torsos/Hannover-f000090-d001.jpg",
+      "preview_path": "previews/Hannover-f000090-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9258429748840543,
+        "width": 54,
+        "height": 166,
+        "contrast": 53.069174296643794,
+        "sharpness": 91.69092951706673
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 2,
+      "flat_detection_index": 1153,
+      "bbox_xyxy": [
+        1187.0,
+        1161.0,
+        1360.0,
+        1671.0
+      ],
+      "bbox_width": 173.0,
+      "bbox_height": 510.0,
+      "detector_confidence": 0.8597184419631958,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d002.jpg",
+      "torso_path": "torsos/Hannover-f000090-d002.jpg",
+      "preview_path": "previews/Hannover-f000090-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9438793967705185,
+        "width": 69,
+        "height": 204,
+        "contrast": 72.80279192897864,
+        "sharpness": 120.40913379655167
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 3,
+      "flat_detection_index": 1154,
+      "bbox_xyxy": [
+        2138.0,
+        991.0,
+        2284.0,
+        1439.0
+      ],
+      "bbox_width": 146.0,
+      "bbox_height": 448.0,
+      "detector_confidence": 0.855214536190033,
+      "detector_class_id": 2,
+      "torso_contamination": 0.6698454317514694,
+      "crop_path": "crops/Hannover-f000090-d003.jpg",
+      "torso_path": "torsos/Hannover-f000090-d003.jpg",
+      "preview_path": "previews/Hannover-f000090-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.7839651805661301,
+        "width": 58,
+        "height": 180,
+        "contrast": 24.484725778992367,
+        "sharpness": 49.94699945684884
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 4,
+      "flat_detection_index": 1155,
+      "bbox_xyxy": [
+        2979.0,
+        671.0,
+        3176.0,
+        1065.0
+      ],
+      "bbox_width": 197.0,
+      "bbox_height": 394.0,
+      "detector_confidence": 0.8550784587860107,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d004.jpg",
+      "torso_path": "torsos/Hannover-f000090-d004.jpg",
+      "preview_path": "previews/Hannover-f000090-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9058366108911496,
+        "width": 79,
+        "height": 158,
+        "contrast": 65.34025462628303,
+        "sharpness": 68.54355103908513
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 5,
+      "flat_detection_index": 1156,
+      "bbox_xyxy": [
+        1251.0,
+        641.0,
+        1381.0,
+        1002.0
+      ],
+      "bbox_width": 130.0,
+      "bbox_height": 361.0,
+      "detector_confidence": 0.8341677188873291,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d005.jpg",
+      "torso_path": "torsos/Hannover-f000090-d005.jpg",
+      "preview_path": "previews/Hannover-f000090-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9289935868152951,
+        "width": 52,
+        "height": 145,
+        "contrast": 39.41012808091621,
+        "sharpness": 96.09277902468882
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 6,
+      "flat_detection_index": 1157,
+      "bbox_xyxy": [
+        1864.0,
+        542.0,
+        1963.0,
+        878.0
+      ],
+      "bbox_width": 99.0,
+      "bbox_height": 336.0,
+      "detector_confidence": 0.8340339660644531,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d006.jpg",
+      "torso_path": "torsos/Hannover-f000090-d006.jpg",
+      "preview_path": "previews/Hannover-f000090-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8985033715043196,
+        "width": 39,
+        "height": 134,
+        "contrast": 37.02784322257709,
+        "sharpness": 61.78788990225065
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 7,
+      "flat_detection_index": 1158,
+      "bbox_xyxy": [
+        1320.0,
+        1599.0,
+        1520.0,
+        2021.0
+      ],
+      "bbox_width": 200.0,
+      "bbox_height": 422.0,
+      "detector_confidence": 0.8303571939468384,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d007.jpg",
+      "torso_path": "torsos/Hannover-f000090-d007.jpg",
+      "preview_path": "previews/Hannover-f000090-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.7336624328673375,
+        "width": 80,
+        "height": 168,
+        "contrast": 25.22700529831857,
+        "sharpness": 21.80210657928536
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 8,
+      "flat_detection_index": 1159,
+      "bbox_xyxy": [
+        1580.0,
+        743.0,
+        1698.0,
+        1130.0
+      ],
+      "bbox_width": 118.0,
+      "bbox_height": 387.0,
+      "detector_confidence": 0.8293006420135498,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d008.jpg",
+      "torso_path": "torsos/Hannover-f000090-d008.jpg",
+      "preview_path": "previews/Hannover-f000090-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9431094555343614,
+        "width": 48,
+        "height": 155,
+        "contrast": 42.92532049919228,
+        "sharpness": 118.99275478017688
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 9,
+      "flat_detection_index": 1160,
+      "bbox_xyxy": [
+        2289.0,
+        889.0,
+        2428.0,
+        1363.0
+      ],
+      "bbox_width": 139.0,
+      "bbox_height": 474.0,
+      "detector_confidence": 0.820000946521759,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d009.jpg",
+      "torso_path": "torsos/Hannover-f000090-d009.jpg",
+      "preview_path": "previews/Hannover-f000090-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.92902478876392,
+        "width": 55,
+        "height": 190,
+        "contrast": 54.152960093084936,
+        "sharpness": 96.13755512923238
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 10,
+      "flat_detection_index": 1161,
+      "bbox_xyxy": [
+        2068.0,
+        907.0,
+        2226.0,
+        1284.0
+      ],
+      "bbox_width": 158.0,
+      "bbox_height": 377.0,
+      "detector_confidence": 0.8011966347694397,
+      "detector_class_id": 2,
+      "torso_contamination": 0.6424050632911396,
+      "crop_path": "crops/Hannover-f000090-d010.jpg",
+      "torso_path": "torsos/Hannover-f000090-d010.jpg",
+      "preview_path": "previews/Hannover-f000090-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9289538829841963,
+        "width": 64,
+        "height": 151,
+        "contrast": 36.21043053132713,
+        "sharpness": 96.03583654799611
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 11,
+      "flat_detection_index": 1162,
+      "bbox_xyxy": [
+        610.0,
+        538.0,
+        735.0,
+        863.0
+      ],
+      "bbox_width": 125.0,
+      "bbox_height": 325.0,
+      "detector_confidence": 0.7651678919792175,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d011.jpg",
+      "torso_path": "torsos/Hannover-f000090-d011.jpg",
+      "preview_path": "previews/Hannover-f000090-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9121527582169936,
+        "width": 50,
+        "height": 130,
+        "contrast": 51.19553544329274,
+        "sharpness": 75.04362830769232
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000090-d012",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 90,
+      "detection_index": 12,
+      "flat_detection_index": 1163,
+      "bbox_xyxy": [
+        2136.0,
+        448.0,
+        2251.0,
+        731.0
+      ],
+      "bbox_width": 115.0,
+      "bbox_height": 283.0,
+      "detector_confidence": 0.6863376498222351,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000090-d012.jpg",
+      "torso_path": "torsos/Hannover-f000090-d012.jpg",
+      "preview_path": "previews/Hannover-f000090-d012.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9529389072332735,
+        "width": 46,
+        "height": 113,
+        "contrast": 64.48092312903235,
+        "sharpness": 138.586752777765
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 0,
+      "flat_detection_index": 2352,
+      "bbox_xyxy": [
+        2971.0,
+        621.0,
+        3164.0,
+        1019.0
+      ],
+      "bbox_width": 193.0,
+      "bbox_height": 398.0,
+      "detector_confidence": 0.8878167867660522,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d000.jpg",
+      "torso_path": "torsos/Hannover-f000181-d000.jpg",
+      "preview_path": "previews/Hannover-f000181-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9313666115574271,
+        "width": 77,
+        "height": 160,
+        "contrast": 66.67663564809983,
+        "sharpness": 99.5666763998988
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 1,
+      "flat_detection_index": 2353,
+      "bbox_xyxy": [
+        3152.0,
+        1006.0,
+        3320.0,
+        1458.0
+      ],
+      "bbox_width": 168.0,
+      "bbox_height": 452.0,
+      "detector_confidence": 0.8641377091407776,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d001.jpg",
+      "torso_path": "torsos/Hannover-f000181-d001.jpg",
+      "preview_path": "previews/Hannover-f000181-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9265521744480172,
+        "width": 68,
+        "height": 180,
+        "contrast": 36.285548635019,
+        "sharpness": 92.66147154940408
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 2,
+      "flat_detection_index": 2354,
+      "bbox_xyxy": [
+        797.0,
+        698.0,
+        947.0,
+        1123.0
+      ],
+      "bbox_width": 150.0,
+      "bbox_height": 425.0,
+      "detector_confidence": 0.8519250750541687,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d002.jpg",
+      "torso_path": "torsos/Hannover-f000181-d002.jpg",
+      "preview_path": "previews/Hannover-f000181-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9387467573603238,
+        "width": 60,
+        "height": 170,
+        "contrast": 47.10899995519075,
+        "sharpness": 111.31418561130336
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 3,
+      "flat_detection_index": 2355,
+      "bbox_xyxy": [
+        2335.0,
+        861.0,
+        2468.0,
+        1317.0
+      ],
+      "bbox_width": 133.0,
+      "bbox_height": 456.0,
+      "detector_confidence": 0.8487076759338379,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d003.jpg",
+      "torso_path": "torsos/Hannover-f000181-d003.jpg",
+      "preview_path": "previews/Hannover-f000181-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9854313730514472,
+        "width": 53,
+        "height": 182,
+        "contrast": 50.111572871959304,
+        "sharpness": 234.4014257418396
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 4,
+      "flat_detection_index": 2356,
+      "bbox_xyxy": [
+        2164.0,
+        846.0,
+        2298.0,
+        1253.0
+      ],
+      "bbox_width": 134.0,
+      "bbox_height": 407.0,
+      "detector_confidence": 0.837285041809082,
+      "detector_class_id": 2,
+      "torso_contamination": 0.6119402985074619,
+      "crop_path": "crops/Hannover-f000181-d004.jpg",
+      "torso_path": "torsos/Hannover-f000181-d004.jpg",
+      "preview_path": "previews/Hannover-f000181-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9389277568819206,
+        "width": 54,
+        "height": 163,
+        "contrast": 38.74327841642368,
+        "sharpness": 111.62138719892884
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 5,
+      "flat_detection_index": 2357,
+      "bbox_xyxy": [
+        1090.0,
+        1134.0,
+        1335.0,
+        1628.0
+      ],
+      "bbox_width": 245.0,
+      "bbox_height": 494.0,
+      "detector_confidence": 0.832319438457489,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d005.jpg",
+      "torso_path": "torsos/Hannover-f000181-d005.jpg",
+      "preview_path": "previews/Hannover-f000181-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9350465305810347,
+        "width": 98,
+        "height": 198,
+        "contrast": 64.87273443865699,
+        "sharpness": 105.23892532141384
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 6,
+      "flat_detection_index": 2358,
+      "bbox_xyxy": [
+        2070.0,
+        952.0,
+        2237.0,
+        1417.0
+      ],
+      "bbox_width": 167.0,
+      "bbox_height": 465.0,
+      "detector_confidence": 0.8277034163475037,
+      "detector_class_id": 2,
+      "torso_contamination": 0.2976587148284081,
+      "crop_path": "crops/Hannover-f000181-d006.jpg",
+      "torso_path": "torsos/Hannover-f000181-d006.jpg",
+      "preview_path": "previews/Hannover-f000181-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8384789846566911,
+        "width": 67,
+        "height": 186,
+        "contrast": 29.46492015753302,
+        "sharpness": 53.395259995135646
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 7,
+      "flat_detection_index": 2359,
+      "bbox_xyxy": [
+        1866.0,
+        505.0,
+        1979.0,
+        833.0
+      ],
+      "bbox_width": 113.0,
+      "bbox_height": 328.0,
+      "detector_confidence": 0.8234379887580872,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d007.jpg",
+      "torso_path": "torsos/Hannover-f000181-d007.jpg",
+      "preview_path": "previews/Hannover-f000181-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8218497995837798,
+        "width": 45,
+        "height": 132,
+        "contrast": 30.649216935303475,
+        "sharpness": 36.2548113004342
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 8,
+      "flat_detection_index": 2360,
+      "bbox_xyxy": [
+        1285.0,
+        592.0,
+        1408.0,
+        946.0
+      ],
+      "bbox_width": 123.0,
+      "bbox_height": 354.0,
+      "detector_confidence": 0.8202958106994629,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d008.jpg",
+      "torso_path": "torsos/Hannover-f000181-d008.jpg",
+      "preview_path": "previews/Hannover-f000181-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9315609552268415,
+        "width": 49,
+        "height": 142,
+        "contrast": 38.66011974974288,
+        "sharpness": 99.85742725973549
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 9,
+      "flat_detection_index": 2361,
+      "bbox_xyxy": [
+        1553.0,
+        702.0,
+        1673.0,
+        1105.0
+      ],
+      "bbox_width": 120.0,
+      "bbox_height": 403.0,
+      "detector_confidence": 0.8015632033348083,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d009.jpg",
+      "torso_path": "torsos/Hannover-f000181-d009.jpg",
+      "preview_path": "previews/Hannover-f000181-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9399880537276029,
+        "width": 48,
+        "height": 161,
+        "contrast": 42.09832916594791,
+        "sharpness": 113.44035226626096
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 10,
+      "flat_detection_index": 2362,
+      "bbox_xyxy": [
+        637.0,
+        496.0,
+        762.0,
+        830.0
+      ],
+      "bbox_width": 125.0,
+      "bbox_height": 334.0,
+      "detector_confidence": 0.7465611696243286,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d010.jpg",
+      "torso_path": "torsos/Hannover-f000181-d010.jpg",
+      "preview_path": "previews/Hannover-f000181-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9447724135729343,
+        "width": 50,
+        "height": 134,
+        "contrast": 49.39092043220663,
+        "sharpness": 122.07582989529963
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000181-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 181,
+      "detection_index": 11,
+      "flat_detection_index": 2363,
+      "bbox_xyxy": [
+        2148.0,
+        417.0,
+        2268.0,
+        699.0
+      ],
+      "bbox_width": 120.0,
+      "bbox_height": 282.0,
+      "detector_confidence": 0.6191911101341248,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000181-d011.jpg",
+      "torso_path": "torsos/Hannover-f000181-d011.jpg",
+      "preview_path": "previews/Hannover-f000181-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9342137928597319,
+        "width": 48,
+        "height": 112,
+        "contrast": 63.55546658823361,
+        "sharpness": 103.92398092049318
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 0,
+      "flat_detection_index": 3513,
+      "bbox_xyxy": [
+        983.0,
+        1106.0,
+        1245.0,
+        1592.0
+      ],
+      "bbox_width": 262.0,
+      "bbox_height": 486.0,
+      "detector_confidence": 0.878608226776123,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d000.jpg",
+      "torso_path": "torsos/Hannover-f000272-d000.jpg",
+      "preview_path": "previews/Hannover-f000272-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9328921961767087,
+        "width": 104,
+        "height": 194,
+        "contrast": 62.04826329556452,
+        "sharpness": 101.87511253074452
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 1,
+      "flat_detection_index": 3514,
+      "bbox_xyxy": [
+        2263.0,
+        874.0,
+        2434.0,
+        1332.0
+      ],
+      "bbox_width": 171.0,
+      "bbox_height": 458.0,
+      "detector_confidence": 0.8719618916511536,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d001.jpg",
+      "torso_path": "torsos/Hannover-f000272-d001.jpg",
+      "preview_path": "previews/Hannover-f000272-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9320569184895263,
+        "width": 69,
+        "height": 184,
+        "contrast": 49.91932822040394,
+        "sharpness": 100.60379122405422
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 2,
+      "flat_detection_index": 3515,
+      "bbox_xyxy": [
+        3119.0,
+        1029.0,
+        3281.0,
+        1478.0
+      ],
+      "bbox_width": 162.0,
+      "bbox_height": 449.0,
+      "detector_confidence": 0.8621338605880737,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d002.jpg",
+      "torso_path": "torsos/Hannover-f000272-d002.jpg",
+      "preview_path": "previews/Hannover-f000272-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9303889025811029,
+        "width": 64,
+        "height": 179,
+        "contrast": 38.95527247990841,
+        "sharpness": 98.11843638052369
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 3,
+      "flat_detection_index": 3516,
+      "bbox_xyxy": [
+        2042.0,
+        955.0,
+        2201.0,
+        1401.0
+      ],
+      "bbox_width": 159.0,
+      "bbox_height": 446.0,
+      "detector_confidence": 0.8484736084938049,
+      "detector_class_id": 2,
+      "torso_contamination": 0.8643497757847531,
+      "crop_path": "crops/Hannover-f000272-d003.jpg",
+      "torso_path": "torsos/Hannover-f000272-d003.jpg",
+      "preview_path": "previews/Hannover-f000272-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8080362745970064,
+        "width": 63,
+        "height": 178,
+        "contrast": 26.757778617573127,
+        "sharpness": 50.33965711858113
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 4,
+      "flat_detection_index": 3517,
+      "bbox_xyxy": [
+        916.0,
+        711.0,
+        1065.0,
+        1131.0
+      ],
+      "bbox_width": 149.0,
+      "bbox_height": 420.0,
+      "detector_confidence": 0.8346702456474304,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d004.jpg",
+      "torso_path": "torsos/Hannover-f000272-d004.jpg",
+      "preview_path": "previews/Hannover-f000272-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9396232305584106,
+        "width": 59,
+        "height": 168,
+        "contrast": 40.53222205790563,
+        "sharpness": 112.81073332330155
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 5,
+      "flat_detection_index": 3518,
+      "bbox_xyxy": [
+        3005.0,
+        656.0,
+        3174.0,
+        1042.0
+      ],
+      "bbox_width": 169.0,
+      "bbox_height": 386.0,
+      "detector_confidence": 0.8317406177520752,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d005.jpg",
+      "torso_path": "torsos/Hannover-f000272-d005.jpg",
+      "preview_path": "previews/Hannover-f000272-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8839160294676548,
+        "width": 67,
+        "height": 154,
+        "contrast": 60.4840650380688,
+        "sharpness": 50.49006783922364
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 6,
+      "flat_detection_index": 3519,
+      "bbox_xyxy": [
+        1261.0,
+        607.0,
+        1394.0,
+        967.0
+      ],
+      "bbox_width": 133.0,
+      "bbox_height": 360.0,
+      "detector_confidence": 0.8256575465202332,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d006.jpg",
+      "torso_path": "torsos/Hannover-f000272-d006.jpg",
+      "preview_path": "previews/Hannover-f000272-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9255614030743811,
+        "width": 53,
+        "height": 144,
+        "contrast": 39.158479095302745,
+        "sharpness": 91.30880072911036
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 7,
+      "flat_detection_index": 3520,
+      "bbox_xyxy": [
+        1864.0,
+        515.0,
+        1989.0,
+        838.0
+      ],
+      "bbox_width": 125.0,
+      "bbox_height": 323.0,
+      "detector_confidence": 0.8243414163589478,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d007.jpg",
+      "torso_path": "torsos/Hannover-f000272-d007.jpg",
+      "preview_path": "previews/Hannover-f000272-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8604329100204403,
+        "width": 50,
+        "height": 129,
+        "contrast": 31.168623427302393,
+        "sharpness": 58.28879860585302
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 8,
+      "flat_detection_index": 3521,
+      "bbox_xyxy": [
+        735.0,
+        521.0,
+        853.0,
+        847.0
+      ],
+      "bbox_width": 118.0,
+      "bbox_height": 326.0,
+      "detector_confidence": 0.8075512051582336,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d008.jpg",
+      "torso_path": "torsos/Hannover-f000272-d008.jpg",
+      "preview_path": "previews/Hannover-f000272-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9675463672440557,
+        "width": 48,
+        "height": 130,
+        "contrast": 48.1059790507335,
+        "sharpness": 174.7915023011177
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 9,
+      "flat_detection_index": 3522,
+      "bbox_xyxy": [
+        1492.0,
+        790.0,
+        1663.0,
+        1115.0
+      ],
+      "bbox_width": 171.0,
+      "bbox_height": 325.0,
+      "detector_confidence": 0.7545381188392639,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d009.jpg",
+      "torso_path": "torsos/Hannover-f000272-d009.jpg",
+      "preview_path": "previews/Hannover-f000272-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9120728741480268,
+        "width": 69,
+        "height": 130,
+        "contrast": 35.350025237503324,
+        "sharpness": 74.95714932346021
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 10,
+      "flat_detection_index": 3523,
+      "bbox_xyxy": [
+        2163.0,
+        427.0,
+        2276.0,
+        711.0
+      ],
+      "bbox_width": 113.0,
+      "bbox_height": 284.0,
+      "detector_confidence": 0.7464368343353271,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000272-d010.jpg",
+      "torso_path": "torsos/Hannover-f000272-d010.jpg",
+      "preview_path": "previews/Hannover-f000272-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9327867636024375,
+        "width": 45,
+        "height": 114,
+        "contrast": 66.15241985726632,
+        "sharpness": 101.71364119634153
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000272-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 272,
+      "detection_index": 11,
+      "flat_detection_index": 3524,
+      "bbox_xyxy": [
+        2083.0,
+        891.0,
+        2228.0,
+        1243.0
+      ],
+      "bbox_width": 145.0,
+      "bbox_height": 352.0,
+      "detector_confidence": 0.6673316955566406,
+      "detector_class_id": 2,
+      "torso_contamination": 1.0,
+      "crop_path": "crops/Hannover-f000272-d011.jpg",
+      "torso_path": "torsos/Hannover-f000272-d011.jpg",
+      "preview_path": "previews/Hannover-f000272-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9712680157628077,
+        "width": 58,
+        "height": 140,
+        "contrast": 40.470693389979715,
+        "sharpness": 185.6395488697857
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 0,
+      "flat_detection_index": 4625,
+      "bbox_xyxy": [
+        1060.0,
+        1024.0,
+        1394.0,
+        1483.0
+      ],
+      "bbox_width": 334.0,
+      "bbox_height": 459.0,
+      "detector_confidence": 0.8996511101722717,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d000.jpg",
+      "torso_path": "torsos/Hannover-f000362-d000.jpg",
+      "preview_path": "previews/Hannover-f000362-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9383257214545896,
+        "width": 134,
+        "height": 183,
+        "contrast": 67.04668562508401,
+        "sharpness": 110.60327457396812
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 1,
+      "flat_detection_index": 4626,
+      "bbox_xyxy": [
+        873.0,
+        722.0,
+        1039.0,
+        1121.0
+      ],
+      "bbox_width": 166.0,
+      "bbox_height": 399.0,
+      "detector_confidence": 0.8806666731834412,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d001.jpg",
+      "torso_path": "torsos/Hannover-f000362-d001.jpg",
+      "preview_path": "previews/Hannover-f000362-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9311718999007218,
+        "width": 66,
+        "height": 159,
+        "contrast": 64.37802531977181,
+        "sharpness": 99.27633669365333
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 2,
+      "flat_detection_index": 4627,
+      "bbox_xyxy": [
+        3015.0,
+        1040.0,
+        3208.0,
+        1491.0
+      ],
+      "bbox_width": 193.0,
+      "bbox_height": 451.0,
+      "detector_confidence": 0.8778751492500305,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d002.jpg",
+      "torso_path": "torsos/Hannover-f000362-d002.jpg",
+      "preview_path": "previews/Hannover-f000362-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9322799730856083,
+        "width": 77,
+        "height": 181,
+        "contrast": 46.77015582847121,
+        "sharpness": 100.94152010495843
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 3,
+      "flat_detection_index": 4628,
+      "bbox_xyxy": [
+        2200.0,
+        862.0,
+        2357.0,
+        1335.0
+      ],
+      "bbox_width": 157.0,
+      "bbox_height": 473.0,
+      "detector_confidence": 0.8605207800865173,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d003.jpg",
+      "torso_path": "torsos/Hannover-f000362-d003.jpg",
+      "preview_path": "previews/Hannover-f000362-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9563182448089946,
+        "width": 63,
+        "height": 189,
+        "contrast": 42.26686630046808,
+        "sharpness": 146.14432987480188
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 4,
+      "flat_detection_index": 4629,
+      "bbox_xyxy": [
+        1879.0,
+        524.0,
+        1989.0,
+        856.0
+      ],
+      "bbox_width": 110.0,
+      "bbox_height": 332.0,
+      "detector_confidence": 0.8597481846809387,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d004.jpg",
+      "torso_path": "torsos/Hannover-f000362-d004.jpg",
+      "preview_path": "previews/Hannover-f000362-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9131942834236749,
+        "width": 44,
+        "height": 132,
+        "contrast": 37.40009990218864,
+        "sharpness": 76.18159759574522
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 5,
+      "flat_detection_index": 4630,
+      "bbox_xyxy": [
+        2991.0,
+        662.0,
+        3197.0,
+        1051.0
+      ],
+      "bbox_width": 206.0,
+      "bbox_height": 389.0,
+      "detector_confidence": 0.8502669334411621,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d005.jpg",
+      "torso_path": "torsos/Hannover-f000362-d005.jpg",
+      "preview_path": "previews/Hannover-f000362-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9245821712632717,
+        "width": 82,
+        "height": 155,
+        "contrast": 68.65362245829922,
+        "sharpness": 89.99386273469598
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 6,
+      "flat_detection_index": 4631,
+      "bbox_xyxy": [
+        2041.0,
+        924.0,
+        2175.0,
+        1377.0
+      ],
+      "bbox_width": 134.0,
+      "bbox_height": 453.0,
+      "detector_confidence": 0.8444987535476685,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d006.jpg",
+      "torso_path": "torsos/Hannover-f000362-d006.jpg",
+      "preview_path": "previews/Hannover-f000362-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8753545424304846,
+        "width": 54,
+        "height": 181,
+        "contrast": 31.21969224979756,
+        "sharpness": 72.07494789444223
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 7,
+      "flat_detection_index": 4632,
+      "bbox_xyxy": [
+        1238.0,
+        665.0,
+        1376.0,
+        1015.0
+      ],
+      "bbox_width": 138.0,
+      "bbox_height": 350.0,
+      "detector_confidence": 0.8405095338821411,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d007.jpg",
+      "torso_path": "torsos/Hannover-f000362-d007.jpg",
+      "preview_path": "previews/Hannover-f000362-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9280374781367701,
+        "width": 56,
+        "height": 140,
+        "contrast": 39.641773104416465,
+        "sharpness": 94.73212073094544
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 8,
+      "flat_detection_index": 4633,
+      "bbox_xyxy": [
+        785.0,
+        513.0,
+        916.0,
+        852.0
+      ],
+      "bbox_width": 131.0,
+      "bbox_height": 339.0,
+      "detector_confidence": 0.8341737389564514,
+      "detector_class_id": 2,
+      "torso_contamination": 0.014736596185458044,
+      "crop_path": "crops/Hannover-f000362-d008.jpg",
+      "torso_path": "torsos/Hannover-f000362-d008.jpg",
+      "preview_path": "previews/Hannover-f000362-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9580188975536397,
+        "width": 53,
+        "height": 135,
+        "contrast": 51.99607538850785,
+        "sharpness": 150.1224628069389
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 9,
+      "flat_detection_index": 4634,
+      "bbox_xyxy": [
+        1868.0,
+        889.0,
+        2074.0,
+        1276.0
+      ],
+      "bbox_width": 206.0,
+      "bbox_height": 387.0,
+      "detector_confidence": 0.8301674723625183,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d009.jpg",
+      "torso_path": "torsos/Hannover-f000362-d009.jpg",
+      "preview_path": "previews/Hannover-f000362-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9038679524874814,
+        "width": 82,
+        "height": 155,
+        "contrast": 36.010958034406,
+        "sharpness": 66.65059103984608
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 10,
+      "flat_detection_index": 4635,
+      "bbox_xyxy": [
+        1547.0,
+        740.0,
+        1700.0,
+        1135.0
+      ],
+      "bbox_width": 153.0,
+      "bbox_height": 395.0,
+      "detector_confidence": 0.8073870539665222,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d010.jpg",
+      "torso_path": "torsos/Hannover-f000362-d010.jpg",
+      "preview_path": "previews/Hannover-f000362-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9393993503614686,
+        "width": 61,
+        "height": 158,
+        "contrast": 39.74445269391685,
+        "sharpness": 112.4263133591221
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000362-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 362,
+      "detection_index": 11,
+      "flat_detection_index": 4636,
+      "bbox_xyxy": [
+        2149.0,
+        438.0,
+        2265.0,
+        727.0
+      ],
+      "bbox_width": 116.0,
+      "bbox_height": 289.0,
+      "detector_confidence": 0.7943394780158997,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000362-d011.jpg",
+      "torso_path": "torsos/Hannover-f000362-d011.jpg",
+      "preview_path": "previews/Hannover-f000362-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9362944484256391,
+        "width": 46,
+        "height": 115,
+        "contrast": 65.13038987024028,
+        "sharpness": 107.2448808073156
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 0,
+      "flat_detection_index": 5716,
+      "bbox_xyxy": [
+        1378.0,
+        931.0,
+        1567.0,
+        1352.0
+      ],
+      "bbox_width": 189.0,
+      "bbox_height": 421.0,
+      "detector_confidence": 0.8748236894607544,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d000.jpg",
+      "torso_path": "torsos/Hannover-f000453-d000.jpg",
+      "preview_path": "previews/Hannover-f000453-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9354294665696928,
+        "width": 75,
+        "height": 169,
+        "contrast": 59.870685544829115,
+        "sharpness": 105.84992013818376
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 1,
+      "flat_detection_index": 5717,
+      "bbox_xyxy": [
+        747.0,
+        738.0,
+        924.0,
+        1149.0
+      ],
+      "bbox_width": 177.0,
+      "bbox_height": 411.0,
+      "detector_confidence": 0.855587363243103,
+      "detector_class_id": 2,
+      "torso_contamination": 0.02765835704565143,
+      "crop_path": "crops/Hannover-f000453-d001.jpg",
+      "torso_path": "torsos/Hannover-f000453-d001.jpg",
+      "preview_path": "previews/Hannover-f000453-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.934117198842008,
+        "width": 71,
+        "height": 165,
+        "contrast": 47.4853756768597,
+        "sharpness": 103.77266075845651
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 2,
+      "flat_detection_index": 5718,
+      "bbox_xyxy": [
+        2851.0,
+        1059.0,
+        3005.0,
+        1511.0
+      ],
+      "bbox_width": 154.0,
+      "bbox_height": 452.0,
+      "detector_confidence": 0.853488028049469,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d002.jpg",
+      "torso_path": "torsos/Hannover-f000453-d002.jpg",
+      "preview_path": "previews/Hannover-f000453-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8564890809892727,
+        "width": 62,
+        "height": 180,
+        "contrast": 33.111962361923794,
+        "sharpness": 43.26631594371861
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 3,
+      "flat_detection_index": 5719,
+      "bbox_xyxy": [
+        2905.0,
+        698.0,
+        3095.0,
+        1084.0
+      ],
+      "bbox_width": 190.0,
+      "bbox_height": 386.0,
+      "detector_confidence": 0.8427371978759766,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d003.jpg",
+      "torso_path": "torsos/Hannover-f000453-d003.jpg",
+      "preview_path": "previews/Hannover-f000453-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8937197683172862,
+        "width": 76,
+        "height": 154,
+        "contrast": 65.77333514889455,
+        "sharpness": 57.79129088693351
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 4,
+      "flat_detection_index": 5720,
+      "bbox_xyxy": [
+        1679.0,
+        565.0,
+        1823.0,
+        898.0
+      ],
+      "bbox_width": 144.0,
+      "bbox_height": 333.0,
+      "detector_confidence": 0.8417490124702454,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d004.jpg",
+      "torso_path": "torsos/Hannover-f000453-d004.jpg",
+      "preview_path": "previews/Hannover-f000453-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8937448800812593,
+        "width": 58,
+        "height": 133,
+        "contrast": 38.356047132913496,
+        "sharpness": 57.81148464932726
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 5,
+      "flat_detection_index": 5721,
+      "bbox_xyxy": [
+        2044.0,
+        459.0,
+        2175.0,
+        752.0
+      ],
+      "bbox_width": 131.0,
+      "bbox_height": 293.0,
+      "detector_confidence": 0.8346061706542969,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d005.jpg",
+      "torso_path": "torsos/Hannover-f000453-d005.jpg",
+      "preview_path": "previews/Hannover-f000453-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9224443863283962,
+        "width": 53,
+        "height": 117,
+        "contrast": 62.269672752394186,
+        "sharpness": 87.19720633309737
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 6,
+      "flat_detection_index": 5722,
+      "bbox_xyxy": [
+        1867.0,
+        961.0,
+        2035.0,
+        1376.0
+      ],
+      "bbox_width": 168.0,
+      "bbox_height": 415.0,
+      "detector_confidence": 0.8279746174812317,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d006.jpg",
+      "torso_path": "torsos/Hannover-f000453-d006.jpg",
+      "preview_path": "previews/Hannover-f000453-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8761504460552745,
+        "width": 68,
+        "height": 166,
+        "contrast": 33.98286029405186,
+        "sharpness": 51.10735181575511
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 7,
+      "flat_detection_index": 5723,
+      "bbox_xyxy": [
+        1122.0,
+        710.0,
+        1274.0,
+        1071.0
+      ],
+      "bbox_width": 152.0,
+      "bbox_height": 361.0,
+      "detector_confidence": 0.8267719149589539,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d007.jpg",
+      "torso_path": "torsos/Hannover-f000453-d007.jpg",
+      "preview_path": "previews/Hannover-f000453-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9013968319087462,
+        "width": 60,
+        "height": 145,
+        "contrast": 37.19572409018554,
+        "sharpness": 64.35834423305589
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 8,
+      "flat_detection_index": 5724,
+      "bbox_xyxy": [
+        2093.0,
+        930.0,
+        2273.0,
+        1364.0
+      ],
+      "bbox_width": 180.0,
+      "bbox_height": 434.0,
+      "detector_confidence": 0.8237167596817017,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d008.jpg",
+      "torso_path": "torsos/Hannover-f000453-d008.jpg",
+      "preview_path": "previews/Hannover-f000453-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9486457362268189,
+        "width": 72,
+        "height": 174,
+        "contrast": 44.30998187833029,
+        "sharpness": 129.61282267312535
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 9,
+      "flat_detection_index": 5725,
+      "bbox_xyxy": [
+        1552.0,
+        779.0,
+        1714.0,
+        1174.0
+      ],
+      "bbox_width": 162.0,
+      "bbox_height": 395.0,
+      "detector_confidence": 0.8209393620491028,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d009.jpg",
+      "torso_path": "torsos/Hannover-f000453-d009.jpg",
+      "preview_path": "previews/Hannover-f000453-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9166269735035969,
+        "width": 64,
+        "height": 158,
+        "contrast": 39.96369082241447,
+        "sharpness": 80.07357497139631
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 10,
+      "flat_detection_index": 5726,
+      "bbox_xyxy": [
+        684.0,
+        548.0,
+        822.0,
+        876.0
+      ],
+      "bbox_width": 138.0,
+      "bbox_height": 328.0,
+      "detector_confidence": 0.8153967261314392,
+      "detector_class_id": 2,
+      "torso_contamination": 0.18372216330858962,
+      "crop_path": "crops/Hannover-f000453-d010.jpg",
+      "torso_path": "torsos/Hannover-f000453-d010.jpg",
+      "preview_path": "previews/Hannover-f000453-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9269731782723206,
+        "width": 56,
+        "height": 132,
+        "contrast": 49.54467876948872,
+        "sharpness": 93.24312815583363
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000453-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 453,
+      "detection_index": 11,
+      "flat_detection_index": 5727,
+      "bbox_xyxy": [
+        1763.0,
+        897.0,
+        1909.0,
+        1262.0
+      ],
+      "bbox_width": 146.0,
+      "bbox_height": 365.0,
+      "detector_confidence": 0.7947901487350464,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000453-d011.jpg",
+      "torso_path": "torsos/Hannover-f000453-d011.jpg",
+      "preview_path": "previews/Hannover-f000453-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8848873915970964,
+        "width": 58,
+        "height": 146,
+        "contrast": 35.558414908218104,
+        "sharpness": 51.16423734165846
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 0,
+      "flat_detection_index": 6804,
+      "bbox_xyxy": [
+        2716.0,
+        802.0,
+        2925.0,
+        1181.0
+      ],
+      "bbox_width": 209.0,
+      "bbox_height": 379.0,
+      "detector_confidence": 0.8740950226783752,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d000.jpg",
+      "torso_path": "torsos/Hannover-f000544-d000.jpg",
+      "preview_path": "previews/Hannover-f000544-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9061167798995551,
+        "width": 83,
+        "height": 151,
+        "contrast": 64.77862078054315,
+        "sharpness": 68.81790028525602
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 1,
+      "flat_detection_index": 6805,
+      "bbox_xyxy": [
+        1802.0,
+        987.0,
+        2002.0,
+        1469.0
+      ],
+      "bbox_width": 200.0,
+      "bbox_height": 482.0,
+      "detector_confidence": 0.8735647201538086,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d001.jpg",
+      "torso_path": "torsos/Hannover-f000544-d001.jpg",
+      "preview_path": "previews/Hannover-f000544-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8117165931261324,
+        "width": 80,
+        "height": 192,
+        "contrast": 29.53276178848881,
+        "sharpness": 36.23968037923177
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 2,
+      "flat_detection_index": 6806,
+      "bbox_xyxy": [
+        2549.0,
+        1094.0,
+        2682.0,
+        1566.0
+      ],
+      "bbox_width": 133.0,
+      "bbox_height": 472.0,
+      "detector_confidence": 0.868575930595398,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d002.jpg",
+      "torso_path": "torsos/Hannover-f000544-d002.jpg",
+      "preview_path": "previews/Hannover-f000544-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8026046332064952,
+        "width": 53,
+        "height": 188,
+        "contrast": 28.11665750617195,
+        "sharpness": 38.37139542376642
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 3,
+      "flat_detection_index": 6807,
+      "bbox_xyxy": [
+        2073.0,
+        1021.0,
+        2287.0,
+        1489.0
+      ],
+      "bbox_width": 214.0,
+      "bbox_height": 468.0,
+      "detector_confidence": 0.8588298559188843,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d003.jpg",
+      "torso_path": "torsos/Hannover-f000544-d003.jpg",
+      "preview_path": "previews/Hannover-f000544-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9482330296383564,
+        "width": 86,
+        "height": 188,
+        "contrast": 53.6624533242226,
+        "sharpness": 128.7852533209257
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 4,
+      "flat_detection_index": 6808,
+      "bbox_xyxy": [
+        717.0,
+        840.0,
+        867.0,
+        1257.0
+      ],
+      "bbox_width": 150.0,
+      "bbox_height": 417.0,
+      "detector_confidence": 0.8474081754684448,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d004.jpg",
+      "torso_path": "torsos/Hannover-f000544-d004.jpg",
+      "preview_path": "previews/Hannover-f000544-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.923523413168224,
+        "width": 60,
+        "height": 167,
+        "contrast": 48.057724614777804,
+        "sharpness": 88.59626171808081
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 5,
+      "flat_detection_index": 6809,
+      "bbox_xyxy": [
+        1364.0,
+        854.0,
+        1529.0,
+        1270.0
+      ],
+      "bbox_width": 165.0,
+      "bbox_height": 416.0,
+      "detector_confidence": 0.8227641582489014,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d005.jpg",
+      "torso_path": "torsos/Hannover-f000544-d005.jpg",
+      "preview_path": "previews/Hannover-f000544-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8880350210571052,
+        "width": 66,
+        "height": 166,
+        "contrast": 37.70147051671925,
+        "sharpness": 53.42077343027392
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 6,
+      "flat_detection_index": 6810,
+      "bbox_xyxy": [
+        560.0,
+        647.0,
+        689.0,
+        989.0
+      ],
+      "bbox_width": 129.0,
+      "bbox_height": 342.0,
+      "detector_confidence": 0.8178389668464661,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d006.jpg",
+      "torso_path": "torsos/Hannover-f000544-d006.jpg",
+      "preview_path": "previews/Hannover-f000544-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.956118050454548,
+        "width": 51,
+        "height": 136,
+        "contrast": 46.15702523206619,
+        "sharpness": 145.68389684347517
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 7,
+      "flat_detection_index": 6811,
+      "bbox_xyxy": [
+        1594.0,
+        1050.0,
+        1820.0,
+        1446.0
+      ],
+      "bbox_width": 226.0,
+      "bbox_height": 396.0,
+      "detector_confidence": 0.8056157231330872,
+      "detector_class_id": 2,
+      "torso_contamination": 0.31194690265486746,
+      "crop_path": "crops/Hannover-f000544-d007.jpg",
+      "torso_path": "torsos/Hannover-f000544-d007.jpg",
+      "preview_path": "previews/Hannover-f000544-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.914539646076146,
+        "width": 90,
+        "height": 158,
+        "contrast": 56.41044843511484,
+        "sharpness": 77.68073243248055
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 8,
+      "flat_detection_index": 6812,
+      "bbox_xyxy": [
+        1412.0,
+        671.0,
+        1534.0,
+        944.0
+      ],
+      "bbox_width": 122.0,
+      "bbox_height": 273.0,
+      "detector_confidence": 0.7920211553573608,
+      "detector_class_id": 2,
+      "torso_contamination": 0.07417582417582436,
+      "crop_path": "crops/Hannover-f000544-d008.jpg",
+      "torso_path": "torsos/Hannover-f000544-d008.jpg",
+      "preview_path": "previews/Hannover-f000544-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.917614101669496,
+        "width": 48,
+        "height": 109,
+        "contrast": 42.54511378217862,
+        "sharpness": 81.2343118740005
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 9,
+      "flat_detection_index": 6813,
+      "bbox_xyxy": [
+        1008.0,
+        836.0,
+        1143.0,
+        1196.0
+      ],
+      "bbox_width": 135.0,
+      "bbox_height": 360.0,
+      "detector_confidence": 0.7297762036323547,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d009.jpg",
+      "torso_path": "torsos/Hannover-f000544-d009.jpg",
+      "preview_path": "previews/Hannover-f000544-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9078148125346774,
+        "width": 54,
+        "height": 144,
+        "contrast": 38.1831218510483,
+        "sharpness": 70.50770161155883
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 10,
+      "flat_detection_index": 6814,
+      "bbox_xyxy": [
+        1869.0,
+        542.0,
+        1995.0,
+        838.0
+      ],
+      "bbox_width": 126.0,
+      "bbox_height": 296.0,
+      "detector_confidence": 0.7240569591522217,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000544-d010.jpg",
+      "torso_path": "torsos/Hannover-f000544-d010.jpg",
+      "preview_path": "previews/Hannover-f000544-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8973846853355031,
+        "width": 50,
+        "height": 118,
+        "contrast": 66.64512625760837,
+        "sharpness": 60.82567721918989
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000544-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 544,
+      "detection_index": 11,
+      "flat_detection_index": 6815,
+      "bbox_xyxy": [
+        1514.0,
+        1038.0,
+        1690.0,
+        1399.0
+      ],
+      "bbox_width": 176.0,
+      "bbox_height": 361.0,
+      "detector_confidence": 0.6922351717948914,
+      "detector_class_id": 2,
+      "torso_contamination": 0.6136363636363635,
+      "crop_path": "crops/Hannover-f000544-d011.jpg",
+      "torso_path": "torsos/Hannover-f000544-d011.jpg",
+      "preview_path": "previews/Hannover-f000544-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8563095283099058,
+        "width": 70,
+        "height": 145,
+        "contrast": 32.233227508678034,
+        "sharpness": 47.96491624645102
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 0,
+      "flat_detection_index": 7903,
+      "bbox_xyxy": [
+        717.0,
+        864.0,
+        872.0,
+        1284.0
+      ],
+      "bbox_width": 155.0,
+      "bbox_height": 420.0,
+      "detector_confidence": 0.8873019218444824,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d000.jpg",
+      "torso_path": "torsos/Hannover-f000635-d000.jpg",
+      "preview_path": "previews/Hannover-f000635-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9194271753178247,
+        "width": 62,
+        "height": 168,
+        "contrast": 54.049809663705666,
+        "sharpness": 83.41645606332631
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 1,
+      "flat_detection_index": 7904,
+      "bbox_xyxy": [
+        2022.0,
+        1005.0,
+        2238.0,
+        1516.0
+      ],
+      "bbox_width": 216.0,
+      "bbox_height": 511.0,
+      "detector_confidence": 0.8807621002197266,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d001.jpg",
+      "torso_path": "torsos/Hannover-f000635-d001.jpg",
+      "preview_path": "previews/Hannover-f000635-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8737651885551286,
+        "width": 86,
+        "height": 205,
+        "contrast": 34.043400713640615,
+        "sharpness": 49.105614141315996
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 2,
+      "flat_detection_index": 7905,
+      "bbox_xyxy": [
+        2573.0,
+        1144.0,
+        2745.0,
+        1616.0
+      ],
+      "bbox_width": 172.0,
+      "bbox_height": 472.0,
+      "detector_confidence": 0.8729552626609802,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d002.jpg",
+      "torso_path": "torsos/Hannover-f000635-d002.jpg",
+      "preview_path": "previews/Hannover-f000635-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8736912158208641,
+        "width": 68,
+        "height": 188,
+        "contrast": 33.496204737502424,
+        "sharpness": 52.36015499442161
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 3,
+      "flat_detection_index": 7906,
+      "bbox_xyxy": [
+        944.0,
+        903.0,
+        1140.0,
+        1257.0
+      ],
+      "bbox_width": 196.0,
+      "bbox_height": 354.0,
+      "detector_confidence": 0.8718341588973999,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d003.jpg",
+      "torso_path": "torsos/Hannover-f000635-d003.jpg",
+      "preview_path": "previews/Hannover-f000635-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8994898546372333,
+        "width": 78,
+        "height": 142,
+        "contrast": 39.84524155843918,
+        "sharpness": 62.65084208080199
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 4,
+      "flat_detection_index": 7907,
+      "bbox_xyxy": [
+        2731.0,
+        838.0,
+        2936.0,
+        1211.0
+      ],
+      "bbox_width": 205.0,
+      "bbox_height": 373.0,
+      "detector_confidence": 0.8692938089370728,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d004.jpg",
+      "torso_path": "torsos/Hannover-f000635-d004.jpg",
+      "preview_path": "previews/Hannover-f000635-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9230667470844925,
+        "width": 82,
+        "height": 149,
+        "contrast": 52.7676097243475,
+        "sharpness": 88.00106479439202
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 5,
+      "flat_detection_index": 7908,
+      "bbox_xyxy": [
+        2291.0,
+        1060.0,
+        2439.0,
+        1585.0
+      ],
+      "bbox_width": 148.0,
+      "bbox_height": 525.0,
+      "detector_confidence": 0.8588429689407349,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d005.jpg",
+      "torso_path": "torsos/Hannover-f000635-d005.jpg",
+      "preview_path": "previews/Hannover-f000635-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9397014746024365,
+        "width": 60,
+        "height": 210,
+        "contrast": 41.23454200847302,
+        "sharpness": 112.94543486394558
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 6,
+      "flat_detection_index": 7909,
+      "bbox_xyxy": [
+        1370.0,
+        679.0,
+        1551.0,
+        1007.0
+      ],
+      "bbox_width": 181.0,
+      "bbox_height": 328.0,
+      "detector_confidence": 0.8544172644615173,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d006.jpg",
+      "torso_path": "torsos/Hannover-f000635-d006.jpg",
+      "preview_path": "previews/Hannover-f000635-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9246370952150474,
+        "width": 73,
+        "height": 132,
+        "contrast": 42.725248045085934,
+        "sharpness": 90.06704448742015
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 7,
+      "flat_detection_index": 7910,
+      "bbox_xyxy": [
+        612.0,
+        652.0,
+        750.0,
+        1031.0
+      ],
+      "bbox_width": 138.0,
+      "bbox_height": 379.0,
+      "detector_confidence": 0.8481969237327576,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d007.jpg",
+      "torso_path": "torsos/Hannover-f000635-d007.jpg",
+      "preview_path": "previews/Hannover-f000635-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9204016468655082,
+        "width": 56,
+        "height": 151,
+        "contrast": 56.32062397305544,
+        "sharpness": 84.6167791938055
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 8,
+      "flat_detection_index": 7911,
+      "bbox_xyxy": [
+        1353.0,
+        922.0,
+        1578.0,
+        1288.0
+      ],
+      "bbox_width": 225.0,
+      "bbox_height": 366.0,
+      "detector_confidence": 0.8406819105148315,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d008.jpg",
+      "torso_path": "torsos/Hannover-f000635-d008.jpg",
+      "preview_path": "previews/Hannover-f000635-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.7821174073468014,
+        "width": 90,
+        "height": 146,
+        "contrast": 27.885143892793728,
+        "sharpness": 29.787350897372633
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 9,
+      "flat_detection_index": 7912,
+      "bbox_xyxy": [
+        1839.0,
+        554.0,
+        1973.0,
+        855.0
+      ],
+      "bbox_width": 134.0,
+      "bbox_height": 301.0,
+      "detector_confidence": 0.8351261019706726,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000635-d009.jpg",
+      "torso_path": "torsos/Hannover-f000635-d009.jpg",
+      "preview_path": "previews/Hannover-f000635-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9311981257473405,
+        "width": 54,
+        "height": 121,
+        "contrast": 59.800999661314634,
+        "sharpness": 99.31538678002629
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 10,
+      "flat_detection_index": 7913,
+      "bbox_xyxy": [
+        1650.0,
+        987.0,
+        1788.0,
+        1422.0
+      ],
+      "bbox_width": 138.0,
+      "bbox_height": 435.0,
+      "detector_confidence": 0.827793300151825,
+      "detector_class_id": 2,
+      "torso_contamination": 0.13768115942028866,
+      "crop_path": "crops/Hannover-f000635-d010.jpg",
+      "torso_path": "torsos/Hannover-f000635-d010.jpg",
+      "preview_path": "previews/Hannover-f000635-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9033448998938697,
+        "width": 56,
+        "height": 174,
+        "contrast": 54.5490049458553,
+        "sharpness": 66.15772797364586
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 11,
+      "flat_detection_index": 7914,
+      "bbox_xyxy": [
+        1530.0,
+        939.0,
+        1674.0,
+        1376.0
+      ],
+      "bbox_width": 144.0,
+      "bbox_height": 437.0,
+      "detector_confidence": 0.7947188019752502,
+      "detector_class_id": 2,
+      "torso_contamination": 0.7604166666666671,
+      "crop_path": "crops/Hannover-f000635-d011.jpg",
+      "torso_path": "torsos/Hannover-f000635-d011.jpg",
+      "preview_path": "previews/Hannover-f000635-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8455986954202724,
+        "width": 58,
+        "height": 175,
+        "contrast": 32.816421658694075,
+        "sharpness": 38.65922260671212
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000635-d012",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 635,
+      "detection_index": 12,
+      "flat_detection_index": 7915,
+      "bbox_xyxy": [
+        1587.0,
+        936.0,
+        1699.0,
+        1292.0
+      ],
+      "bbox_width": 112.0,
+      "bbox_height": 356.0,
+      "detector_confidence": 0.6238315105438232,
+      "detector_class_id": 2,
+      "torso_contamination": 1.0,
+      "crop_path": "crops/Hannover-f000635-d012.jpg",
+      "torso_path": "torsos/Hannover-f000635-d012.jpg",
+      "preview_path": "previews/Hannover-f000635-d012.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8765733080519669,
+        "width": 44,
+        "height": 142,
+        "contrast": 34.97170274158876,
+        "sharpness": 45.85647460964717
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 0,
+      "flat_detection_index": 8993,
+      "bbox_xyxy": [
+        2820.0,
+        790.0,
+        3010.0,
+        1210.0
+      ],
+      "bbox_width": 190.0,
+      "bbox_height": 420.0,
+      "detector_confidence": 0.9055272340774536,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d000.jpg",
+      "torso_path": "torsos/Hannover-f000725-d000.jpg",
+      "preview_path": "previews/Hannover-f000725-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9235346296458135,
+        "width": 76,
+        "height": 168,
+        "contrast": 59.74684680614846,
+        "sharpness": 88.61093815267336
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 1,
+      "flat_detection_index": 8994,
+      "bbox_xyxy": [
+        2615.0,
+        1241.0,
+        2917.0,
+        1696.0
+      ],
+      "bbox_width": 302.0,
+      "bbox_height": 455.0,
+      "detector_confidence": 0.8930346965789795,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d001.jpg",
+      "torso_path": "torsos/Hannover-f000725-d001.jpg",
+      "preview_path": "previews/Hannover-f000725-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.896153400253345,
+        "width": 120,
+        "height": 182,
+        "contrast": 35.646791411083484,
+        "sharpness": 59.78635523588133
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 2,
+      "flat_detection_index": 8995,
+      "bbox_xyxy": [
+        700.0,
+        827.0,
+        852.0,
+        1287.0
+      ],
+      "bbox_width": 152.0,
+      "bbox_height": 460.0,
+      "detector_confidence": 0.892860472202301,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d002.jpg",
+      "torso_path": "torsos/Hannover-f000725-d002.jpg",
+      "preview_path": "previews/Hannover-f000725-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.939008165268968,
+        "width": 60,
+        "height": 184,
+        "contrast": 50.70753269109067,
+        "sharpness": 111.75816791870145
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 3,
+      "flat_detection_index": 8996,
+      "bbox_xyxy": [
+        2303.0,
+        1103.0,
+        2499.0,
+        1600.0
+      ],
+      "bbox_width": 196.0,
+      "bbox_height": 497.0,
+      "detector_confidence": 0.8665446639060974,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d003.jpg",
+      "torso_path": "torsos/Hannover-f000725-d003.jpg",
+      "preview_path": "previews/Hannover-f000725-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9170017617581292,
+        "width": 78,
+        "height": 199,
+        "contrast": 50.43715804890378,
+        "sharpness": 80.5120424566743
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 4,
+      "flat_detection_index": 8997,
+      "bbox_xyxy": [
+        948.0,
+        853.0,
+        1119.0,
+        1259.0
+      ],
+      "bbox_width": 171.0,
+      "bbox_height": 406.0,
+      "detector_confidence": 0.865984320640564,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d004.jpg",
+      "torso_path": "torsos/Hannover-f000725-d004.jpg",
+      "preview_path": "previews/Hannover-f000725-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9058057481787554,
+        "width": 69,
+        "height": 162,
+        "contrast": 39.698763656505434,
+        "sharpness": 68.51340576268704
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 5,
+      "flat_detection_index": 8998,
+      "bbox_xyxy": [
+        2148.0,
+        998.0,
+        2352.0,
+        1521.0
+      ],
+      "bbox_width": 204.0,
+      "bbox_height": 523.0,
+      "detector_confidence": 0.8561151027679443,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d005.jpg",
+      "torso_path": "torsos/Hannover-f000725-d005.jpg",
+      "preview_path": "previews/Hannover-f000725-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9262775436284704,
+        "width": 82,
+        "height": 209,
+        "contrast": 37.62417369054051,
+        "sharpness": 92.2842619019801
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 6,
+      "flat_detection_index": 8999,
+      "bbox_xyxy": [
+        1361.0,
+        1014.0,
+        1522.0,
+        1340.0
+      ],
+      "bbox_width": 161.0,
+      "bbox_height": 326.0,
+      "detector_confidence": 0.8549588918685913,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d006.jpg",
+      "torso_path": "torsos/Hannover-f000725-d006.jpg",
+      "preview_path": "previews/Hannover-f000725-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8873351730945115,
+        "width": 65,
+        "height": 130,
+        "contrast": 42.692243478405125,
+        "sharpness": 52.90935645110466
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 7,
+      "flat_detection_index": 9000,
+      "bbox_xyxy": [
+        1353.0,
+        675.0,
+        1512.0,
+        1017.0
+      ],
+      "bbox_width": 159.0,
+      "bbox_height": 342.0,
+      "detector_confidence": 0.8547678589820862,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d007.jpg",
+      "torso_path": "torsos/Hannover-f000725-d007.jpg",
+      "preview_path": "previews/Hannover-f000725-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9295931466855627,
+        "width": 63,
+        "height": 136,
+        "contrast": 41.05419200559677,
+        "sharpness": 96.95732703484444
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 8,
+      "flat_detection_index": 9001,
+      "bbox_xyxy": [
+        1583.0,
+        916.0,
+        1750.0,
+        1338.0
+      ],
+      "bbox_width": 167.0,
+      "bbox_height": 422.0,
+      "detector_confidence": 0.8461033701896667,
+      "detector_class_id": 2,
+      "torso_contamination": 0.4925149700598803,
+      "crop_path": "crops/Hannover-f000725-d008.jpg",
+      "torso_path": "torsos/Hannover-f000725-d008.jpg",
+      "preview_path": "previews/Hannover-f000725-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8974698877798916,
+        "width": 67,
+        "height": 168,
+        "contrast": 34.099793762576056,
+        "sharpness": 68.02047767527222
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 9,
+      "flat_detection_index": 9002,
+      "bbox_xyxy": [
+        1818.0,
+        532.0,
+        1976.0,
+        847.0
+      ],
+      "bbox_width": 158.0,
+      "bbox_height": 315.0,
+      "detector_confidence": 0.8359674215316772,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d009.jpg",
+      "torso_path": "torsos/Hannover-f000725-d009.jpg",
+      "preview_path": "previews/Hannover-f000725-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9552083240231103,
+        "width": 64,
+        "height": 126,
+        "contrast": 54.6382153182793,
+        "sharpness": 143.61206159257685
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 10,
+      "flat_detection_index": 9003,
+      "bbox_xyxy": [
+        588.0,
+        678.0,
+        729.0,
+        1044.0
+      ],
+      "bbox_width": 141.0,
+      "bbox_height": 366.0,
+      "detector_confidence": 0.8281048536300659,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000725-d010.jpg",
+      "torso_path": "torsos/Hannover-f000725-d010.jpg",
+      "preview_path": "previews/Hannover-f000725-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9349282313312295,
+        "width": 57,
+        "height": 146,
+        "contrast": 53.01516061040265,
+        "sharpness": 105.05098055200783
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000725-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 725,
+      "detection_index": 11,
+      "flat_detection_index": 9004,
+      "bbox_xyxy": [
+        1515.0,
+        838.0,
+        1666.0,
+        1252.0
+      ],
+      "bbox_width": 151.0,
+      "bbox_height": 414.0,
+      "detector_confidence": 0.7274155020713806,
+      "detector_class_id": 2,
+      "torso_contamination": 0.6241721854304635,
+      "crop_path": "crops/Hannover-f000725-d011.jpg",
+      "torso_path": "torsos/Hannover-f000725-d011.jpg",
+      "preview_path": "previews/Hannover-f000725-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9376893736637395,
+        "width": 61,
+        "height": 166,
+        "contrast": 42.65897672210237,
+        "sharpness": 109.53853907680077
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 0,
+      "flat_detection_index": 10123,
+      "bbox_xyxy": [
+        3137.0,
+        1439.0,
+        3435.0,
+        1970.0
+      ],
+      "bbox_width": 298.0,
+      "bbox_height": 531.0,
+      "detector_confidence": 0.9141727089881897,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d000.jpg",
+      "torso_path": "torsos/Hannover-f000816-d000.jpg",
+      "preview_path": "previews/Hannover-f000816-d000.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 120,
+        "height": 213,
+        "contrast": 32.62699544785284,
+        "sharpness": 10.224815127069144
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 1,
+      "flat_detection_index": 10124,
+      "bbox_xyxy": [
+        2855.0,
+        885.0,
+        3143.0,
+        1194.0
+      ],
+      "bbox_width": 288.0,
+      "bbox_height": 309.0,
+      "detector_confidence": 0.8888496160507202,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d001.jpg",
+      "torso_path": "torsos/Hannover-f000816-d001.jpg",
+      "preview_path": "previews/Hannover-f000816-d001.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8803314127690057,
+        "width": 116,
+        "height": 123,
+        "contrast": 31.69524522051684,
+        "sharpness": 72.6708553565771
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 2,
+      "flat_detection_index": 10125,
+      "bbox_xyxy": [
+        836.0,
+        1046.0,
+        1170.0,
+        1431.0
+      ],
+      "bbox_width": 334.0,
+      "bbox_height": 385.0,
+      "detector_confidence": 0.8826596140861511,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d002.jpg",
+      "torso_path": "torsos/Hannover-f000816-d002.jpg",
+      "preview_path": "previews/Hannover-f000816-d002.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 134,
+        "height": 154,
+        "contrast": 37.8903650612448,
+        "sharpness": 13.730006502185718
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 3,
+      "flat_detection_index": 10126,
+      "bbox_xyxy": [
+        2244.0,
+        1353.0,
+        2534.0,
+        1802.0
+      ],
+      "bbox_width": 290.0,
+      "bbox_height": 449.0,
+      "detector_confidence": 0.8735982179641724,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d003.jpg",
+      "torso_path": "torsos/Hannover-f000816-d003.jpg",
+      "preview_path": "previews/Hannover-f000816-d003.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 116,
+        "height": 179,
+        "contrast": 26.2298908150658,
+        "sharpness": 14.781539183168295
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 4,
+      "flat_detection_index": 10127,
+      "bbox_xyxy": [
+        1077.0,
+        669.0,
+        1328.0,
+        1029.0
+      ],
+      "bbox_width": 251.0,
+      "bbox_height": 360.0,
+      "detector_confidence": 0.8714776635169983,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d004.jpg",
+      "torso_path": "torsos/Hannover-f000816-d004.jpg",
+      "preview_path": "previews/Hannover-f000816-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8470019079878756,
+        "width": 101,
+        "height": 144,
+        "contrast": 34.883198901230756,
+        "sharpness": 31.444621442342253
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 5,
+      "flat_detection_index": 10128,
+      "bbox_xyxy": [
+        289.0,
+        732.0,
+        474.0,
+        1075.0
+      ],
+      "bbox_width": 185.0,
+      "bbox_height": 343.0,
+      "detector_confidence": 0.8701007962226868,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d005.jpg",
+      "torso_path": "torsos/Hannover-f000816-d005.jpg",
+      "preview_path": "previews/Hannover-f000816-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8657441607305851,
+        "width": 74,
+        "height": 137,
+        "contrast": 40.14689897331072,
+        "sharpness": 39.57964494201755
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 6,
+      "flat_detection_index": 10129,
+      "bbox_xyxy": [
+        1912.0,
+        1060.0,
+        2235.0,
+        1519.0
+      ],
+      "bbox_width": 323.0,
+      "bbox_height": 459.0,
+      "detector_confidence": 0.8676897883415222,
+      "detector_class_id": 2,
+      "torso_contamination": 0.8521671826625391,
+      "crop_path": "crops/Hannover-f000816-d006.jpg",
+      "torso_path": "torsos/Hannover-f000816-d006.jpg",
+      "preview_path": "previews/Hannover-f000816-d006.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 129,
+        "height": 183,
+        "contrast": 23.592120226229678,
+        "sharpness": 16.34115797667295
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 7,
+      "flat_detection_index": 10130,
+      "bbox_xyxy": [
+        1810.0,
+        1180.0,
+        2119.0,
+        1668.0
+      ],
+      "bbox_width": 309.0,
+      "bbox_height": 488.0,
+      "detector_confidence": 0.8642396926879883,
+      "detector_class_id": 2,
+      "torso_contamination": 0.9124398177622163,
+      "crop_path": "crops/Hannover-f000816-d007.jpg",
+      "torso_path": "torsos/Hannover-f000816-d007.jpg",
+      "preview_path": "previews/Hannover-f000816-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.836739507167175,
+        "width": 123,
+        "height": 196,
+        "contrast": 41.89846992945531,
+        "sharpness": 27.314962588915666
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 8,
+      "flat_detection_index": 10131,
+      "bbox_xyxy": [
+        1519.0,
+        589.0,
+        1685.0,
+        862.0
+      ],
+      "bbox_width": 166.0,
+      "bbox_height": 273.0,
+      "detector_confidence": 0.8488259315490723,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d008.jpg",
+      "torso_path": "torsos/Hannover-f000816-d008.jpg",
+      "preview_path": "previews/Hannover-f000816-d008.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9075518758886605,
+        "width": 66,
+        "height": 109,
+        "contrast": 37.40500851409476,
+        "sharpness": 70.24297046491574
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 9,
+      "flat_detection_index": 10132,
+      "bbox_xyxy": [
+        644.0,
+        886.0,
+        850.0,
+        1292.0
+      ],
+      "bbox_width": 206.0,
+      "bbox_height": 406.0,
+      "detector_confidence": 0.8465744256973267,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d009.jpg",
+      "torso_path": "torsos/Hannover-f000816-d009.jpg",
+      "preview_path": "previews/Hannover-f000816-d009.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8020742602344266,
+        "width": 82,
+        "height": 162,
+        "contrast": 32.38103894066791,
+        "sharpness": 23.119113229110308
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 10,
+      "flat_detection_index": 10133,
+      "bbox_xyxy": [
+        481.0,
+        876.0,
+        668.0,
+        1285.0
+      ],
+      "bbox_width": 187.0,
+      "bbox_height": 409.0,
+      "detector_confidence": 0.8387959599494934,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000816-d010.jpg",
+      "torso_path": "torsos/Hannover-f000816-d010.jpg",
+      "preview_path": "previews/Hannover-f000816-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8709515179990104,
+        "width": 75,
+        "height": 163,
+        "contrast": 51.11961565440539,
+        "sharpness": 42.40148131866294
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 11,
+      "flat_detection_index": 10134,
+      "bbox_xyxy": [
+        1386.0,
+        973.0,
+        1586.0,
+        1376.0
+      ],
+      "bbox_width": 200.0,
+      "bbox_height": 403.0,
+      "detector_confidence": 0.8336276412010193,
+      "detector_class_id": 2,
+      "torso_contamination": 0.8,
+      "crop_path": "crops/Hannover-f000816-d011.jpg",
+      "torso_path": "torsos/Hannover-f000816-d011.jpg",
+      "preview_path": "previews/Hannover-f000816-d011.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8331561322574779,
+        "width": 80,
+        "height": 161,
+        "contrast": 36.288324492159674,
+        "sharpness": 26.12943790748814
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000816-d012",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 816,
+      "detection_index": 12,
+      "flat_detection_index": 10135,
+      "bbox_xyxy": [
+        1462.0,
+        868.0,
+        1703.0,
+        1271.0
+      ],
+      "bbox_width": 241.0,
+      "bbox_height": 403.0,
+      "detector_confidence": 0.7327038645744324,
+      "detector_class_id": 2,
+      "torso_contamination": 0.5363070539419087,
+      "crop_path": "crops/Hannover-f000816-d012.jpg",
+      "torso_path": "torsos/Hannover-f000816-d012.jpg",
+      "preview_path": "previews/Hannover-f000816-d012.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8726565771339246,
+        "width": 97,
+        "height": 161,
+        "contrast": 36.348397544757965,
+        "sharpness": 43.375228809985444
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 0,
+      "flat_detection_index": 11276,
+      "bbox_xyxy": [
+        1729.0,
+        1544.0,
+        2062.0,
+        2049.0
+      ],
+      "bbox_width": 333.0,
+      "bbox_height": 505.0,
+      "detector_confidence": 0.915179967880249,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d000.jpg",
+      "torso_path": "torsos/Hannover-f000907-d000.jpg",
+      "preview_path": "previews/Hannover-f000907-d000.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 133,
+        "height": 202,
+        "contrast": 39.09402894008473,
+        "sharpness": 11.813132342975889
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 1,
+      "flat_detection_index": 11277,
+      "bbox_xyxy": [
+        1213.0,
+        1510.0,
+        1539.0,
+        1999.0
+      ],
+      "bbox_width": 326.0,
+      "bbox_height": 489.0,
+      "detector_confidence": 0.9129869341850281,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d001.jpg",
+      "torso_path": "torsos/Hannover-f000907-d001.jpg",
+      "preview_path": "previews/Hannover-f000907-d001.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 130,
+        "height": 195,
+        "contrast": 29.820353477133576,
+        "sharpness": 7.401336226166996
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 2,
+      "flat_detection_index": 11278,
+      "bbox_xyxy": [
+        6.0,
+        960.0,
+        327.0,
+        1381.0
+      ],
+      "bbox_width": 321.0,
+      "bbox_height": 421.0,
+      "detector_confidence": 0.8942505121231079,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d002.jpg",
+      "torso_path": "torsos/Hannover-f000907-d002.jpg",
+      "preview_path": "previews/Hannover-f000907-d002.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 129,
+        "height": 169,
+        "contrast": 31.235128549796574,
+        "sharpness": 13.030464053397882
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 3,
+      "flat_detection_index": 11279,
+      "bbox_xyxy": [
+        3189.0,
+        1039.0,
+        3450.0,
+        1471.0
+      ],
+      "bbox_width": 261.0,
+      "bbox_height": 432.0,
+      "detector_confidence": 0.8865306377410889,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d003.jpg",
+      "torso_path": "torsos/Hannover-f000907-d003.jpg",
+      "preview_path": "previews/Hannover-f000907-d003.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8652998048937298,
+        "width": 105,
+        "height": 172,
+        "contrast": 39.598558594333376,
+        "sharpness": 39.3490255319723
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 4,
+      "flat_detection_index": 11280,
+      "bbox_xyxy": [
+        383.0,
+        684.0,
+        614.0,
+        1055.0
+      ],
+      "bbox_width": 231.0,
+      "bbox_height": 371.0,
+      "detector_confidence": 0.885623037815094,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d004.jpg",
+      "torso_path": "torsos/Hannover-f000907-d004.jpg",
+      "preview_path": "previews/Hannover-f000907-d004.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.821106736157679,
+        "width": 93,
+        "height": 149,
+        "contrast": 34.205604059307916,
+        "sharpness": 24.351869802570924
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 5,
+      "flat_detection_index": 11281,
+      "bbox_xyxy": [
+        808.0,
+        1189.0,
+        1186.0,
+        1677.0
+      ],
+      "bbox_width": 378.0,
+      "bbox_height": 488.0,
+      "detector_confidence": 0.8845816254615784,
+      "detector_class_id": 2,
+      "torso_contamination": 0.08136953551912517,
+      "crop_path": "crops/Hannover-f000907-d005.jpg",
+      "torso_path": "torsos/Hannover-f000907-d005.jpg",
+      "preview_path": "previews/Hannover-f000907-d005.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 152,
+        "height": 196,
+        "contrast": 43.407487461446195,
+        "sharpness": 12.857994319828002
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 6,
+      "flat_detection_index": 11282,
+      "bbox_xyxy": [
+        4.0,
+        1290.0,
+        228.0,
+        1663.0
+      ],
+      "bbox_width": 224.0,
+      "bbox_height": 373.0,
+      "detector_confidence": 0.8827100396156311,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d006.jpg",
+      "torso_path": "torsos/Hannover-f000907-d006.jpg",
+      "preview_path": "previews/Hannover-f000907-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8891815831803404,
+        "width": 90,
+        "height": 149,
+        "contrast": 37.59873383304633,
+        "sharpness": 54.27091436766556
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 7,
+      "flat_detection_index": 11283,
+      "bbox_xyxy": [
+        2980.0,
+        794.0,
+        3182.0,
+        1199.0
+      ],
+      "bbox_width": 202.0,
+      "bbox_height": 405.0,
+      "detector_confidence": 0.8720806241035461,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d007.jpg",
+      "torso_path": "torsos/Hannover-f000907-d007.jpg",
+      "preview_path": "previews/Hannover-f000907-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8798471786277764,
+        "width": 80,
+        "height": 162,
+        "contrast": 44.100234511191026,
+        "sharpness": 47.77461419157713
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d008",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 8,
+      "flat_detection_index": 11284,
+      "bbox_xyxy": [
+        833.0,
+        604.0,
+        1009.0,
+        919.0
+      ],
+      "bbox_width": 176.0,
+      "bbox_height": 315.0,
+      "detector_confidence": 0.8687678575515747,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000907-d008.jpg",
+      "torso_path": "torsos/Hannover-f000907-d008.jpg",
+      "preview_path": "previews/Hannover-f000907-d008.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 70,
+        "height": 126,
+        "contrast": 29.618303394119884,
+        "sharpness": 16.607111800124432
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d009",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 9,
+      "flat_detection_index": 11285,
+      "bbox_xyxy": [
+        847.0,
+        914.0,
+        1100.0,
+        1330.0
+      ],
+      "bbox_width": 253.0,
+      "bbox_height": 416.0,
+      "detector_confidence": 0.8619941473007202,
+      "detector_class_id": 2,
+      "torso_contamination": 0.09735576923076945,
+      "crop_path": "crops/Hannover-f000907-d009.jpg",
+      "torso_path": "torsos/Hannover-f000907-d009.jpg",
+      "preview_path": "previews/Hannover-f000907-d009.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 101,
+        "height": 166,
+        "contrast": 25.383019000571128,
+        "sharpness": 17.979104599808334
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d010",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 10,
+      "flat_detection_index": 11286,
+      "bbox_xyxy": [
+        1223.0,
+        1053.0,
+        1427.0,
+        1492.0
+      ],
+      "bbox_width": 204.0,
+      "bbox_height": 439.0,
+      "detector_confidence": 0.8584942817687988,
+      "detector_class_id": 2,
+      "torso_contamination": 0.46323529411764697,
+      "crop_path": "crops/Hannover-f000907-d010.jpg",
+      "torso_path": "torsos/Hannover-f000907-d010.jpg",
+      "preview_path": "previews/Hannover-f000907-d010.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8475293269873139,
+        "width": 82,
+        "height": 175,
+        "contrast": 34.77508594153484,
+        "sharpness": 32.012178897400716
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000907-d011",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 907,
+      "detection_index": 11,
+      "flat_detection_index": 11287,
+      "bbox_xyxy": [
+        1060.0,
+        1077.0,
+        1322.0,
+        1526.0
+      ],
+      "bbox_width": 262.0,
+      "bbox_height": 449.0,
+      "detector_confidence": 0.8537085056304932,
+      "detector_class_id": 2,
+      "torso_contamination": 0.4522900763358779,
+      "crop_path": "crops/Hannover-f000907-d011.jpg",
+      "torso_path": "torsos/Hannover-f000907-d011.jpg",
+      "preview_path": "previews/Hannover-f000907-d011.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 104,
+        "height": 179,
+        "contrast": 21.78588042706945,
+        "sharpness": 10.148745183801118
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d000",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 0,
+      "flat_detection_index": 12167,
+      "bbox_xyxy": [
+        1007.0,
+        1168.0,
+        1308.0,
+        1697.0
+      ],
+      "bbox_width": 301.0,
+      "bbox_height": 529.0,
+      "detector_confidence": 0.8910771012306213,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000998-d000.jpg",
+      "torso_path": "torsos/Hannover-f000998-d000.jpg",
+      "preview_path": "previews/Hannover-f000998-d000.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8143485079151076,
+        "width": 121,
+        "height": 211,
+        "contrast": 39.69082137292212,
+        "sharpness": 20.80421313676578
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d001",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 1,
+      "flat_detection_index": 12168,
+      "bbox_xyxy": [
+        3159.0,
+        762.0,
+        3326.0,
+        1182.0
+      ],
+      "bbox_width": 167.0,
+      "bbox_height": 420.0,
+      "detector_confidence": 0.8859313726425171,
+      "detector_class_id": 1,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000998-d001.jpg",
+      "torso_path": "torsos/Hannover-f000998-d001.jpg",
+      "preview_path": "previews/Hannover-f000998-d001.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 67,
+        "height": 168,
+        "contrast": 37.022170159725505,
+        "sharpness": 19.74606483270519
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d002",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 2,
+      "flat_detection_index": 12169,
+      "bbox_xyxy": [
+        260.0,
+        1065.0,
+        620.0,
+        1582.0
+      ],
+      "bbox_width": 360.0,
+      "bbox_height": 517.0,
+      "detector_confidence": 0.8785384893417358,
+      "detector_class_id": 2,
+      "torso_contamination": 0.38152804642166355,
+      "crop_path": "crops/Hannover-f000998-d002.jpg",
+      "torso_path": "torsos/Hannover-f000998-d002.jpg",
+      "preview_path": "previews/Hannover-f000998-d002.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.8113949468936462,
+        "width": 144,
+        "height": 207,
+        "contrast": 31.778695970835365,
+        "sharpness": 27.72377161656214
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d003",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 3,
+      "flat_detection_index": 12170,
+      "bbox_xyxy": [
+        199.0,
+        675.0,
+        371.0,
+        1017.0
+      ],
+      "bbox_width": 172.0,
+      "bbox_height": 342.0,
+      "detector_confidence": 0.8525559902191162,
+      "detector_class_id": 2,
+      "torso_contamination": 0.03501546987624092,
+      "crop_path": "crops/Hannover-f000998-d003.jpg",
+      "torso_path": "torsos/Hannover-f000998-d003.jpg",
+      "preview_path": "previews/Hannover-f000998-d003.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 68,
+        "height": 136,
+        "contrast": 28.025233013177296,
+        "sharpness": 16.348640611343257
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d004",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 4,
+      "flat_detection_index": 12171,
+      "bbox_xyxy": [
+        298.0,
+        899.0,
+        553.0,
+        1299.0
+      ],
+      "bbox_width": 255.0,
+      "bbox_height": 400.0,
+      "detector_confidence": 0.8481392860412598,
+      "detector_class_id": 2,
+      "torso_contamination": 0.7125,
+      "crop_path": "crops/Hannover-f000998-d004.jpg",
+      "torso_path": "torsos/Hannover-f000998-d004.jpg",
+      "preview_path": "previews/Hannover-f000998-d004.jpg",
+      "crop_quality": {
+        "accepted": false,
+        "score": 0.0,
+        "width": 102,
+        "height": 160,
+        "contrast": 34.279339901746575,
+        "sharpness": 12.190710288711072
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d005",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 5,
+      "flat_detection_index": 12172,
+      "bbox_xyxy": [
+        140.0,
+        1603.0,
+        465.0,
+        2047.0
+      ],
+      "bbox_width": 325.0,
+      "bbox_height": 444.0,
+      "detector_confidence": 0.8106492161750793,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000998-d005.jpg",
+      "torso_path": "torsos/Hannover-f000998-d005.jpg",
+      "preview_path": "previews/Hannover-f000998-d005.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.7901264245727744,
+        "width": 130,
+        "height": 178,
+        "contrast": 31.249212201008007,
+        "sharpness": 22.408051122811134
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d006",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 6,
+      "flat_detection_index": 12173,
+      "bbox_xyxy": [
+        46.0,
+        1591.0,
+        229.0,
+        2049.0
+      ],
+      "bbox_width": 183.0,
+      "bbox_height": 458.0,
+      "detector_confidence": 0.7192751169204712,
+      "detector_class_id": 2,
+      "torso_contamination": 0.4658469945355191,
+      "crop_path": "crops/Hannover-f000998-d006.jpg",
+      "torso_path": "torsos/Hannover-f000998-d006.jpg",
+      "preview_path": "previews/Hannover-f000998-d006.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.7617112798274615,
+        "width": 73,
+        "height": 184,
+        "contrast": 27.77311145059177,
+        "sharpness": 23.012242145245498
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    },
+    {
+      "sample_id": "Hannover-f000998-d007",
+      "video_id": "Hannover",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "frame_index": 998,
+      "detection_index": 7,
+      "flat_detection_index": 12174,
+      "bbox_xyxy": [
+        2648.0,
+        1079.0,
+        2879.0,
+        1528.0
+      ],
+      "bbox_width": 231.0,
+      "bbox_height": 449.0,
+      "detector_confidence": 0.7192137241363525,
+      "detector_class_id": 2,
+      "torso_contamination": 0.0,
+      "crop_path": "crops/Hannover-f000998-d007.jpg",
+      "torso_path": "torsos/Hannover-f000998-d007.jpg",
+      "preview_path": "previews/Hannover-f000998-d007.jpg",
+      "crop_quality": {
+        "accepted": true,
+        "score": 0.9449097054029548,
+        "width": 93,
+        "height": 179,
+        "contrast": 58.6664072776454,
+        "sharpness": 122.33437019929326
+      },
+      "annotation": {
+        "code": null,
+        "team": null,
+        "role": null,
+        "quality": null
+      }
+    }
+  ]
+}

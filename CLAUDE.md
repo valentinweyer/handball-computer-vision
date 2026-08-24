@@ -1,5 +1,23 @@
 # Handball CV handoff: tracking and team classification
 
+## Repository migration note
+
+The canonical reusable code now lives under `src/handball_cv/`; command-line
+diagnostics live under `scripts/`; rejected or non-default approaches live under
+`experiments/`; and protected label copies live under `data/annotations/`.
+
+The older `notebooks/*.py`, `outputs/`, and `source/` paths referenced later in
+this document still exist and still work as migration fallbacks. They were not
+deleted or moved. New code should import from `handball_cv`, and new commands
+should be run as modules, for example:
+
+```bash
+python -m scripts.render_mcbyte_team_correction --help
+```
+
+See `docs/architecture.md` for dependency rules and `docs/legacy-layout.md` for
+the exact material intentionally retained pending deletion approval.
+
 This document records the decisions, experiments, measurements, and current implementation state from the team-classification/tracking work on branch `feat/team-classification`. Read it before changing the pipeline. Do not assume every experimental module is wired into the main runtime.
 
 ## Goal and constraints

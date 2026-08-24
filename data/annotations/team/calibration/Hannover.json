@@ -1,0 +1,9 @@
+{
+  "video": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+  "team_a": 1,
+  "team_b": 3,
+  "referee": [
+    10,
+    17
+  ]
+}

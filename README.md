@@ -1,3 +1,80 @@
+# Handball Computer Vision
+
+Research code for handball player detection, per-video team classification,
+tracking, identity correction, and court mapping.
+
+## Current status
+
+- RF-DETR player and goalkeeper detection is the detector baseline.
+- Team classification discovers two anonymous field-player teams separately for
+  each video using clean torso color evidence and guarded visual fallback.
+- Raw classification can be evaluated without a tracker.
+- MCByte is the preferred tracker. `IdentityManager` adds reversible temporal
+  team labels so an early mistake is not frozen for the rest of a track.
+- Mask-derived jersey color is an overlap-only fallback and cannot override a
+  valid clean-crop observation by itself.
+- Team-gated tracking and the SAM2 tracker remain experiments, not defaults.
+
+## Repository layout
+
+```text
+src/handball_cv/    reusable project code
+scripts/            labeling, evaluation, and rendering commands
+experiments/        SAM2 and team-gated association baselines
+tests/unit/         package-level tests
+configs/            model registry and reference pipeline configuration
+data/annotations/   tracked human labels
+data/raw/           ignored source media
+data/cache/         ignored reproducible caches
+models/             ignored local checkpoints
+runs/               ignored generated results
+notebooks/          actual notebooks plus untouched migration originals
+```
+
+The old `notebooks/*.py`, `outputs/`, `source/`, model duplicates, and nested
+upstream repositories are still present. Nothing was deleted during the first
+migration pass; see `docs/legacy-layout.md`.
+
+## Setup
+
+Use the existing CUDA-capable environment or create the documented Conda
+environment, then install the package itself in editable mode:
+
+```bash
+conda env create -f environment.yml
+conda activate handball-cv
+pip install -e .
+```
+
+The current machine snapshot remains in `requirements.txt`. Roboflow access is
+read from `ROBOFLOW_API_KEY`; copy `.env.example` to `.env` and fill it locally.
+
+## Tests
+
+```bash
+conda run -n NewEnv pytest -q
+```
+
+Pytest is scoped to `tests/unit/`, so vendored ONNX Runtime and model repositories
+are no longer collected.
+
+## Team-classification diagnostics
+
+Run tools as modules after the editable install:
+
+```bash
+python -m scripts.render_raw_team_classification --help
+python -m scripts.render_mcbyte_team_correction --help
+python -m scripts.render_mask_team_comparison --help
+python -m scripts.evaluate_team_embeddings --help
+```
+
+The architectural dependency rules and artifact boundaries are documented in
+`docs/architecture.md`. Detailed experimental findings remain in `CLAUDE.md`.
+
+<details>
+<summary>Historical pre-migration README</summary>
+
 # Handball AI: Player Detection, Tracking, and Identification
 
 **Detect, track, and identify handball players in videos using computer vision.**
@@ -44,3 +121,5 @@ However I still need to adapt some features, which will include fine-tuning othe
 ## 🤝 Contributing
 
 Found a bug or have an idea for improvement? Open an issue or submit a pull request!
+
+</details>

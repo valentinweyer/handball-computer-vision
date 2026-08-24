@@ -1,0 +1,27 @@
+# Logical model registry. Weights live under models/ and are never committed.
+models:
+  player_detector:
+    provider: roboflow
+    id: player-and-handball-detection-3z9xf/3
+  court_keypoints:
+    provider: roboflow
+    id: keypointv333-uwois-xprdi/4
+  sam_vit_b:
+    path: models/sam/sam_vit_b_01ec64.pth
+    sha256: ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912
+  cutie_base_mega:
+    path: models/cutie/cutie-base-mega.pth
+    sha256: 9c05402ee36d3a356fb72715d263ba7e1ea06ad3bada48c1306491792da43023
+  prtreid_soccernet:
+    path: models/prtreid/prtreid-soccernet-baseline.pth.tar
+  sam2_large_baseline:
+    path: segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt
+    sha256: 2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318
+
+duplicate_locations_to_remove_only_after_approval:
+  - notebooks/models/sam/sam_vit_b_01ec64.pth
+  - notebooks/models/cutie/cutie-base-mega.pth
+  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt.1
+  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_base_plus.pt.1
+  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.1
+  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.2
