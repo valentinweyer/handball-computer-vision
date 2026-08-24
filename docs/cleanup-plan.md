@@ -10,8 +10,10 @@ The following must remain until a later migration explicitly replaces them:
 - `data/annotations/`: canonical human-label copies, verified byte-identical to
   their legacy originals.
 - `models/`: the centralized 870 MB local checkpoint cache.
-- `source/` and root-level videos: raw inputs and legacy caches until raw media
-  is deliberately moved into `data/raw/` and path references are rewritten.
+- `source/`: legacy media and caches that have not yet been migrated.
+- `data/raw/`: canonical location for the migrated FelixClaar and Hannover raw
+  videos. Their code, notebook, annotation, and result-metadata references have
+  been rewritten.
 - modified or untracked notebooks belonging to the user.
 - `segment-anything-2-real-time/`: ten untracked local outputs/checkpoints.
 

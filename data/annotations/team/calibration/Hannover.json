@@ -1,5 +1,5 @@
 {
-  "video": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+  "video": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
   "team_a": 1,
   "team_b": 3,
   "referee": [

@@ -1,5 +1,5 @@
 {
-  "video": "/home/valentinweyer/projects/handball-computer-vision/FelixClaar.mp4",
+  "video": "/home/valentinweyer/projects/handball-computer-vision/data/raw/FelixClaar.mp4",
   "team_a": 3,
   "team_b": 6,
   "referee": [

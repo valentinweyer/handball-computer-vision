@@ -8,7 +8,8 @@ The following remain intentionally:
 - `notebooks/*.py`: original working scripts and modules.
 - `outputs/`: old render outputs, fitted models, caches, and annotations.
 - `source/`: old source media, frame caches, mask caches, and tracker runs.
-- root-level videos: old raw inputs and diagnostic encodes.
+- `data/raw/`: canonical raw-video location after the root-video migration.
+- `runs/legacy/`: retained diagnostic encodes moved out of the repository root.
 - `onnxruntime/`, `sam3/`, and `segment-anything-2-real-time/`: nested
   upstream repositories.
 - `sam3-checkpoints/`: SAM3.1 weights retained for jersey-number experiments.

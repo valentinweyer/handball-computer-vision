@@ -6,7 +6,7 @@ manifest which this script can ingest back into the repository.
 
 Examples:
     conda run -n NewEnv python notebooks/label_team_detections.py build \
-        FelixClaar.mp4 Hannover.mp4 --frames-per-video 12
+        data/raw/FelixClaar.mp4 data/raw/Hannover.mp4 --frames-per-video 12
 
     conda run -n NewEnv python notebooks/label_team_detections.py ingest \
         ~/Downloads/FelixClaar-team-labels.json \

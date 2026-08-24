@@ -5,8 +5,8 @@ and write an annotated output video with court landmarks overlaid.
 Uses Roboflow's hosted inference API (cloud) so no model weights are downloaded locally.
 
 Usage:
-    conda run -n handball-computer-vision python test_keypoint_model.py --api-key YOUR_KEY
-    conda run -n handball-computer-vision python test_keypoint_model.py --api-key YOUR_KEY --video Hannover.mp4
+    python -m scripts.evaluate_keypoints --api-key YOUR_KEY
+    python -m scripts.evaluate_keypoints --video data/raw/Hannover.mp4 --api-key YOUR_KEY
 """
 import argparse
 import os
@@ -24,7 +24,9 @@ import cv2
 import supervision as sv
 from inference import get_model
 
-SOURCE_DIR = Path(__file__).parent
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_VIDEO = PROJECT_ROOT / "data/raw/FelixClaar.mp4"
+DEFAULT_OUTPUT_DIR = PROJECT_ROOT / "runs/keypoints"
 
 KEYPOINT_DETECTION_MODEL_ID = "keypointv333-uwois-xprdi/4"
 KEYPOINT_DETECTION_MODEL_CONFIDENCE = 0.5
@@ -32,7 +34,7 @@ KEYPOINT_DETECTION_MODEL_ANCHOR_CONFIDENCE = 0.5
 KEYPOINT_COLOR = sv.Color.from_hex("#FF1493")
 
 
-def main(video_path: Path, max_frames: int, api_key: str) -> None:
+def main(video_path: Path, output_path: Path, max_frames: int, api_key: str) -> None:
     print(f"Loading model {KEYPOINT_DETECTION_MODEL_ID} ...")
     model = get_model(model_id=KEYPOINT_DETECTION_MODEL_ID, api_key=api_key)
     print("Model loaded.")
@@ -40,14 +42,14 @@ def main(video_path: Path, max_frames: int, api_key: str) -> None:
     vertex_annotator = sv.VertexAnnotator(color=KEYPOINT_COLOR, radius=8)
 
     video_info = sv.VideoInfo.from_video_path(str(video_path))
-    out_path = SOURCE_DIR / f"{video_path.stem}-keypoint-test.mp4"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     frame_generator = sv.get_video_frames_generator(str(video_path))
 
     total = min(max_frames, video_info.total_frames)
     detected_count = 0
 
-    with sv.VideoSink(str(out_path), video_info) as sink:
+    with sv.VideoSink(str(output_path), video_info) as sink:
         for frame_idx, frame in enumerate(frame_generator):
             if frame_idx >= max_frames:
                 break
@@ -87,12 +89,24 @@ def main(video_path: Path, max_frames: int, api_key: str) -> None:
                 print(f"  frame {frame_idx+1}/{total}  landmarks detected: {n_detected}")
 
     print(f"\nDone. {detected_count}/{total} frames had ≥1 landmark detected.")
-    print(f"Output: {out_path}")
+    print(f"Output: {output_path}")
+
+
+def resolve_video_path(path: Path) -> Path:
+    """Resolve absolute, project-relative, or data/raw video arguments."""
+    if path.is_absolute():
+        return path
+    candidates = (Path.cwd() / path, PROJECT_ROOT / path, PROJECT_ROOT / "data/raw" / path)
+    return next((candidate for candidate in candidates if candidate.exists()), PROJECT_ROOT / path)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--video", default="FelixClaar.mp4", help="Video filename in project root")
+    parser.add_argument("--video", type=Path, default=DEFAULT_VIDEO, help="Input video path")
+    parser.add_argument(
+        "--output", type=Path, default=None,
+        help="Output path (default: runs/keypoints/<video>-keypoint-test.mp4)",
+    )
     parser.add_argument("--frames", type=int, default=200, help="Max frames to process")
     parser.add_argument("--api-key", default=os.environ.get("ROBOFLOW_API_KEY", ""), help="Roboflow API key")
     args = parser.parse_args()
@@ -100,8 +114,11 @@ if __name__ == "__main__":
     if not args.api_key:
         raise SystemExit("Set ROBOFLOW_API_KEY env var or pass --api-key <key>")
 
-    video_path = SOURCE_DIR / args.video
+    video_path = resolve_video_path(args.video)
     if not video_path.exists():
         raise FileNotFoundError(f"Video not found: {video_path}")
 
-    main(video_path, args.frames, args.api_key)
+    output_path = args.output or DEFAULT_OUTPUT_DIR / f"{video_path.stem}-keypoint-test.mp4"
+    if not output_path.is_absolute():
+        output_path = PROJECT_ROOT / output_path
+    main(video_path, output_path, args.frames, args.api_key)

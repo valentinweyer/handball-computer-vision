@@ -1,8 +1,8 @@
 """Generate easy per-video prototype sheets and save clicked calibrations.
 
 Examples:
-    python calibrate_teams.py candidates FelixClaar.mp4 Hannover.mp4
-    python calibrate_teams.py fit --video Hannover.mp4 --team-a 3 --team-b 8 --referee 1 5
+    python calibrate_teams.py candidates data/raw/FelixClaar.mp4 data/raw/Hannover.mp4
+    python calibrate_teams.py fit --video data/raw/Hannover.mp4 --team-a 3 --team-b 8 --referee 1 5
 """
 from __future__ import annotations
 

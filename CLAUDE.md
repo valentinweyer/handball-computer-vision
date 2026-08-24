@@ -466,11 +466,11 @@ After integration, rerun Felix and Han-Ber tracked overlays and compare:
 
 Videos and caches:
 
-- `FelixClaar.mp4`: 249-frame short clip.
+- `data/raw/FelixClaar.mp4`: 249-frame short clip.
 - `outputs/team_comparison/.FelixClaar_detections_v1.npz`
 - `outputs/team_dataset/Han-Ber4_cached.mp4`: 199-frame short clip.
 - `outputs/team_dataset/.Han-Ber4_detections_v1.npz`
-- `Hannover.mp4` and its existing detection/model assets are also available, but the recent overlap-mask evaluation focused on Felix and Han-Ber.
+- `data/raw/Hannover.mp4` and its existing detection/model assets are also available, but the recent overlap-mask evaluation focused on Felix and Han-Ber.
 
 Manual manifests:
 
@@ -526,7 +526,7 @@ Render Felix mask comparison:
 
 ```bash
 conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
-  FelixClaar.mp4 \
+  data/raw/FelixClaar.mp4 \
   --detections outputs/team_comparison/.FelixClaar_detections_v1.npz \
   --team-model outputs/team_comparison/.FelixClaar_team.pkl \
   --manifest outputs/team_dataset/FelixClaar/manifest.json \

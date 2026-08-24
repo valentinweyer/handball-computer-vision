@@ -2,7 +2,7 @@
   "schema_version": 1,
   "task": "tracker_independent_team_classification",
   "video_id": "Hannover",
-  "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+  "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
   "video_size": 20427979,
   "video_mtime_ns": 1773009063396690906,
   "detection_cache": "/home/valentinweyer/projects/handball-computer-vision/outputs/team_comparison/.Hannover_detections_v1.npz",
@@ -20,7 +20,7 @@
     {
       "sample_id": "Hannover-f000000-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 0,
       "flat_detection_index": 0,
@@ -56,7 +56,7 @@
     {
       "sample_id": "Hannover-f000000-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 1,
       "flat_detection_index": 1,
@@ -92,7 +92,7 @@
     {
       "sample_id": "Hannover-f000000-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 2,
       "flat_detection_index": 2,
@@ -128,7 +128,7 @@
     {
       "sample_id": "Hannover-f000000-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 3,
       "flat_detection_index": 3,
@@ -164,7 +164,7 @@
     {
       "sample_id": "Hannover-f000000-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 4,
       "flat_detection_index": 4,
@@ -200,7 +200,7 @@
     {
       "sample_id": "Hannover-f000000-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 5,
       "flat_detection_index": 5,
@@ -236,7 +236,7 @@
     {
       "sample_id": "Hannover-f000000-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 6,
       "flat_detection_index": 6,
@@ -272,7 +272,7 @@
     {
       "sample_id": "Hannover-f000000-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 7,
       "flat_detection_index": 7,
@@ -308,7 +308,7 @@
     {
       "sample_id": "Hannover-f000000-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 8,
       "flat_detection_index": 8,
@@ -344,7 +344,7 @@
     {
       "sample_id": "Hannover-f000000-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 9,
       "flat_detection_index": 9,
@@ -380,7 +380,7 @@
     {
       "sample_id": "Hannover-f000000-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 10,
       "flat_detection_index": 10,
@@ -416,7 +416,7 @@
     {
       "sample_id": "Hannover-f000000-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 11,
       "flat_detection_index": 11,
@@ -452,7 +452,7 @@
     {
       "sample_id": "Hannover-f000000-d012",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 0,
       "detection_index": 12,
       "flat_detection_index": 12,
@@ -488,7 +488,7 @@
     {
       "sample_id": "Hannover-f000090-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 0,
       "flat_detection_index": 1151,
@@ -524,7 +524,7 @@
     {
       "sample_id": "Hannover-f000090-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 1,
       "flat_detection_index": 1152,
@@ -560,7 +560,7 @@
     {
       "sample_id": "Hannover-f000090-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 2,
       "flat_detection_index": 1153,
@@ -596,7 +596,7 @@
     {
       "sample_id": "Hannover-f000090-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 3,
       "flat_detection_index": 1154,
@@ -632,7 +632,7 @@
     {
       "sample_id": "Hannover-f000090-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 4,
       "flat_detection_index": 1155,
@@ -668,7 +668,7 @@
     {
       "sample_id": "Hannover-f000090-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 5,
       "flat_detection_index": 1156,
@@ -704,7 +704,7 @@
     {
       "sample_id": "Hannover-f000090-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 6,
       "flat_detection_index": 1157,
@@ -740,7 +740,7 @@
     {
       "sample_id": "Hannover-f000090-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 7,
       "flat_detection_index": 1158,
@@ -776,7 +776,7 @@
     {
       "sample_id": "Hannover-f000090-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 8,
       "flat_detection_index": 1159,
@@ -812,7 +812,7 @@
     {
       "sample_id": "Hannover-f000090-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 9,
       "flat_detection_index": 1160,
@@ -848,7 +848,7 @@
     {
       "sample_id": "Hannover-f000090-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 10,
       "flat_detection_index": 1161,
@@ -884,7 +884,7 @@
     {
       "sample_id": "Hannover-f000090-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 11,
       "flat_detection_index": 1162,
@@ -920,7 +920,7 @@
     {
       "sample_id": "Hannover-f000090-d012",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 90,
       "detection_index": 12,
       "flat_detection_index": 1163,
@@ -956,7 +956,7 @@
     {
       "sample_id": "Hannover-f000181-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 0,
       "flat_detection_index": 2352,
@@ -992,7 +992,7 @@
     {
       "sample_id": "Hannover-f000181-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 1,
       "flat_detection_index": 2353,
@@ -1028,7 +1028,7 @@
     {
       "sample_id": "Hannover-f000181-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 2,
       "flat_detection_index": 2354,
@@ -1064,7 +1064,7 @@
     {
       "sample_id": "Hannover-f000181-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 3,
       "flat_detection_index": 2355,
@@ -1100,7 +1100,7 @@
     {
       "sample_id": "Hannover-f000181-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 4,
       "flat_detection_index": 2356,
@@ -1136,7 +1136,7 @@
     {
       "sample_id": "Hannover-f000181-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 5,
       "flat_detection_index": 2357,
@@ -1172,7 +1172,7 @@
     {
       "sample_id": "Hannover-f000181-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 6,
       "flat_detection_index": 2358,
@@ -1208,7 +1208,7 @@
     {
       "sample_id": "Hannover-f000181-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 7,
       "flat_detection_index": 2359,
@@ -1244,7 +1244,7 @@
     {
       "sample_id": "Hannover-f000181-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 8,
       "flat_detection_index": 2360,
@@ -1280,7 +1280,7 @@
     {
       "sample_id": "Hannover-f000181-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 9,
       "flat_detection_index": 2361,
@@ -1316,7 +1316,7 @@
     {
       "sample_id": "Hannover-f000181-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 10,
       "flat_detection_index": 2362,
@@ -1352,7 +1352,7 @@
     {
       "sample_id": "Hannover-f000181-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 181,
       "detection_index": 11,
       "flat_detection_index": 2363,
@@ -1388,7 +1388,7 @@
     {
       "sample_id": "Hannover-f000272-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 0,
       "flat_detection_index": 3513,
@@ -1424,7 +1424,7 @@
     {
       "sample_id": "Hannover-f000272-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 1,
       "flat_detection_index": 3514,
@@ -1460,7 +1460,7 @@
     {
       "sample_id": "Hannover-f000272-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 2,
       "flat_detection_index": 3515,
@@ -1496,7 +1496,7 @@
     {
       "sample_id": "Hannover-f000272-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 3,
       "flat_detection_index": 3516,
@@ -1532,7 +1532,7 @@
     {
       "sample_id": "Hannover-f000272-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 4,
       "flat_detection_index": 3517,
@@ -1568,7 +1568,7 @@
     {
       "sample_id": "Hannover-f000272-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 5,
       "flat_detection_index": 3518,
@@ -1604,7 +1604,7 @@
     {
       "sample_id": "Hannover-f000272-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 6,
       "flat_detection_index": 3519,
@@ -1640,7 +1640,7 @@
     {
       "sample_id": "Hannover-f000272-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 7,
       "flat_detection_index": 3520,
@@ -1676,7 +1676,7 @@
     {
       "sample_id": "Hannover-f000272-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 8,
       "flat_detection_index": 3521,
@@ -1712,7 +1712,7 @@
     {
       "sample_id": "Hannover-f000272-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 9,
       "flat_detection_index": 3522,
@@ -1748,7 +1748,7 @@
     {
       "sample_id": "Hannover-f000272-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 10,
       "flat_detection_index": 3523,
@@ -1784,7 +1784,7 @@
     {
       "sample_id": "Hannover-f000272-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 272,
       "detection_index": 11,
       "flat_detection_index": 3524,
@@ -1820,7 +1820,7 @@
     {
       "sample_id": "Hannover-f000362-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 0,
       "flat_detection_index": 4625,
@@ -1856,7 +1856,7 @@
     {
       "sample_id": "Hannover-f000362-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 1,
       "flat_detection_index": 4626,
@@ -1892,7 +1892,7 @@
     {
       "sample_id": "Hannover-f000362-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 2,
       "flat_detection_index": 4627,
@@ -1928,7 +1928,7 @@
     {
       "sample_id": "Hannover-f000362-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 3,
       "flat_detection_index": 4628,
@@ -1964,7 +1964,7 @@
     {
       "sample_id": "Hannover-f000362-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 4,
       "flat_detection_index": 4629,
@@ -2000,7 +2000,7 @@
     {
       "sample_id": "Hannover-f000362-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 5,
       "flat_detection_index": 4630,
@@ -2036,7 +2036,7 @@
     {
       "sample_id": "Hannover-f000362-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 6,
       "flat_detection_index": 4631,
@@ -2072,7 +2072,7 @@
     {
       "sample_id": "Hannover-f000362-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 7,
       "flat_detection_index": 4632,
@@ -2108,7 +2108,7 @@
     {
       "sample_id": "Hannover-f000362-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 8,
       "flat_detection_index": 4633,
@@ -2144,7 +2144,7 @@
     {
       "sample_id": "Hannover-f000362-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 9,
       "flat_detection_index": 4634,
@@ -2180,7 +2180,7 @@
     {
       "sample_id": "Hannover-f000362-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 10,
       "flat_detection_index": 4635,
@@ -2216,7 +2216,7 @@
     {
       "sample_id": "Hannover-f000362-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 362,
       "detection_index": 11,
       "flat_detection_index": 4636,
@@ -2252,7 +2252,7 @@
     {
       "sample_id": "Hannover-f000453-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 0,
       "flat_detection_index": 5716,
@@ -2288,7 +2288,7 @@
     {
       "sample_id": "Hannover-f000453-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 1,
       "flat_detection_index": 5717,
@@ -2324,7 +2324,7 @@
     {
       "sample_id": "Hannover-f000453-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 2,
       "flat_detection_index": 5718,
@@ -2360,7 +2360,7 @@
     {
       "sample_id": "Hannover-f000453-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 3,
       "flat_detection_index": 5719,
@@ -2396,7 +2396,7 @@
     {
       "sample_id": "Hannover-f000453-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 4,
       "flat_detection_index": 5720,
@@ -2432,7 +2432,7 @@
     {
       "sample_id": "Hannover-f000453-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 5,
       "flat_detection_index": 5721,
@@ -2468,7 +2468,7 @@
     {
       "sample_id": "Hannover-f000453-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 6,
       "flat_detection_index": 5722,
@@ -2504,7 +2504,7 @@
     {
       "sample_id": "Hannover-f000453-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 7,
       "flat_detection_index": 5723,
@@ -2540,7 +2540,7 @@
     {
       "sample_id": "Hannover-f000453-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 8,
       "flat_detection_index": 5724,
@@ -2576,7 +2576,7 @@
     {
       "sample_id": "Hannover-f000453-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 9,
       "flat_detection_index": 5725,
@@ -2612,7 +2612,7 @@
     {
       "sample_id": "Hannover-f000453-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 10,
       "flat_detection_index": 5726,
@@ -2648,7 +2648,7 @@
     {
       "sample_id": "Hannover-f000453-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 453,
       "detection_index": 11,
       "flat_detection_index": 5727,
@@ -2684,7 +2684,7 @@
     {
       "sample_id": "Hannover-f000544-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 0,
       "flat_detection_index": 6804,
@@ -2720,7 +2720,7 @@
     {
       "sample_id": "Hannover-f000544-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 1,
       "flat_detection_index": 6805,
@@ -2756,7 +2756,7 @@
     {
       "sample_id": "Hannover-f000544-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 2,
       "flat_detection_index": 6806,
@@ -2792,7 +2792,7 @@
     {
       "sample_id": "Hannover-f000544-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 3,
       "flat_detection_index": 6807,
@@ -2828,7 +2828,7 @@
     {
       "sample_id": "Hannover-f000544-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 4,
       "flat_detection_index": 6808,
@@ -2864,7 +2864,7 @@
     {
       "sample_id": "Hannover-f000544-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 5,
       "flat_detection_index": 6809,
@@ -2900,7 +2900,7 @@
     {
       "sample_id": "Hannover-f000544-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 6,
       "flat_detection_index": 6810,
@@ -2936,7 +2936,7 @@
     {
       "sample_id": "Hannover-f000544-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 7,
       "flat_detection_index": 6811,
@@ -2972,7 +2972,7 @@
     {
       "sample_id": "Hannover-f000544-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 8,
       "flat_detection_index": 6812,
@@ -3008,7 +3008,7 @@
     {
       "sample_id": "Hannover-f000544-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 9,
       "flat_detection_index": 6813,
@@ -3044,7 +3044,7 @@
     {
       "sample_id": "Hannover-f000544-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 10,
       "flat_detection_index": 6814,
@@ -3080,7 +3080,7 @@
     {
       "sample_id": "Hannover-f000544-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 544,
       "detection_index": 11,
       "flat_detection_index": 6815,
@@ -3116,7 +3116,7 @@
     {
       "sample_id": "Hannover-f000635-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 0,
       "flat_detection_index": 7903,
@@ -3152,7 +3152,7 @@
     {
       "sample_id": "Hannover-f000635-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 1,
       "flat_detection_index": 7904,
@@ -3188,7 +3188,7 @@
     {
       "sample_id": "Hannover-f000635-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 2,
       "flat_detection_index": 7905,
@@ -3224,7 +3224,7 @@
     {
       "sample_id": "Hannover-f000635-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 3,
       "flat_detection_index": 7906,
@@ -3260,7 +3260,7 @@
     {
       "sample_id": "Hannover-f000635-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 4,
       "flat_detection_index": 7907,
@@ -3296,7 +3296,7 @@
     {
       "sample_id": "Hannover-f000635-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 5,
       "flat_detection_index": 7908,
@@ -3332,7 +3332,7 @@
     {
       "sample_id": "Hannover-f000635-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 6,
       "flat_detection_index": 7909,
@@ -3368,7 +3368,7 @@
     {
       "sample_id": "Hannover-f000635-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 7,
       "flat_detection_index": 7910,
@@ -3404,7 +3404,7 @@
     {
       "sample_id": "Hannover-f000635-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 8,
       "flat_detection_index": 7911,
@@ -3440,7 +3440,7 @@
     {
       "sample_id": "Hannover-f000635-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 9,
       "flat_detection_index": 7912,
@@ -3476,7 +3476,7 @@
     {
       "sample_id": "Hannover-f000635-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 10,
       "flat_detection_index": 7913,
@@ -3512,7 +3512,7 @@
     {
       "sample_id": "Hannover-f000635-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 11,
       "flat_detection_index": 7914,
@@ -3548,7 +3548,7 @@
     {
       "sample_id": "Hannover-f000635-d012",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 635,
       "detection_index": 12,
       "flat_detection_index": 7915,
@@ -3584,7 +3584,7 @@
     {
       "sample_id": "Hannover-f000725-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 0,
       "flat_detection_index": 8993,
@@ -3620,7 +3620,7 @@
     {
       "sample_id": "Hannover-f000725-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 1,
       "flat_detection_index": 8994,
@@ -3656,7 +3656,7 @@
     {
       "sample_id": "Hannover-f000725-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 2,
       "flat_detection_index": 8995,
@@ -3692,7 +3692,7 @@
     {
       "sample_id": "Hannover-f000725-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 3,
       "flat_detection_index": 8996,
@@ -3728,7 +3728,7 @@
     {
       "sample_id": "Hannover-f000725-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 4,
       "flat_detection_index": 8997,
@@ -3764,7 +3764,7 @@
     {
       "sample_id": "Hannover-f000725-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 5,
       "flat_detection_index": 8998,
@@ -3800,7 +3800,7 @@
     {
       "sample_id": "Hannover-f000725-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 6,
       "flat_detection_index": 8999,
@@ -3836,7 +3836,7 @@
     {
       "sample_id": "Hannover-f000725-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 7,
       "flat_detection_index": 9000,
@@ -3872,7 +3872,7 @@
     {
       "sample_id": "Hannover-f000725-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 8,
       "flat_detection_index": 9001,
@@ -3908,7 +3908,7 @@
     {
       "sample_id": "Hannover-f000725-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 9,
       "flat_detection_index": 9002,
@@ -3944,7 +3944,7 @@
     {
       "sample_id": "Hannover-f000725-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 10,
       "flat_detection_index": 9003,
@@ -3980,7 +3980,7 @@
     {
       "sample_id": "Hannover-f000725-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 725,
       "detection_index": 11,
       "flat_detection_index": 9004,
@@ -4016,7 +4016,7 @@
     {
       "sample_id": "Hannover-f000816-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 0,
       "flat_detection_index": 10123,
@@ -4052,7 +4052,7 @@
     {
       "sample_id": "Hannover-f000816-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 1,
       "flat_detection_index": 10124,
@@ -4088,7 +4088,7 @@
     {
       "sample_id": "Hannover-f000816-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 2,
       "flat_detection_index": 10125,
@@ -4124,7 +4124,7 @@
     {
       "sample_id": "Hannover-f000816-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 3,
       "flat_detection_index": 10126,
@@ -4160,7 +4160,7 @@
     {
       "sample_id": "Hannover-f000816-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 4,
       "flat_detection_index": 10127,
@@ -4196,7 +4196,7 @@
     {
       "sample_id": "Hannover-f000816-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 5,
       "flat_detection_index": 10128,
@@ -4232,7 +4232,7 @@
     {
       "sample_id": "Hannover-f000816-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 6,
       "flat_detection_index": 10129,
@@ -4268,7 +4268,7 @@
     {
       "sample_id": "Hannover-f000816-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 7,
       "flat_detection_index": 10130,
@@ -4304,7 +4304,7 @@
     {
       "sample_id": "Hannover-f000816-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 8,
       "flat_detection_index": 10131,
@@ -4340,7 +4340,7 @@
     {
       "sample_id": "Hannover-f000816-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 9,
       "flat_detection_index": 10132,
@@ -4376,7 +4376,7 @@
     {
       "sample_id": "Hannover-f000816-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 10,
       "flat_detection_index": 10133,
@@ -4412,7 +4412,7 @@
     {
       "sample_id": "Hannover-f000816-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 11,
       "flat_detection_index": 10134,
@@ -4448,7 +4448,7 @@
     {
       "sample_id": "Hannover-f000816-d012",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 816,
       "detection_index": 12,
       "flat_detection_index": 10135,
@@ -4484,7 +4484,7 @@
     {
       "sample_id": "Hannover-f000907-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 0,
       "flat_detection_index": 11276,
@@ -4520,7 +4520,7 @@
     {
       "sample_id": "Hannover-f000907-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 1,
       "flat_detection_index": 11277,
@@ -4556,7 +4556,7 @@
     {
       "sample_id": "Hannover-f000907-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 2,
       "flat_detection_index": 11278,
@@ -4592,7 +4592,7 @@
     {
       "sample_id": "Hannover-f000907-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 3,
       "flat_detection_index": 11279,
@@ -4628,7 +4628,7 @@
     {
       "sample_id": "Hannover-f000907-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 4,
       "flat_detection_index": 11280,
@@ -4664,7 +4664,7 @@
     {
       "sample_id": "Hannover-f000907-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 5,
       "flat_detection_index": 11281,
@@ -4700,7 +4700,7 @@
     {
       "sample_id": "Hannover-f000907-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 6,
       "flat_detection_index": 11282,
@@ -4736,7 +4736,7 @@
     {
       "sample_id": "Hannover-f000907-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 7,
       "flat_detection_index": 11283,
@@ -4772,7 +4772,7 @@
     {
       "sample_id": "Hannover-f000907-d008",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 8,
       "flat_detection_index": 11284,
@@ -4808,7 +4808,7 @@
     {
       "sample_id": "Hannover-f000907-d009",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 9,
       "flat_detection_index": 11285,
@@ -4844,7 +4844,7 @@
     {
       "sample_id": "Hannover-f000907-d010",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 10,
       "flat_detection_index": 11286,
@@ -4880,7 +4880,7 @@
     {
       "sample_id": "Hannover-f000907-d011",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 907,
       "detection_index": 11,
       "flat_detection_index": 11287,
@@ -4916,7 +4916,7 @@
     {
       "sample_id": "Hannover-f000998-d000",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 0,
       "flat_detection_index": 12167,
@@ -4952,7 +4952,7 @@
     {
       "sample_id": "Hannover-f000998-d001",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 1,
       "flat_detection_index": 12168,
@@ -4988,7 +4988,7 @@
     {
       "sample_id": "Hannover-f000998-d002",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 2,
       "flat_detection_index": 12169,
@@ -5024,7 +5024,7 @@
     {
       "sample_id": "Hannover-f000998-d003",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 3,
       "flat_detection_index": 12170,
@@ -5060,7 +5060,7 @@
     {
       "sample_id": "Hannover-f000998-d004",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 4,
       "flat_detection_index": 12171,
@@ -5096,7 +5096,7 @@
     {
       "sample_id": "Hannover-f000998-d005",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 5,
       "flat_detection_index": 12172,
@@ -5132,7 +5132,7 @@
     {
       "sample_id": "Hannover-f000998-d006",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 6,
       "flat_detection_index": 12173,
@@ -5168,7 +5168,7 @@
     {
       "sample_id": "Hannover-f000998-d007",
       "video_id": "Hannover",
-      "video_path": "/home/valentinweyer/projects/handball-computer-vision/Hannover.mp4",
+      "video_path": "/home/valentinweyer/projects/handball-computer-vision/data/raw/Hannover.mp4",
       "frame_index": 998,
       "detection_index": 7,
       "flat_detection_index": 12174,
