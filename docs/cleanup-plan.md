@@ -13,8 +13,7 @@ The following must remain until a later migration explicitly replaces them:
 - `source/` and root-level videos: raw inputs and legacy caches until raw media
   is deliberately moved into `data/raw/` and path references are rewritten.
 - modified or untracked notebooks belonging to the user.
-- `SAM-MT/`: eight untracked local entries, including checkpoints and caches.
-- `segment-anything-2-real-time/`: fourteen untracked local outputs/checkpoints.
+- `segment-anything-2-real-time/`: ten untracked local outputs/checkpoints.
 
 ## Batch A: completed
 
@@ -43,10 +42,10 @@ These are not project source and should eventually live outside this repository.
 | Path | Size | Local status | Recommendation |
 | --- | ---: | --- | --- |
 | `onnxruntime/` | 3.5 GB | pristine | Remove checkout after approval; runtime imports the installed package. |
-| `sam2-upstream/` | 117 MB | pristine | Externalize; retained only by the SAM2 baseline. |
-| `sam3/` | 133 MB | pristine | Externalize if jersey/SAM3 experiments continue. |
-| `SAM-MT/` | 2.7 GB | 8 untracked entries | Do not remove wholesale. Preserve local checkpoint material first. |
-| `segment-anything-2-real-time/` | 3.5 GB | 14 untracked entries | Do not remove wholesale. It contains local outputs and baseline weights. |
+| `sam2-upstream/` | 117 MB | removed 2026-08-25 | Archived baseline now requires an external install. |
+| `sam3/` | 131 MB | pristine | Externalize if jersey/SAM3 experiments continue. |
+| `SAM-MT/` | 2.7 GB | removed 2026-08-25 | No active project references remained. |
+| `segment-anything-2-real-time/` | 2.1 GB | 10 untracked entries | Do not remove wholesale. It contains local outputs and baseline weights. |
 
 The ONNX Runtime checkout contains roughly 1.3 GB of build products and 1.5 GB
 of Git object data. It is the best second cleanup target.

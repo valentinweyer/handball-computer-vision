@@ -35,9 +35,9 @@ yacs==0.1.8  # official SoccerNet PRTReID checkpoint config
 #    clean_paths, sports.handball court config) ──────────────────────────────
 git+https://github.com/valentinweyer/roboflow-sports-handball.git@feat/handball
 
-# ── vendored, installed editable, NOT pip-resolvable ─────────────────────────
+# ── optional archived SAM2 baseline dependency ─────────────────────────────────────────────────────
 # Only e2e.py (the SAM2 baseline) needs these. e2e_mcbyte.py does not.
-#   pip install -e ./sam2-upstream      # provides `sam2`
+#   pip install "git+https://github.com/facebookresearch/sam2.git"  # archived baseline
 # Note three .pth files compete for the name `sam2`; see the header comment in
 # notebooks/e2e.py before touching import order there.
 

@@ -4,6 +4,11 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SAM2_UPSTREAM_DIR = Path(os.getenv("SAM2_UPSTREAM_DIR", PROJECT_ROOT / "sam2-upstream"))
+if not SAM2_UPSTREAM_DIR.is_dir():
+    raise FileNotFoundError(
+        "The archived SAM2 baseline needs an external facebookresearch/sam2 "
+        "checkout. Set SAM2_UPSTREAM_DIR to its path before running this module."
+    )
 
 # `inference` (imported below via sports/roboflow) depends on RF-SAM-2, whose
 # .pth file puts segment-anything-2-real-time on sys.path at interpreter

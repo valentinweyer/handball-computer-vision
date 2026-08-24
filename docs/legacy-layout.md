@@ -9,9 +9,9 @@ The following remain intentionally:
 - `outputs/`: old render outputs, fitted models, caches, and annotations.
 - `source/`: old source media, frame caches, mask caches, and tracker runs.
 - root-level videos: old raw inputs and diagnostic encodes.
-- `SAM-MT/`, `onnxruntime/`, `sam2-upstream/`, `sam3/`, and
-  `segment-anything-2-real-time/`: nested upstream repositories.
-- `sam3-checkpoints/` and all checkpoint duplicates.
+- `onnxruntime/`, `sam3/`, and `segment-anything-2-real-time/`: nested
+  upstream repositories.
+- `sam3-checkpoints/`: SAM3.1 weights retained for jersey-number experiments.
 
 The canonical copies are now under `src/`, `scripts/`, `experiments/`, and
 `data/annotations/`. Only those copies should receive new structural work.
