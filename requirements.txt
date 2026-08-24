@@ -1,0 +1,48 @@
+# Handball CV pipeline — versions verified working in the `NewEnv` conda env
+# (python 3.11, CUDA 13.0, GB10). This records what the pipeline actually runs
+# on; it is not a from-scratch install recipe — torch/onnxruntime here are
+# CUDA-13 builds and SAM2 is a vendored checkout (see below).
+
+# ── tracking ─────────────────────────────────────────────────────────────────
+# The `mask` extra pulls rf-segment-anything + rf-cutie, which McByte uses as an
+# association cue. SAM vit_b and Cutie base-mega weights auto-download on first
+# run (~515 MB, checksum-validated) to the trackers asset cache.
+trackers[mask]==2.6.0
+
+# ── detection / core CV ──────────────────────────────────────────────────────
+supervision==0.30.0
+inference==0.62.0
+opencv-python==4.10.0.84
+numpy==2.3.5
+scipy==1.16.3
+
+# ── team classification / re-ID (SigLIP + UMAP + KMeans) ─────────────────────
+transformers==5.9.0
+umap-learn==0.5.9.post2
+scikit-learn==1.7.2
+
+# ── torch (CUDA 13 build — install from the cu130 index, not PyPI) ───────────
+torch==2.9.1+cu130
+torchvision==0.24.1
+
+# ── misc ─────────────────────────────────────────────────────────────────────
+python-dotenv==1.0.1
+tqdm==4.67.1
+hydra-core==1.3.2
+yacs==0.1.8  # official SoccerNet PRTReID checkpoint config
+
+# ── handball fork of roboflow/sports (TeamClassifier, ViewTransformer,
+#    clean_paths, sports.handball court config) ──────────────────────────────
+git+https://github.com/valentinweyer/roboflow-sports-handball.git@feat/handball
+
+# ── vendored, installed editable, NOT pip-resolvable ─────────────────────────
+# Only e2e.py (the SAM2 baseline) needs these. e2e_mcbyte.py does not.
+#   pip install -e ./sam2-upstream      # provides `sam2`
+# Note three .pth files compete for the name `sam2`; see the header comment in
+# notebooks/e2e.py before touching import order there.
+
+# ── known conflicts (benign, both pipelines verified running) ────────────────
+# inference-gpu 1.3.1 pins trackers~=2.4.0, which predates McByte. Overridden
+# deliberately. `pip check` will also flag several pre-existing inference pins
+# (av, boto3, click, packaging, onnxruntime-gpu) that were already violated
+# before this change.
