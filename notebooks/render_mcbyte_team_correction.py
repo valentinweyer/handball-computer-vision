@@ -25,7 +25,11 @@ from render_raw_team_classification import (
 from team_model import MIN_STABLE_TEAM_CONFIDENCE, TeamModel, torso_boxes
 
 TEAM_BGR = {0: (255, 190, 0), 1: (0, 120, 255)}
-UNCERTAIN_BGR = (0, 220, 255)
+# A brand-new player still bootstrapping evidence looks different from an
+# established player whose label is under genuine active opposition right
+# now -- the second case is the interesting one to notice, not the first.
+NEW_UNCERTAIN_BGR = (0, 220, 255)
+CONTESTED_BGR = (0, 0, 220)
 GOALKEEPER_BGR = (180, 180, 180)
 GOALKEEPER_CLASS_ID = 1
 
@@ -62,7 +66,9 @@ def draw_text(frame, text, origin, color, scale):
     )
 
 
-def draw_header(frame, source, frame_index, fps, visible, switches, masks):
+def draw_header(
+    frame, source, frame_index, fps, visible, switches, id_switches, masks,
+):
     height, width = frame.shape[:2]
     scale = max(width / 1920.0, 1.0)
     header_height = min(height, round(86 * scale))
@@ -87,8 +93,10 @@ def draw_header(frame, source, frame_index, fps, visible, switches, masks):
         max(1, round(scale)), cv2.LINE_AA,
     )
     cv2.putText(
-        frame, f"visible {visible}   completed team switches {switches}",
-        (max(round(18 * scale), width - round(480 * scale)), round(31 * scale)),
+        frame,
+        f"visible {visible}   team switches {switches}"
+        f"   suspected id switches {id_switches}",
+        (max(round(18 * scale), width - round(560 * scale)), round(31 * scale)),
         cv2.FONT_HERSHEY_SIMPLEX, 0.47 * scale, (235, 235, 235),
         max(1, round(scale)), cv2.LINE_AA,
     )
@@ -163,7 +171,12 @@ def render(source, cache_path, model_path, output_path, device, enable_masks):
             else:
                 team = player.voted_team_id
                 stable = player.team_confidence >= MIN_STABLE_TEAM_CONFIDENCE
-                color = TEAM_BGR[team] if stable else UNCERTAIN_BGR
+                if stable:
+                    color = TEAM_BGR[team]
+                elif player.team_is_provisional:
+                    color = NEW_UNCERTAIN_BGR
+                else:
+                    color = CONTESTED_BGR
                 pending = ""
                 if player.pending_team_id is not None:
                     pending = (
@@ -189,11 +202,19 @@ def render(source, cache_path, model_path, output_path, device, enable_masks):
                 color, scale,
             )
 
-        everyone = list(identity.players.values()) + identity.retired
-        switches = sum(player.team_switches for player in everyone)
+        # A flip on a settled label more likely means McByte changed person than
+        # that the colour read was wrong; count it apart from plain corrections
+        # rather than folding both into one `player.team_switches` total.
+        switches = sum(
+            1 for event in identity.events if event["type"] == "team_switch"
+        )
+        id_switches = sum(
+            1 for event in identity.events
+            if event["type"] == "suspected_id_switch"
+        )
         draw_header(
             annotated, source, frame_index, info.fps, len(tracked), switches,
-            enable_masks,
+            id_switches, enable_masks,
         )
         writer.write(annotated)
         frames_written += 1
@@ -217,9 +238,10 @@ def render(source, cache_path, model_path, output_path, device, enable_masks):
         "preview": str(preview_path),
         "frames": frames_written,
         "mcbyte_masks": enable_masks,
-        "team_switches": sum(player.team_switches for player in everyone),
+        "label_changes_total": sum(player.team_switches for player in everyone),
         "team_switch_events": [
-            event for event in identity.events if event["type"] == "team_switch"
+            event for event in identity.events
+            if event["type"] in ("team_switch", "suspected_id_switch")
         ],
         **identity.summary(),
     }

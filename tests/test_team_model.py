@@ -8,7 +8,14 @@ import supervision as sv
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "notebooks"))
 
-from identity_manager import IdentityManager
+from identity_manager import (
+    MIN_STABLE_TEAM_CONFIDENCE,
+    MIN_TEAM_VOTE_CONFIDENCE,
+    TEAM_SWITCH_MIN_QUALITY,
+    IdentityManager,
+    Player,
+    is_qualified,
+)
 from mask_team_features import guarded_torso_masks
 from track_manager import TrackManager
 from team_model import (
@@ -243,3 +250,249 @@ class TrackManagerTeamTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ScriptedTeamModel(FakeTeamModel):
+    """Per-frame (team, confidence, quality), so weak reads can be scripted."""
+
+    def __init__(self, script, default):
+        super().__init__()
+        self.script = script
+        self.default = default
+
+    def observe(self, frame_rgb, boxes_xyxy, context_boxes_xyxy=None):
+        frame_index = int(frame_rgb[0, 0, 0])
+        self.observed_frames.append(frame_index)
+        count = len(boxes_xyxy)
+        team, confidence, quality = self.script.get(frame_index, self.default)
+        return (
+            np.ones((count, 4), dtype=float),
+            np.full(count, team, dtype=int),
+            np.full(count, confidence, dtype=float),
+            np.full(count, quality, dtype=float),
+        )
+
+
+def _one_detection(goalkeeper=False):
+    return sv.Detections(
+        xyxy=np.array([[10, 10, 50, 100]], dtype=float),
+        confidence=np.array([0.9]),
+        class_id=np.array([1 if goalkeeper else 2]),
+        tracker_id=np.array([42]),
+    )
+
+
+def _run(manager, frames, detections):
+    for frame_index in range(frames):
+        manager.update(
+            frame_index,
+            np.full((2, 2, 3), frame_index, dtype=np.uint8),
+            detections,
+        )
+
+
+class TrackerErrorIsolationTests(unittest.TestCase):
+    """A tracking error must not quietly become a settled team label."""
+
+    def _settled_candidate(self, switch_observations=4, observations=10):
+        player = Player(
+            player_id=1,
+            team_id=0,
+            embedding=np.array([1.0, 0.0, 0.0, 0.0]),
+            created_goalkeeper=False,
+            created_at=0,
+            last_seen=0,
+            team_switch_observations=switch_observations,
+        )
+        for _ in range(observations):
+            player.record_team_vote(0, 0.9, 1.0)
+        return player
+
+    def test_flip_on_a_settled_label_is_reported_as_a_suspected_id_switch(self):
+        # Ten agreeing reads, then sustained opposition -- what a McByte swap
+        # between crossing players looks like from the classifier's side.
+        model = ScriptedTeamModel(
+            {f: (0, 0.9, 1.0) for f in range(0, 50)}, default=(1, 0.9, 1.0)
+        )
+        manager = IdentityManager(model, team_switch_observations=3)
+        _run(manager, 62, _one_detection())
+
+        player = manager.players[1]
+        self.assertEqual(player.voted_team_id, 1)
+        types = [event["type"] for event in manager.events]
+        self.assertIn("suspected_id_switch", types)
+        self.assertNotIn("team_switch", types)
+        # The identity is now in doubt, and says so.
+        self.assertLess(player.team_confidence, MIN_STABLE_TEAM_CONFIDENCE)
+
+    def test_flip_on_a_weakly_evidenced_label_is_still_a_plain_correction(self):
+        # Two agreeing reads is a bad first crop, not a lost identity.
+        model = ScriptedTeamModel(
+            {0: (0, 0.9, 1.0), 5: (0, 0.9, 1.0)}, default=(1, 0.9, 1.0)
+        )
+        manager = IdentityManager(model, team_switch_observations=3)
+        _run(manager, 27, _one_detection())
+
+        self.assertEqual(manager.players[1].voted_team_id, 1)
+        types = [event["type"] for event in manager.events]
+        self.assertIn("team_switch", types)
+        self.assertNotIn("suspected_id_switch", types)
+
+    def test_a_contested_label_stops_vetoing_reid_candidates(self):
+        manager = IdentityManager(FakeTeamModel(), team_switch_observations=4)
+        candidate = self._settled_candidate()
+        manager.retired.append(candidate)
+        query = np.array([1.0, 0.0, 0.0, 0.0])
+
+        # Settled and unchallenged: team disagreement vetoes the match.
+        self.assertIsNone(manager._reid_match(
+            query, 5, set(), team_id=1, confidence=0.9, quality=1.0,
+            is_goalkeeper=False,
+        ))
+
+        # Three opposing reads, one short of a switch. The label has not
+        # changed, but it is no longer trustworthy enough to exclude anyone.
+        for _ in range(3):
+            candidate.record_team_vote(1, 0.9, 1.0)
+        self.assertEqual(candidate.voted_team_id, 0)
+        self.assertEqual(candidate.team_switches, 0)
+        self.assertIsNotNone(manager._reid_match(
+            query, 5, set(), team_id=1, confidence=0.9, quality=1.0,
+            is_goalkeeper=False,
+        ))
+
+    def test_a_long_agreeing_run_can_still_be_contested(self):
+        # The unbounded accumulator reached ~0.99 after a few hundred frames and
+        # could never express doubt again. Decay caps the mass at
+        # weight/(1 - decay), so even a 400-observation player stays reachable.
+        player = self._settled_candidate(observations=400)
+        saturated = player.team_confidence
+        self.assertLessEqual(sum(player.team_votes.values()), 10.0)
+
+        for _ in range(3):
+            player.record_team_vote(1, 0.9, 1.0)
+        self.assertLess(player.team_confidence, saturated)
+        self.assertLess(player.team_confidence, MIN_STABLE_TEAM_CONFIDENCE)
+
+    def test_unqualified_same_team_noise_does_not_erode_a_settled_label(self):
+        # Decay must respond to real opposing evidence, not to every call --
+        # a run of low-quality reads (partial occlusion, blur, a small crop)
+        # that still agree on the team must leave confidence untouched.
+        # Before this was fixed, ~20 such reads alone dragged a 0.93-confidence
+        # player under the stable gate with zero genuine opposition.
+        player = self._settled_candidate(observations=20)
+        settled = player.team_confidence
+        for _ in range(30):
+            outcome = player.record_team_vote(0, 0.5, 0.1)
+            self.assertIsNone(outcome)
+        self.assertEqual(player.team_confidence, settled)
+        self.assertGreaterEqual(player.team_confidence, MIN_STABLE_TEAM_CONFIDENCE)
+
+    def test_unqualified_opposite_team_noise_does_not_erode_a_settled_label(self):
+        # Same guarantee when the noisy reads disagree -- an unqualified read
+        # must never nudge the pending-switch counter either.
+        player = self._settled_candidate(observations=20)
+        settled = player.team_confidence
+        for _ in range(30):
+            outcome = player.record_team_vote(1, 0.5, 0.1)
+            self.assertIsNone(outcome)
+        self.assertEqual(player.team_confidence, settled)
+        self.assertIsNone(player.pending_team_id)
+
+    def test_genuine_qualified_opposition_still_erodes_confidence(self):
+        # The fix must not blunt real contest detection -- three qualified
+        # opposing reads still fire the switch, exactly as before.
+        player = self._settled_candidate(switch_observations=3, observations=20)
+        for _ in range(2):
+            self.assertIsNone(player.record_team_vote(1, 0.9, 1.0))
+        self.assertLess(player.team_confidence, MIN_STABLE_TEAM_CONFIDENCE)
+        self.assertEqual(player.record_team_vote(1, 0.9, 1.0), "id_switch")
+
+
+class ProvisionalTeamLabelTests(unittest.TestCase):
+    def test_unqualified_creation_label_yields_to_first_qualified_read(self):
+        # Frame 0 is too weak to vote, but still seeds `team_id`.
+        model = ScriptedTeamModel(
+            {0: (0, 0.2, 1.0)}, default=(1, 0.9, 1.0)
+        )
+        manager = IdentityManager(model, team_switch_observations=3)
+        manager.update(
+            0, np.zeros((2, 2, 3), dtype=np.uint8), _one_detection()
+        )
+        player = manager.players[1]
+        self.assertTrue(player.team_is_provisional)
+        self.assertEqual(player.voted_team_id, 0)
+
+        # One qualified read replaces it outright -- no three-observation wait.
+        _run(manager, 6, _one_detection())
+        self.assertFalse(player.team_is_provisional)
+        self.assertEqual(player.voted_team_id, 1)
+        self.assertEqual(player.team_switches, 0)
+        self.assertNotIn(
+            "team_switch", [event["type"] for event in manager.events]
+        )
+
+
+class QualifiedObservationTests(unittest.TestCase):
+    def test_reid_gate_and_team_vote_agree_on_the_same_observation(self):
+        # The re-ID gate used to test `confidence * quality` against a threshold
+        # meant for confidence alone, so this pair voted but could not gate.
+        confidence, quality = 0.4, 0.5
+        self.assertTrue(is_qualified(confidence, quality))
+        self.assertLess(confidence * quality, MIN_TEAM_VOTE_CONFIDENCE)
+
+        player = Player(
+            player_id=1, team_id=0, embedding=np.array([1.0, 0.0]),
+            created_goalkeeper=False, created_at=0, last_seen=0,
+        )
+        self.assertEqual(player.record_team_vote(1, confidence, quality), "adopt")
+        self.assertEqual(player.qualified_observations, 1)
+
+    def test_quality_below_the_switch_floor_votes_but_cannot_settle(self):
+        player = Player(
+            player_id=1, team_id=0, embedding=np.array([1.0, 0.0]),
+            created_goalkeeper=False, created_at=0, last_seen=0,
+        )
+        weak_quality = TEAM_SWITCH_MIN_QUALITY / 2
+        self.assertIsNone(player.record_team_vote(1, 0.9, weak_quality))
+        self.assertEqual(player.team_observations, 1)
+        self.assertEqual(player.qualified_observations, 0)
+        self.assertTrue(player.team_is_provisional)
+
+
+class GoalkeeperRoleTests(unittest.TestCase):
+    def _candidate(self, created_goalkeeper):
+        return Player(
+            player_id=1, team_id=0, embedding=np.array([1.0, 0.0, 0.0, 0.0]),
+            created_goalkeeper=created_goalkeeper, created_at=0, last_seen=0,
+        )
+
+    def test_one_flickered_goalkeeper_class_does_not_block_reid(self):
+        manager = IdentityManager(FakeTeamModel())
+        candidate = self._candidate(created_goalkeeper=True)
+        candidate.record_role(True)   # the single bad frame at creation
+        manager.retired.append(candidate)
+
+        self.assertIsNotNone(manager._reid_match(
+            np.array([1.0, 0.0, 0.0, 0.0]), 5, set(), is_goalkeeper=False,
+        ))
+
+    def test_a_settled_goalkeeper_still_vetoes_a_field_player_match(self):
+        manager = IdentityManager(FakeTeamModel())
+        candidate = self._candidate(created_goalkeeper=True)
+        for _ in range(10):
+            candidate.record_role(True)
+        manager.retired.append(candidate)
+
+        self.assertTrue(candidate.goalkeeper_settled)
+        self.assertIsNone(manager._reid_match(
+            np.array([1.0, 0.0, 0.0, 0.0]), 5, set(), is_goalkeeper=False,
+        ))
+
+    def test_role_follows_the_running_majority_not_the_creation_frame(self):
+        candidate = self._candidate(created_goalkeeper=True)
+        candidate.record_role(True)
+        for _ in range(9):
+            candidate.record_role(False)
+        self.assertFalse(candidate.is_goalkeeper)
+        self.assertTrue(candidate.goalkeeper_settled)
