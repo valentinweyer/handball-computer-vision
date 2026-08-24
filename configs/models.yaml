@@ -18,10 +18,6 @@ models:
     path: segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt
     sha256: 2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318
 
-duplicate_locations_to_remove_only_after_approval:
-  - notebooks/models/sam/sam_vit_b_01ec64.pth
-  - notebooks/models/cutie/cutie-base-mega.pth
-  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt.1
-  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_base_plus.pt.1
-  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.1
-  - segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.2
+cleanup:
+  batch_a_completed: 2026-08-25
+  removed_verified_duplicate_checkpoints: 6

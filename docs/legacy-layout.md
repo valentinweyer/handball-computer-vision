@@ -12,7 +12,6 @@ The following remain intentionally:
 - `SAM-MT/`, `onnxruntime/`, `sam2-upstream/`, `sam3/`, and
   `segment-anything-2-real-time/`: nested upstream repositories.
 - `sam3-checkpoints/` and all checkpoint duplicates.
-- `*.orig`, `__pycache__`, and test caches.
 
 The canonical copies are now under `src/`, `scripts/`, `experiments/`, and
 `data/annotations/`. Only those copies should receive new structural work.

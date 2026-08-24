@@ -1,6 +1,7 @@
 # Cleanup plan
 
-Inventory date: 2026-08-25. No files in this plan have been deleted.
+Inventory date: 2026-08-25. Batch A was completed after explicit approval;
+later batches have not been deleted.
 
 ## Protected material
 
@@ -15,13 +16,13 @@ The following must remain until a later migration explicitly replaces them:
 - `SAM-MT/`: eight untracked local entries, including checkpoints and caches.
 - `segment-anything-2-real-time/`: fourteen untracked local outputs/checkpoints.
 
-## Batch A: exact duplicates and disposable caches
+## Batch A: completed
 
-This is the lowest-risk deletion batch and requires explicit approval. The six
-checkpoint copies below were verified byte-for-byte by SHA-256. Removing only
-these copies would reclaim 2,049,193,516 bytes, approximately 1.91 GiB.
+The six checkpoint copies below were verified byte-for-byte by SHA-256 and
+removed after approval. They reclaimed 2,049,193,516 bytes, approximately
+1.91 GiB.
 
-| Duplicate copy | Canonical copy |
+| Removed duplicate copy | Preserved canonical copy |
 | --- | --- |
 | `notebooks/models/sam/sam_vit_b_01ec64.pth` | `models/sam/sam_vit_b_01ec64.pth` |
 | `notebooks/models/cutie/cutie-base-mega.pth` | `models/cutie/cutie-base-mega.pth` |
@@ -30,11 +31,10 @@ these copies would reclaim 2,049,193,516 bytes, approximately 1.91 GiB.
 | `segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.1` | same path without `.1` |
 | `segment-anything-2-real-time/checkpoints/sam2.1_hiera_tiny.pt.2` | same path without `.2` |
 
-Also eligible in this batch:
+Also removed in this batch:
 
 - four `*.orig` files, approximately 60 KB total;
-- project and vendored `__pycache__`/`.pytest_cache` directories, approximately
-  9 MB total.
+- project and vendored Python/test caches, approximately 9 MB total.
 
 ## Batch B: upstream source checkouts
 
@@ -78,7 +78,7 @@ little disk space; removing them is about clarity, not capacity.
 
 ## Approval sequence
 
-1. Approve Batch A for approximately 1.92 GiB of low-risk cleanup.
+1. Completed: Batch A reclaimed approximately 1.92 GiB.
 2. Decide whether the ONNX Runtime checkout is still needed for development.
 3. Select which rendered videos must be retained before cleaning `outputs/`.
 4. Externalize remaining upstream repositories before removing legacy imports.
