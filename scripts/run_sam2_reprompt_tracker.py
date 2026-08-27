@@ -34,6 +34,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
@@ -111,6 +112,15 @@ def masks_from_logits(mask_logits: torch.Tensor) -> np.ndarray:
         sv.filter_segments_by_distance(m, relative_distance=0.03, mode="edge")
         for m in masks
     ])
+
+
+def _json_default(value):
+    """Event dicts may carry numpy scalars (obj_id/frame from array iteration)."""
+    if isinstance(value, np.integer):
+        return int(value)
+    if isinstance(value, np.floating):
+        return float(value)
+    return str(value)
 
 
 def main() -> None:
@@ -234,11 +244,35 @@ def main() -> None:
                         state, frame_idx=chunk_end, obj_id=action["obj_id"],
                         box=np.asarray(action["box"], dtype=np.float32),
                     )
+                elif action["type"] == "reset":
+                    # Body-swap, not drift: memory is contaminated with the
+                    # wrong player's appearance, so reprompting in place would
+                    # seed the "correction" from that wrong mask. Tear the
+                    # object down and re-add it fresh under the same obj_id.
+                    if len(state["obj_id_to_idx"]) > 1:
+                        predictor.remove_object(state, obj_id=action["obj_id"])
+                        predictor.add_new_points_or_box(
+                            state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                            box=np.asarray(action["box"], dtype=np.float32),
+                        )
+                    else:
+                        # Removing the only live object resets the whole
+                        # session (see SAM2VideoPredictor.remove_object) --
+                        # fall back to an in-place reprompt instead.
+                        predictor.add_new_points_or_box(
+                            state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                            box=np.asarray(action["box"], dtype=np.float32),
+                            clear_old_points=True,
+                        )
     pbar.close()
 
     print(f"track lifecycle events: {len(track_manager.events)}")
     for e in track_manager.events:
         print(f"  frame {e['frame']:>4}  {e['type']:<16} obj_id={e['obj_id']}")
+
+    events_path = args.output.with_name(args.output.stem + "_events.json")
+    events_path.write_text(json.dumps(track_manager.events, indent=2, default=_json_default))
+    print("events dumped ->", events_path)
 
     # ── flatten to (frame_index, tracker_id, box) rows ───────────────────────
     rows_frame, rows_id, rows_box = [], [], []

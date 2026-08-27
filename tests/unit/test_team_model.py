@@ -13,7 +13,12 @@ from handball_cv.tracking.identity import (
     is_qualified,
 )
 from handball_cv.teams.masks import guarded_torso_masks
-from handball_cv.tracking.sam2_manager import TrackManager
+from handball_cv.tracking.sam2_manager import (
+    BODY_SWAP_COS_SIM_MIN,
+    EMBEDDING_EMA_ALPHA,
+    Track,
+    TrackManager,
+)
 from handball_cv.teams.model import (
     crop_quality,
     jersey_color_features,
@@ -492,3 +497,214 @@ class GoalkeeperRoleTests(unittest.TestCase):
             candidate.record_role(False)
         self.assertFalse(candidate.is_goalkeeper)
         self.assertTrue(candidate.goalkeeper_settled)
+
+
+def _box_mask(box, shape=(120, 120)):
+    x1, y1, x2, y2 = [int(v) for v in box]
+    mask = np.zeros(shape, dtype=bool)
+    mask[y1:y2, x1:x2] = True
+    return mask
+
+
+class EmbeddingScriptedTeamModel(FakeTeamModel):
+    """Returns caller-supplied embeddings, one array per observe() call, in
+    order -- for tests that need control over appearance, not just team/conf/quality.
+    """
+
+    def __init__(self, embeddings_by_call, team=0, confidence=0.9, quality=1.0):
+        super().__init__()
+        self.embeddings_by_call = list(embeddings_by_call)
+        self.calls = 0
+        self.team = team
+        self.confidence = confidence
+        self.quality = quality
+
+    def observe(self, frame_rgb, boxes_xyxy, context_boxes_xyxy=None):
+        count = len(boxes_xyxy)
+        embeddings = np.asarray(self.embeddings_by_call[self.calls], dtype=float)
+        self.calls += 1
+        assert len(embeddings) == count, (
+            f"call {self.calls}: expected {count} embeddings, got {len(embeddings)}"
+        )
+        return (
+            embeddings,
+            np.full(count, self.team, dtype=int),
+            np.full(count, self.confidence, dtype=float),
+            np.full(count, self.quality, dtype=float),
+        )
+
+
+class TrackEmbeddingRefreshTests(unittest.TestCase):
+    """Track.embedding must track current appearance, not a frame-0 snapshot --
+    that snapshot is what re-ID and the drift/body-swap check compare against.
+    """
+
+    def test_matched_track_embedding_moves_toward_the_new_observation(self):
+        seed_embedding = np.array([1.0, 0.0, 0.0, 0.0])
+        det_embedding = np.array([0.0, 1.0, 0.0, 0.0])
+        model = EmbeddingScriptedTeamModel([
+            np.array([seed_embedding]),  # seed()
+            np.array([det_embedding]),   # checkpoint()
+        ])
+        manager = TrackManager(model, court_test_fn=lambda _box: True)
+        box = np.array([10.0, 10.0, 50.0, 100.0])
+        obj_ids = manager.seed(
+            0, np.array([box]), np.zeros((120, 120, 3), dtype=np.uint8),
+            np.array([False]),
+        )
+        oid = obj_ids[0]
+
+        manager.checkpoint(
+            5, np.zeros((120, 120, 3), dtype=np.uint8),
+            [oid], np.array([_box_mask(box)]), np.array([box]), np.array([False]),
+        )
+
+        expected = EMBEDDING_EMA_ALPHA * det_embedding + (1 - EMBEDDING_EMA_ALPHA) * seed_embedding
+        np.testing.assert_allclose(manager.tracks[oid].embedding, expected)
+
+    def test_low_quality_observation_does_not_refresh_the_embedding(self):
+        seed_embedding = np.array([1.0, 0.0, 0.0, 0.0])
+        model = EmbeddingScriptedTeamModel(
+            [np.array([seed_embedding]), np.array([np.array([0.0, 1.0, 0.0, 0.0])])],
+            quality=0.0,
+        )
+        manager = TrackManager(model, court_test_fn=lambda _box: True)
+        box = np.array([10.0, 10.0, 50.0, 100.0])
+        obj_ids = manager.seed(
+            0, np.array([box]), np.zeros((120, 120, 3), dtype=np.uint8),
+            np.array([False]),
+        )
+        oid = obj_ids[0]
+
+        manager.checkpoint(
+            5, np.zeros((120, 120, 3), dtype=np.uint8),
+            [oid], np.array([_box_mask(box)]), np.array([box]), np.array([False]),
+        )
+
+        np.testing.assert_array_equal(manager.tracks[oid].embedding, seed_embedding)
+
+
+class DuplicateRetirementTests(unittest.TestCase):
+    def test_duplicate_removed_track_is_retired_not_destroyed(self):
+        # Two heavily overlapping tracks, confirmed over two checkpoints --
+        # whichever one rule 1 removes must land in `retired`, recoverable by
+        # re-ID, rather than being permanently lost the way it was before.
+        model = FakeTeamModel()
+        manager = TrackManager(model, court_test_fn=lambda _box: True)
+        box_a = np.array([10.0, 10.0, 60.0, 100.0])
+        box_b = np.array([15.0, 10.0, 65.0, 100.0])
+        obj_ids = manager.seed(
+            0, np.array([box_a, box_b]), np.zeros((120, 120, 3), dtype=np.uint8),
+            np.array([False, False]),
+        )
+        oid_a, oid_b = obj_ids
+        masks = np.array([_box_mask(box_a), _box_mask(box_b)])
+
+        for frame_idx in (10, 20):
+            manager.checkpoint(
+                frame_idx, np.zeros((120, 120, 3), dtype=np.uint8),
+                [oid_a, oid_b], masks, np.array([box_a, box_b]),
+                np.array([False, False]),
+            )
+
+        remove_events = [e for e in manager.events if e["type"] == "remove_duplicate"]
+        self.assertEqual(len(remove_events), 1)
+        removed_id = remove_events[0]["obj_id"]
+        self.assertIn(removed_id, [t.obj_id for t in manager.retired])
+
+
+class ReidTakenGuardTests(unittest.TestCase):
+    def test_two_new_detections_cannot_claim_the_same_retired_identity(self):
+        # Two unmatched detections that both look like the one retired player
+        # must not both revive it -- exactly one reid, one fresh allocation.
+        # `self.retired.remove()` already enforces this by mutating the
+        # candidate pool as each match is claimed within the loop; `taken`
+        # makes that invariant explicit so a future change to the matching
+        # order (e.g. batching `_reid_match` calls before applying removals)
+        # can't silently reintroduce a double-claim.
+        model = FakeTeamModel()  # embeddings are all-ones -- identical for every det
+        manager = TrackManager(model, court_test_fn=lambda _box: True)
+        retired = Track(
+            obj_id=99, team_id=1, embedding=np.array([1.0, 1.0, 1.0, 1.0]),
+            is_goalkeeper=False, created_at=0, last_seen=0,
+        )
+        manager.retired.append(retired)
+
+        box_1 = np.array([10.0, 10.0, 50.0, 100.0])
+        box_2 = np.array([500.0, 10.0, 540.0, 100.0])  # far away -> different spatial slot
+        det_boxes = np.array([box_1, box_2])
+        det_is_gk = np.array([False, False])
+
+        for frame_idx in (10, 20):
+            manager.checkpoint(
+                frame_idx, np.zeros((600, 600, 3), dtype=np.uint8),
+                [], np.empty((0, 0, 0), dtype=bool), det_boxes, det_is_gk,
+            )
+
+        reid_events = [e for e in manager.events if e["type"] == "reid"]
+        add_events = [e for e in manager.events if e["type"] == "add_new"]
+        self.assertEqual(len(reid_events), 1)
+        self.assertEqual(len(add_events), 1)
+        self.assertEqual(manager.retired, [])
+
+
+class DriftVsBodySwapTests(unittest.TestCase):
+    """Rule 3 fires on the same signal (poor IoU / collapsed mask) for two
+    different failure modes; appearance similarity must tell them apart.
+    """
+
+    def _seed_single_track(self, model, box):
+        manager = TrackManager(model, court_test_fn=lambda _box: True)
+        obj_ids = manager.seed(
+            0, np.array([box]), np.zeros((120, 120, 3), dtype=np.uint8),
+            np.array([False]),
+        )
+        return manager, obj_ids[0]
+
+    def test_matched_low_iou_with_consistent_appearance_is_a_reprompt(self):
+        seed_box = np.array([10.0, 10.0, 50.0, 100.0])
+        det_box = np.array([30.0, 10.0, 70.0, 100.0])  # ~0.33 IoU -- drift band
+        same_embedding = np.array([1.0, 0.0, 0.0, 0.0])
+        model = EmbeddingScriptedTeamModel([
+            np.array([same_embedding]),  # seed()
+            np.array([same_embedding]),  # checkpoint 1 (below confirm threshold)
+            np.array([same_embedding]),  # checkpoint 2 (confirms and acts)
+        ])
+        manager, oid = self._seed_single_track(model, seed_box)
+        mask = _box_mask(seed_box)
+
+        actions = []
+        for frame_idx in (10, 20):
+            actions = manager.checkpoint(
+                frame_idx, np.zeros((120, 120, 3), dtype=np.uint8),
+                [oid], np.array([mask]), np.array([det_box]), np.array([False]),
+            )
+
+        types = [a["type"] for a in actions]
+        self.assertIn("reprompt", types)
+        self.assertNotIn("reset", types)
+
+    def test_matched_low_iou_with_a_different_player_triggers_a_reset(self):
+        seed_box = np.array([10.0, 10.0, 50.0, 100.0])
+        det_box = np.array([30.0, 10.0, 70.0, 100.0])
+        seed_embedding = np.array([1.0, 0.0, 0.0, 0.0])
+        different_embedding = np.array([0.0, 1.0, 0.0, 0.0])  # orthogonal -> sim 0.0
+        self.assertLess(BODY_SWAP_COS_SIM_MIN, 1.0)  # sanity: threshold is meaningful
+        model = EmbeddingScriptedTeamModel([
+            np.array([seed_embedding]),
+            np.array([different_embedding]),
+            np.array([different_embedding]),
+        ])
+        manager, oid = self._seed_single_track(model, seed_box)
+        mask = _box_mask(seed_box)
+
+        actions = []
+        for frame_idx in (10, 20):
+            actions = manager.checkpoint(
+                frame_idx, np.zeros((120, 120, 3), dtype=np.uint8),
+                [oid], np.array([mask]), np.array([det_box]), np.array([False]),
+            )
+
+        types = [a["type"] for a in actions]
+        self.assertIn("reset", types)
+        self.assertNotIn("reprompt", types)

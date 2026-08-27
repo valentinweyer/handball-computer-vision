@@ -334,6 +334,24 @@ while t < num_frames - 1:
                 )
                 if oid not in obj_id_to_col:
                     obj_id_to_col[oid] = len(obj_id_to_col)
+            elif action["type"] == "reset":
+                # Body-swap, not drift: memory holds the wrong player's
+                # appearance, so reprompting in place would correct from that
+                # wrong mask. Tear the object down and re-add it fresh under
+                # the same obj_id. See sam2_manager.py's module docstring.
+                if len(state["obj_id_to_idx"]) > 1:
+                    predictor.remove_object(state, obj_id=action["obj_id"])
+                    predictor.add_new_points_or_box(
+                        state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                        box=np.asarray(action["box"], dtype=np.float32),
+                    )
+                else:
+                    # Removing the only live object resets the whole session.
+                    predictor.add_new_points_or_box(
+                        state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                        box=np.asarray(action["box"], dtype=np.float32),
+                        clear_old_points=True,
+                    )
 
 pbar.close()
 

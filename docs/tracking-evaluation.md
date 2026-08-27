@@ -510,3 +510,115 @@ clips, three wins, two of them (FelixClaar, BHC-FAG) on architecturally
 independent references. Open question #1 is superseded with higher
 confidence than §8.6 alone supported. The unresolved parts are now cost and
 integration (§8.5), not validity.
+
+### 8.9 Automatic-lifecycle fixes (2026-08-27)
+
+With SAM2-with-reprompting established as the direction, four gaps in
+`src/handball_cv/tracking/sam2_manager.TrackManager`'s automatic lifecycle
+were fixed before adding any new capability, plus one design defect found
+while fixing them.
+
+**The four gaps** (all in `TrackManager`, ported toward parity with
+`handball_cv.tracking.identity.IdentityManager`, the more mature identity
+layer on the MCByte side):
+
+1. **`Track.embedding` is now refreshed every checkpoint** (EMA, α=0.3,
+   `EMBEDDING_EMA_ALPHA`), gated only on crop quality — not team-vote
+   confidence, not goalkeeper status, since this is an appearance estimate
+   and goalkeepers need re-ID too. Previously it was set once at track
+   creation and never updated, so re-ID and (new, see below) in-place
+   swap-detection were comparing against a possibly stale snapshot.
+2. **Duplicate-removed tracks (rule 1) are now retired**, not discarded.
+   Previously only rule 2 (dropout) pushed a removed track into `self.retired`;
+   rule 1's removal — a *guess* (larger recent centroid jump) that can pick
+   the wrong one of an overlapping pair — permanently destroyed that identity
+   if the guess was wrong. Now it can come back via re-ID like any other
+   retirement.
+3. **`_reid_match` takes an explicit `taken` set**, mirroring
+   `IdentityManager`. The pre-existing code already prevented two detections
+   in one checkpoint from claiming the same retired identity, because
+   `self.retired.remove(match)` mutates the shared candidate list in place as
+   each match is claimed within the same sequential loop — so this is not a
+   behavior change today, only an explicit invariant that survives a future
+   change to the matching loop (e.g. batching `_reid_match` calls before
+   applying removals).
+4. **`TrackManager.events` is now persisted**, not just printed. `run_sam2_reprompt_tracker.py`
+   writes `{output}_events.json` alongside the boxes dump, so lifecycle
+   behavior is inspectable and diffable across runs (used below).
+
+**Design defect found and fixed while implementing #1**: rule 3 fires on one
+signal (poor box IoU or a collapsed mask) for two different failure modes —
+a mask that's still on the right player but has drifted geometrically, and a
+mask that has jumped onto a different player. These need opposite remedies.
+Reprompting in place is correct for drift: SAM2's memory bank survives a
+`clear_old_points=True` reprompt (only that frame's *prompt inputs* are
+cleared) and the predictor explicitly feeds the previous mask back in as a
+prior when the frame was already tracked (`sam2_video_predictor.py`'s own
+comment: "the input points will be used to correct the already tracked
+masks"). But reprompting in place is wrong for a body-swap: it corrects from
+the wrong mask and leaves the wrong player's appearance in memory. The right
+remedy there is `remove_object` (a genuine memory teardown — it pops
+`output_dict_per_obj`, `temp_output_dict_per_obj`, `frames_tracked_per_obj`
+for that object) followed by re-adding the **same** `obj_id` fresh
+(`_obj_id_to_idx` hardcodes `allow_new_object = True`, confirmed in the
+cloned checkout). Rule 3 now classifies via cosine similarity between the
+detection's embedding and the track's own — and this had to be the track's
+**pre-refresh** embedding, snapshotted before fix #1's EMA update runs
+earlier in the same `checkpoint()` call, or the comparison would partly
+compare the new sample against itself and understate a real swap. High
+similarity → `reprompt` (unchanged behavior); low similarity → a new `reset`
+action (`remove_object` then re-add), applied identically in both drivers
+(`scripts/run_sam2_reprompt_tracker.py`, `experiments/sam2_baseline/run_pipeline.py`
+— their action loops are otherwise byte-identical). Guarded against
+`remove_object` resetting the whole session when only one object is live (it
+falls back to an in-place reprompt in that case).
+
+Six new unit tests in `tests/unit/test_team_model.py` cover: EMA embedding
+movement and its quality gate, duplicate-removed tracks landing in
+`retired`, the `taken` guard, and both drift/reprompt and
+swap/reset classification.
+
+**Verification — no regression on any of the three benchmark clips**,
+scored identically before and after with the unmodified scorer:
+
+| clip | correct (unchanged) | mixed | switches | matched |
+|---|---|---|---|---|
+| FelixClaar | 93.8% | 5 | 8 | 2271 |
+| Han-Ber4 | 89.2% | 0 | 0 | 2305 |
+| BHC-FAG window | 98.9% | 3 | 6 | 5022 |
+
+Han-Ber4 and BHC-FAG's lifecycle event logs are byte-identical to their
+pre-fix runs — no duplicate-removal or drift-band match occurred in either
+clip where the new code paths would even engage. FelixClaar's *did* change:
+at frame 160, a track removed as a duplicate is now revived by re-ID
+(`reid obj_id=10`) instead of forcing a fresh allocation
+(`add_new obj_id=14`, the pre-fix behavior) — fix #2 working as designed.
+This did not move the scored numbers because that span of frames falls
+outside every reference identity's currently-trusted (human-verified) span
+at that point in the clip, so the scorer has no ground truth to credit or
+penalize it against — not because the fix had no effect. Reduced
+fragmentation in an unscored region is still a real improvement; it is just
+not one this particular reference can measure.
+
+**Not done**: the plan's step 3 (verify out-of-frame removal latency against
+the benchmark references) was scoped as "may need no code at all," but doing
+it precisely requires mapping each `TrackManager` `obj_id` to the reference
+identity the scorer matched it against and diffing removal frame against the
+reference's own last-present frame — `TrackManager`'s own numbering has no
+relation to reference identity numbers, so this isn't a simple log
+cross-reference. Left as a follow-up; not blocking, since rule 2's
+2-checkpoint confirmation (`MIN_CONFIRM_CHECKPOINTS=2`, `CHECK_EVERY=10` →
+worst case ~20 frames) was already a deliberate, reasoned choice, not a
+default needing justification.
+
+**Not started**: jersey-number-anchored identity (the original ask that
+prompted this work) remains blocked on three independent things, unchanged
+by anything in this session: `inference==0.62.0` is uninstallable in this
+venv (unsatisfiable against `transformers==5.9.0`), OCR accuracy measured at
+~33% on legible crops with systematic small-crop digit confusion (§5), and
+no jersey-number ground truth exists anywhere in the repo. What *has*
+changed: §5's blocker ("number accuracy is not well defined until identity
+is trustworthy") no longer holds — SAM2's clean tracklets (0-5 mixed per
+clip, versus MCByte's 3-8) make per-identity number-vote histograms
+meaningful for the first time, so this is now measurable whenever the
+dependency and ground-truth work happens.

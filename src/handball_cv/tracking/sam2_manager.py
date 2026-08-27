@@ -6,6 +6,17 @@ periodic detector checkpoints against the live tracks and issues the
 add / remove / re-prompt calls SAM2 needs to correct itself, keyed by
 `obj_id` (never by index -- `remove_object` renumbers internal indices).
 
+Two different fixes look identical from the outside (a matched track with
+poor IoU or a collapsed mask) but need opposite handling: a mask that has
+merely drifted off a still-correctly-identified player should be reprompted
+in place (SAM2 keeps its memory and treats the click as a correction), while
+a mask that has jumped onto a different player should have its memory torn
+down and be re-added fresh under the same `obj_id` (`reset`) -- reprompting
+in place would seed the "correction" from the wrong player's mask and keep
+their appearance in memory. `Track.embedding` (EMA-refreshed at every
+checkpoint) versus the checkpoint's own detection embedding is what tells
+the two cases apart.
+
 Team is tracked as a running vote (`Track.voted_team_id`), not frozen at
 creation: a single frame-0 read can be wrong (occlusion, an off-colour crop),
 and freezing it means a re-ID hit inherits a stale, possibly incorrect label
@@ -41,6 +52,27 @@ REID_COS_SIM_MIN = 0.7
 # original comment intended.
 REID_MAX_GAP_FRAMES = 300
 MAX_LIVE_OBJECTS = 20
+# Blends each checkpoint's detection embedding into the track's own, so re-ID
+# and the drift/body-swap check below compare against roughly-current
+# appearance instead of a frame-0 (or last-reprompt) snapshot that may no
+# longer resemble the player. Low weight: one noisy read should not overwrite
+# a good running appearance estimate.
+EMBEDDING_EMA_ALPHA = 0.3
+# Rule 3 fires on poor box IoU or a collapsed mask, which is ambiguous: either
+# the mask is still on the right player and has just drifted (reprompting in
+# place is correct -- SAM2 keeps its memory and treats the click as a
+# correction), or the mask has jumped onto a different player entirely
+# (reprompting in place would seed the correction from contaminated memory --
+# see `reset` below, which tears memory down and re-adds fresh). Appearance
+# similarity against the track's own (EMA-refreshed) embedding distinguishes
+# the two. Reuses REID_COS_SIM_MIN: same question -- "is this the same
+# person" -- just asked in-place against a live track instead of against the
+# retired gallery.
+BODY_SWAP_COS_SIM_MIN = REID_COS_SIM_MIN
+
+
+def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))
 
 
 @dataclass
@@ -166,7 +198,7 @@ class TrackManager:
     def _reid_match(
         self, crop_embedding: np.ndarray, frame_idx: int,
         team_id: Optional[int] = None, team_conf: float = 0.0,
-        is_goalkeeper: Optional[bool] = None,
+        is_goalkeeper: Optional[bool] = None, taken: Optional[set] = None,
     ):
         """Best retired player above the similarity floor, or None.
 
@@ -175,9 +207,14 @@ class TrackManager:
         trusted. A team mismatch only excludes a candidate when the new
         detection's own team prediction is confident enough to trust; a
         low-confidence read must not permanently forbid the correct match.
+        `taken` excludes candidates already claimed by another detection in
+        this same checkpoint, so two new players cannot both revive the same
+        retired identity.
         """
         best, best_sim = None, REID_COS_SIM_MIN
         for cand in self.retired:
+            if taken is not None and cand.obj_id in taken:
+                continue
             if frame_idx - cand.last_seen > REID_MAX_GAP_FRAMES:
                 continue
             if is_goalkeeper is not None and cand.is_goalkeeper != is_goalkeeper:
@@ -189,10 +226,7 @@ class TrackManager:
                 and cand.voted_team_id != team_id
             ):
                 continue
-            sim = float(
-                np.dot(crop_embedding, cand.embedding)
-                / (np.linalg.norm(crop_embedding) * np.linalg.norm(cand.embedding) + 1e-8)
-            )
+            sim = _cosine_similarity(crop_embedding, cand.embedding)
             if sim > best_sim:
                 best, best_sim = cand, sim
         return best
@@ -205,6 +239,7 @@ class TrackManager:
 
           {"type": "remove", "obj_id": int}
           {"type": "reprompt", "obj_id": int, "box": xyxy}
+          {"type": "reset", "obj_id": int, "box": xyxy}  # same obj_id, fresh memory
           {"type": "add", "obj_id": int, "box": xyxy}   # obj_id is new
         """
         actions = []
@@ -249,15 +284,34 @@ class TrackManager:
             det_confidence = np.empty(0, dtype=float)
             det_quality = np.empty(0, dtype=float)
 
+        # Snapshot embeddings before the refresh below rebinds them. Rule 3's
+        # body-swap check needs the track's appearance as it stood BEFORE this
+        # checkpoint's observation was blended in -- comparing the post-refresh
+        # embedding against the very sample it was just blended with would
+        # understate a real swap (it would already be ~30% that sample).
+        pre_refresh_embedding = {
+            oid: self.tracks[oid].embedding for oid in track_to_det
+        }
+
         for oid, detection_index in track_to_det.items():
             confidence = float(det_confidence[detection_index])
             quality = float(det_quality[detection_index])
+            track = self.tracks[oid]
+            if quality > 0:
+                # Gated on crop legibility alone (not team-vote confidence,
+                # not goalkeeper status) -- this is an appearance estimate,
+                # not a team-color read, and goalkeepers need their embedding
+                # refreshed too so they remain re-ID-able.
+                track.embedding = (
+                    EMBEDDING_EMA_ALPHA * det_embeddings[detection_index]
+                    + (1 - EMBEDDING_EMA_ALPHA) * track.embedding
+                )
             if (
                 not bool(det_is_goalkeeper[detection_index])
                 and confidence >= MIN_TEAM_VOTE_CONFIDENCE
                 and quality > 0
             ):
-                self.tracks[oid].record_team_vote(
+                track.record_team_vote(
                     int(det_teams[detection_index]), confidence, quality
                 )
 
@@ -286,6 +340,12 @@ class TrackManager:
                         if jumper.obj_id not in acted_ids:
                             actions.append({"type": "remove", "obj_id": jumper.obj_id})
                             acted_ids.add(jumper.obj_id)
+                            # Unlike rule 2's dropout, duplicate resolution is a
+                            # guess (larger recent jump) that can pick the wrong
+                            # one of the pair -- retiring it, like rule 2 does,
+                            # means a wrong guess is still recoverable by re-ID
+                            # instead of permanently destroying that identity.
+                            self.retired.append(jumper)
                             self.events.append({
                                 "frame": frame_idx, "type": "remove_duplicate",
                                 "obj_id": jumper.obj_id,
@@ -326,11 +386,27 @@ class TrackManager:
                 active_keys_per_track[oid].add(key)
                 if t.confirm(key):
                     box = det_boxes_xyxy[di]
-                    actions.append({"type": "reprompt", "obj_id": oid, "box": box})
-                    self.events.append({
-                        "frame": frame_idx, "type": "reprompt", "obj_id": oid,
-                        "iou": float(track_iou),
-                    })
+                    same_player = (
+                        _cosine_similarity(pre_refresh_embedding[oid], det_embeddings[di])
+                        >= BODY_SWAP_COS_SIM_MIN
+                    )
+                    if same_player:
+                        actions.append({"type": "reprompt", "obj_id": oid, "box": box})
+                        self.events.append({
+                            "frame": frame_idx, "type": "reprompt", "obj_id": oid,
+                            "iou": float(track_iou),
+                        })
+                    else:
+                        # Appearance no longer matches: the mask likely jumped
+                        # to a different player. Reprompting in place would
+                        # correct from that wrong mask and keep the wrong
+                        # appearance in memory -- ask the caller to tear the
+                        # object down and re-add it fresh under the same id.
+                        actions.append({"type": "reset", "obj_id": oid, "box": box})
+                        self.events.append({
+                            "frame": frame_idx, "type": "reset", "obj_id": oid,
+                            "iou": float(track_iou),
+                        })
 
         # decay confirmation counters for conditions that didn't fire this round
         for oid in live_obj_ids:
@@ -338,6 +414,9 @@ class TrackManager:
 
         # ---- rule 4: new player (unmatched detection, inside court, confirmed) ----
         n_live_after = len(live_obj_ids) - len([a for a in actions if a["type"] == "remove"])
+        # Claimed retired identities within this checkpoint, so two unmatched
+        # detections cannot both revive the same one.
+        taken: set = set()
         for di, box in enumerate(det_boxes_xyxy):
             if di in matched_det_idx or n_live_after >= MAX_LIVE_OBJECTS:
                 continue
@@ -361,9 +440,11 @@ class TrackManager:
             match = self._reid_match(
                 emb, frame_idx, team_id=team,
                 team_conf=team_conf * team_quality, is_goalkeeper=is_gk,
+                taken=taken,
             )
             if match is not None:
                 oid = match.obj_id
+                taken.add(oid)
                 self.retired.remove(match)
                 self.tracks[oid] = match
                 self.tracks[oid].last_seen = frame_idx
