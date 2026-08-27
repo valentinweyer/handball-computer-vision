@@ -418,9 +418,93 @@ confirmation without this caveat attached.
   being compared against. `sam2_reprompt`'s own parameters (`CHECK_EVERY=10`)
   were not tuned either.
 
-### 8.6 Bottom line
+### 8.6 Bottom line (two clips)
 
 Open question #1 is superseded. **SAM2 with periodic detector-checkpoint
 reprompting is the best-measured tracker on both clips by a substantial
 margin** — pending the cost/integration tradeoffs above and validation past
-these two clips.
+these two clips. §8.7 adds that third validation.
+
+### 8.7 Third clip, with a fully independent reference (2026-08-27)
+
+§8.4 flagged that Han-Ber4's reference was itself SAM2-built, making that
+result corroborating rather than independent. This closes that gap with a
+third clip whose reference was verified by hand against the specific failure
+mode §4.2/§3.4 warned about (sparse verification missing a real swap).
+
+**Clip**: `source/BHC-FAG.mp4` (4554 frames, 50fps, 1080p), a match not used
+anywhere else in this evaluation. A 500-frame derived clip was cut at
+`scripts.extract_clip_window` from original frames 3030-4029 (the densest
+continuous span found, 11-14 detections/frame, no dropouts), subsampled
+every 2nd frame to land at ~25fps and match the motion difficulty of
+FelixClaar/Han-Ber4 rather than testing at native 50fps, which would make
+association easier for every tracker and compress the gaps between them.
+Detections and team model were sliced/reused from the existing full-match
+cache (`outputs/team_confidence_v2/.BHC-FAG_detections_v1.npz` /
+`.BHC-FAG_team.pkl`), re-indexed to the new frame numbering.
+
+**Reference**: built with `scripts.build_identity_reference.py` — SAM ViT-B +
+Cutie, the same non-SAM2 engine used for FelixClaar's reference, seeded at
+frame 0 (14 identities). Verified at `--samples 40` (vs. the original 12) by
+viewing all 14 sheets directly, specifically hunting for the failure mode
+§3.4 documents: a real swap surviving sparse sampling. It found one.
+
+- **Identity 13 was genuinely mixed**: a dark #14-like jersey for roughly the
+  first 50 frames, then a full handoff onto a different white #25 jersey for
+  the rest of the clip. This is a real tracker error caught by verification
+  working as intended — not a hypothetical.
+- The `answers.txt` truncation format only expresses a valid *prefix*
+  (`clean until fN`, i.e. frames `0..N`); it cannot express "bad prefix, clean
+  suffix." Since identity 13's good segment is the suffix, not the prefix,
+  the honest choice was to exclude it entirely (`X`) rather than force it into
+  a format that would mislabel one half.
+- Identities 3 and 4 showed a different jersey number briefly surfacing
+  during the same frame window (~281-345) that coincides with an apparent
+  multi-player pileup — also visible disrupting id6 and id12 momentarily,
+  though those two recovered by the next sample. 3 and 4 were truncated
+  (`clean until f280`) rather than trusted through the recovery, on the same
+  "a smaller trustworthy reference beats a larger uncertain one" principle
+  the FelixClaar reference already applies. Identity 14 was excluded outright
+  (mask degenerates to disconnected fragments almost immediately — the same
+  failure mode as FelixClaar id4's late-life mask collapse).
+- Net reference: **12 of 14 seeded identities usable**, two truncated at
+  frame 280, matching `evaluate_tracker_identity.parse_labels` exactly
+  (verified programmatically before scoring — see the trap noted in §4.4:
+  an unannotated line does not silently default to excluded here, since the
+  auto-generated frame-count comment already makes the line non-empty).
+
+**Result**:
+
+| tracker | recall | wrong-identity | **correct** |
+|---|---|---|---|
+| **sam2_reprompt** | 99.0% | 0.1% | **98.9%** |
+| mcbyte_masks_on | 98.0% | 2.2% | 95.9% |
+| bytetrack | 97.8% | 2.3% | 95.6% |
+| sort | 97.6% | 2.3% | 95.3% |
+| mcbyte_masks_off | 98.0% | 4.3% | 93.8% |
+| botsort | 98.0% | 4.3% | 93.8% |
+| cbiou | 98.0% | 4.3% | 93.8% |
+| ocsort | 96.9% | 3.9% | 93.1% |
+
+14 tracklets, 3 mixed (vs. 5-7 for every box tracker), 6 id switches (vs.
+9-13), matched 5022/5073 trusted detections — again the highest recall of
+any tracker, consistent with §8.3's mechanism (mask propagation survives
+detector misses between checkpoints).
+
+**This replicates the finding on independent evidence.** The margin here
+(+3.0 points over the best box tracker) is smaller than FelixClaar's +12.3,
+which tracks: this clip has less-severe occlusion than Felix (per-identity
+wrong-identity rates are lower across every tracker here than on Felix), so
+there is less room for any tracker to lose ground. `sam2_reprompt` still wins
+outright, with the lowest mixed-tracklet and switch counts of any config, on
+a reference built with a different engine than the tracker being tested and
+personally verified against the specific blind spot that made Han-Ber4's
+result suspect.
+
+### 8.8 Bottom line (three clips)
+
+The advantage is not an artifact of Han-Ber4's circular reference. Three
+clips, three wins, two of them (FelixClaar, BHC-FAG) on architecturally
+independent references. Open question #1 is superseded with higher
+confidence than §8.6 alone supported. The unresolved parts are now cost and
+integration (§8.5), not validity.
