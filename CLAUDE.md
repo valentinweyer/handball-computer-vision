@@ -18,6 +18,18 @@ python -m scripts.render_mcbyte_team_correction --help
 See `docs/architecture.md` for dependency rules and `docs/legacy-layout.md` for
 the exact material intentionally retained pending deletion approval.
 
+**`docs/tracking-evaluation.md` supersedes several tracking claims made in this
+document.** It records per-frame identity measurements against human-verified
+references, and in particular: MCByte-with-masks is the *worst* of the seven
+box-tracker configurations tested on both clips, plain SORT is roughly twice
+as accurate as MCByte on FelixClaar, and masks make identity worse while
+dominating runtime *when they only nudge box association*. §8 then measured a
+different SAM2 configuration — mask-memory propagation with periodic
+detector-checkpoint reprompting — as the best tracker of all eight measured,
+by a wide margin, which is why "SAM2 is not the primary tracker" below is no
+longer a settled constraint. The document also lists the claims made during
+that work that were later refuted, and why.
+
 This document records the decisions, experiments, measurements, and current implementation state from the team-classification/tracking work on branch `feat/team-classification`. Read it before changing the pipeline. Do not assume every experimental module is wired into the main runtime.
 
 ## Goal and constraints
@@ -29,8 +41,8 @@ The user accepts a small amount of labeling when it is made easy, but does not w
 The key architectural constraints are:
 
 - Use the user's local RF-DETR/Roboflow detector.
-- Use MCByte for multi-object tracking. Do not switch back to ByteTrack.
-- SAM2 is not the primary multi-object tracker. Segmentation masks may be used as supporting evidence.
+- Use MCByte for multi-object tracking as the current production default. Do not switch back to ByteTrack — it measured worst on FelixClaar in `docs/tracking-evaluation.md`.
+- **Tracker choice is under active reconsideration, not settled.** SAM2 with periodic detector-checkpoint reprompting (not the raw video predictor seeded once, and not masks merely nudging MCByte's box association — see `docs/tracking-evaluation.md` §8 for why those are different things) measured as the best tracker by a wide margin against per-frame ground truth on both existing clips: 93.8% correct on FelixClaar (vs 81.5% for the prior-best box tracker, SORT) and 89.2% correct with zero mixed tracklets and zero ID switches on Han-Ber4. This overturns the reasoning that originally excluded SAM2 as primary. Before changing the production default, weigh the open caveats in §8: roughly 10x the runtime cost, not a drop-in swap into the existing per-frame tracker interface, the Han-Ber4 result is partly circular (its reference was itself built by SAM2, so only the FelixClaar result is architecturally independent evidence), and the sample is still two clips (~450 frames).
 - Raw team classification must remain frame-local. A tracker must not supply or freeze the raw team prediction.
 - Team labels attached to identities must be reversible.
 - Abstaining is preferred to injecting a confident wrong observation.
@@ -142,6 +154,8 @@ Use plain `McByteTracker` from the `trackers` package. The user explicitly rejec
 The current comparison/correction renderer uses plain MCByte, not the experimental `TeamGatedMcByteTracker`. Team-aware association exists in `notebooks/team_aware_tracker.py`, but should not be enabled for this work: using the same uncertain team classification to gate tracking creates circular failure modes.
 
 MCByte uses detector boxes for association and, when enabled, SAM + Cutie masks for mask-conditioned association. The frame supplied to MCByte must be RGB.
+
+**Unresolved architectural fork (2026-08-26):** there are now two parallel implementations of track lifecycle, team voting, and SigLIP re-ID, one per tracker family — `notebooks/identity_manager.py` (below) for MCByte, and `src/handball_cv/tracking/sam2_manager.TrackManager` for SAM2. They share some primitives from `handball_cv.teams.model` but are not the same code. If the SAM2 tracker direction above (see "SAM2 as the main tracker") is pursued further, this fork needs a decision — one identity layer, not two — before it compounds.
 
 ### IdentityManager
 
@@ -354,7 +368,7 @@ Rejected by user based on observed tracking quality. Use MCByte.
 
 ### SAM2 as the main tracker
 
-Not the current direction. The older SAM2-era track manager required prompt/add/remove/reprompt logic and produced unhelpful tracklets in these tests. MCByte re-anchors on detector boxes every frame. Existing SAM2 masks remain useful as independent Han-Ber evaluation references.
+**Superseded (2026-08-26) — see `docs/tracking-evaluation.md` §8.** This rejection was based on an older SAM2-era track manager (prompt/add/remove/reprompt logic on a seed-once propagator) that produced unhelpful tracklets in informal review, predating this project's rigorous per-frame scorer. When the same reprompting design (`src/handball_cv/tracking/sam2_manager.TrackManager`, periodic detector checkpoints rather than a one-time prompt) was actually run through that scorer, it measured best on both clips by a wide margin. The original reasoning — "MCByte re-anchors on detector boxes every frame, SAM2 doesn't need to" — turned out to miss that SAM2's mask memory also survives frames where the detector itself misses the player, which was the source of its recall advantage, not just an identity-stability difference. Existing SAM2 masks are still also used as independent Han-Ber evaluation references (with the important exception that this makes `sam2_reprompt`'s own Han-Ber score partially circular — see §8.4). Kept as the original rejection reasoning, not deleted, since §8's caveats (runtime cost, integration shape, two-clip sample) mean this is not yet a settled reversal.
 
 ### Team-gated tracking association
 
