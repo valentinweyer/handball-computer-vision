@@ -465,8 +465,10 @@ viewing all 14 sheets directly, specifically hunting for the failure mode
   (`clean until f280`) rather than trusted through the recovery, on the same
   "a smaller trustworthy reference beats a larger uncertain one" principle
   the FelixClaar reference already applies. Identity 14 was excluded outright
-  (mask degenerates to disconnected fragments almost immediately — the same
-  failure mode as FelixClaar id4's late-life mask collapse).
+  — user-confirmed on review: no real player mask anywhere in this identity,
+  pure noise fragments throughout rather than a real body degrading over
+  time (unlike FelixClaar id4's late-life mask collapse, which does start
+  from a genuine mask).
 - Net reference: **12 of 14 seeded identities usable**, two truncated at
   frame 280, matching `evaluate_tracker_identity.parse_labels` exactly
   (verified programmatically before scoring — see the trap noted in §4.4:
