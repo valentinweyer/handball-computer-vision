@@ -16,7 +16,6 @@ from handball_cv.teams.masks import guarded_torso_masks
 from handball_cv.tracking.sam2_manager import (
     BODY_SWAP_COS_SIM_MIN,
     EMBEDDING_EMA_ALPHA,
-    Track,
     TrackManager,
 )
 from handball_cv.teams.model import (
@@ -245,8 +244,8 @@ class TrackManagerTeamTests(unittest.TestCase):
             np.zeros((120, 120, 3), dtype=np.uint8),
             np.array([False, True]),
         )
-        self.assertNotEqual(manager.tracks[obj_ids[0]].team_votes, {})
-        self.assertEqual(manager.tracks[obj_ids[1]].team_votes, {})
+        self.assertNotEqual(manager.registry.live[obj_ids[0]].team_votes, {})
+        self.assertEqual(manager.registry.live[obj_ids[1]].team_votes, {})
 
 
 if __name__ == "__main__":
@@ -346,7 +345,7 @@ class TrackerErrorIsolationTests(unittest.TestCase):
         query = np.array([1.0, 0.0, 0.0, 0.0])
 
         # Settled and unchallenged: team disagreement vetoes the match.
-        self.assertIsNone(manager._reid_match(
+        self.assertIsNone(manager.registry.reid_match(
             query, 5, set(), team_id=1, confidence=0.9, quality=1.0,
             is_goalkeeper=False,
         ))
@@ -357,7 +356,7 @@ class TrackerErrorIsolationTests(unittest.TestCase):
             candidate.record_team_vote(1, 0.9, 1.0)
         self.assertEqual(candidate.voted_team_id, 0)
         self.assertEqual(candidate.team_switches, 0)
-        self.assertIsNotNone(manager._reid_match(
+        self.assertIsNotNone(manager.registry.reid_match(
             query, 5, set(), team_id=1, confidence=0.9, quality=1.0,
             is_goalkeeper=False,
         ))
@@ -474,7 +473,7 @@ class GoalkeeperRoleTests(unittest.TestCase):
         candidate.record_role(True)   # the single bad frame at creation
         manager.retired.append(candidate)
 
-        self.assertIsNotNone(manager._reid_match(
+        self.assertIsNotNone(manager.registry.reid_match(
             np.array([1.0, 0.0, 0.0, 0.0]), 5, set(), is_goalkeeper=False,
         ))
 
@@ -486,7 +485,7 @@ class GoalkeeperRoleTests(unittest.TestCase):
         manager.retired.append(candidate)
 
         self.assertTrue(candidate.goalkeeper_settled)
-        self.assertIsNone(manager._reid_match(
+        self.assertIsNone(manager.registry.reid_match(
             np.array([1.0, 0.0, 0.0, 0.0]), 5, set(), is_goalkeeper=False,
         ))
 
@@ -560,7 +559,7 @@ class TrackEmbeddingRefreshTests(unittest.TestCase):
         )
 
         expected = EMBEDDING_EMA_ALPHA * det_embedding + (1 - EMBEDDING_EMA_ALPHA) * seed_embedding
-        np.testing.assert_allclose(manager.tracks[oid].embedding, expected)
+        np.testing.assert_allclose(manager.registry.live[oid].embedding, expected)
 
     def test_low_quality_observation_does_not_refresh_the_embedding(self):
         seed_embedding = np.array([1.0, 0.0, 0.0, 0.0])
@@ -581,7 +580,7 @@ class TrackEmbeddingRefreshTests(unittest.TestCase):
             [oid], np.array([_box_mask(box)]), np.array([box]), np.array([False]),
         )
 
-        np.testing.assert_array_equal(manager.tracks[oid].embedding, seed_embedding)
+        np.testing.assert_array_equal(manager.registry.live[oid].embedding, seed_embedding)
 
 
 class DuplicateRetirementTests(unittest.TestCase):
@@ -610,7 +609,7 @@ class DuplicateRetirementTests(unittest.TestCase):
         remove_events = [e for e in manager.events if e["type"] == "remove_duplicate"]
         self.assertEqual(len(remove_events), 1)
         removed_id = remove_events[0]["obj_id"]
-        self.assertIn(removed_id, [t.obj_id for t in manager.retired])
+        self.assertIn(removed_id, [p.player_id for p in manager.retired])
 
 
 class ReidTakenGuardTests(unittest.TestCase):
@@ -624,9 +623,9 @@ class ReidTakenGuardTests(unittest.TestCase):
         # can't silently reintroduce a double-claim.
         model = FakeTeamModel()  # embeddings are all-ones -- identical for every det
         manager = TrackManager(model, court_test_fn=lambda _box: True)
-        retired = Track(
-            obj_id=99, team_id=1, embedding=np.array([1.0, 1.0, 1.0, 1.0]),
-            is_goalkeeper=False, created_at=0, last_seen=0,
+        retired = Player(
+            player_id=99, team_id=1, embedding=np.array([1.0, 1.0, 1.0, 1.0]),
+            created_goalkeeper=False, created_at=0, last_seen=0,
         )
         manager.retired.append(retired)
 

@@ -38,6 +38,15 @@ by a wide margin, which is why "SAM2 is not the primary tracker" below is no
 longer a settled constraint. The document also lists the claims made during
 that work that were later refuted, and why.
 
+**The "Agreed next implementation step" below (wiring the mask fallback) is
+superseded.** Identity, team evidence, goalkeeper role, and re-ID are now a
+single `PlayerRegistry` (`src/handball_cv/tracking/identity.py`) shared by
+both `IdentityManager` (McByte) and `TrackManager` (SAM2, via the new
+`src/handball_cv/tracking/sam2_driver.py`), and jersey numbers are now read
+against SAM2 tracklets too (`scripts.evaluate_number_pipeline --tracker
+sam2`), which they never were before. See "Number-anchored identity across
+both trackers" below for the measurements and what is still open.
+
 This document records the decisions, experiments, measurements, and current implementation state from the team-classification/tracking work on branch `feat/team-classification`. Read it before changing the pipeline. Do not assume every experimental module is wired into the main runtime.
 
 ## Goal and constraints
@@ -384,7 +393,85 @@ Not yet wired into the runtime IdentityManager:
 
 - The agreed mask fallback. `IdentityManager._embed()` still calls ordinary `TeamModel.observe()` and therefore overlap-rejected normal observations still abstain in the actual tracked pipeline.
 
-## Agreed next implementation step
+## Number-anchored identity across both trackers (2026-09-05)
+
+Numbers are the only signal that discriminates teammates (§5 of
+`docs/tracking-evaluation.md`), and the number pipeline had never been run
+against SAM2's tracklets — `scripts/run_sam2_reprompt_tracker.py` had no
+`NumberVoter` at all. This closes that gap, ahead of the mask-fallback work
+below, because it directly targets teammate-level ID errors the mask fallback
+does not.
+
+**Shared identity layer.** `IdentityManager` and `TrackManager` were two
+parallel implementations of team evidence, goalkeeper role, and re-ID (the
+"unresolved architectural fork" noted above). Both now delegate to one
+`PlayerRegistry` (`src/handball_cv/tracking/identity.py`). This also carried
+two real fixes from the McByte side to the SAM2 side that had never applied
+there: team-evidence decay/hysteresis (previously a plain accumulator with no
+switch logic) and running-majority goalkeeper status (previously frozen at
+track creation). Verified on all three §8 clips (FelixClaar, Han-Ber4,
+BHC-FAG): tracker lifecycle events and final `evaluate_tracker_identity`
+scores are byte-identical to the pre-change baseline on every clip — the two
+fixes exist for cases these particular clips don't happen to exercise (no
+goalkeeper-class flicker or contested team label landed near a re-ID
+decision), so this is a clean, unexercised result, not evidence the fixes
+never matter.
+
+**Shared SAM2 driver.** The predictor/`TrackManager` checkpoint loop, previously
+inlined in `run_sam2_reprompt_tracker.py`, is now
+`src/handball_cv/tracking/sam2_driver.drive_sam2`, reused by both the
+tracking-only dump and the number pipeline. Re-verified byte-identical
+(events and full per-frame box dump) against the pre-extraction version on
+all three clips.
+
+**Numbers now run on SAM2.** `scripts/evaluate_number_pipeline.py` takes
+`--tracker {mcbyte,sam2}`; the per-frame match→read→vote logic is shared
+(`process_numbers_for_frame`) so only the outer loop differs. On FelixClaar,
+`--tracker sam2 --reader easyocr` resolved 2 of 3 labeled players correctly
+(players 3 and 4) versus `--tracker mcbyte --reader qwen`'s 1 of 6 (only
+player 4, with 5 no-verdicts) from the same clip's earlier run
+(`runs/number_pipeline/felix_qwen/report.json`) — SAM2 resolving more players
+with the *weaker* reader shows reads-per-tracklet is a real bottleneck,
+because SAM2 has a mask every propagated frame where McByte's mask manager
+does not. One wrong read on this run (player 12 voted "3", truth "33")
+matches the already-documented single-vs-double-digit truncation mode.
+
+**Do not read that as "reader accuracy is not the bottleneck" — BHC-FAG
+refuted the strong form of that claim.** Traced frame by frame on that clip
+(`--tracker sam2 --reader easyocr`), player 2 wears 22 and EasyOCR produced
+`92, 92, 22, 22, …` — at frame 45 the voter committed to **`92`, a wrong
+number, and displayed it until ~frame 85** before retracting and settling on
+`22` only at frame 175. Reader error is a first-order problem, not a
+second-order one; see the vote-gate defect below.
+
+**Vote-gate defect (open).** That wrong commit cleared on counts `92:3, 22:2`
+→ `margin = (3-2)/5 = 0.200` against `min_margin = 0.200`, and the test is
+`margin < self.min_margin`, so it passed by exactly zero. A 3-vs-2 plurality
+is enough to display a number confidently, which violates this project's
+"abstaining beats injecting a confident wrong observation" rule. Raising
+`min_votes` from 3 to 4-5 blocks it without penalising a genuinely dominant
+value; raising `min_margin` alone would also suppress correct late verdicts
+(`22` resolved at margin 0.235). Not yet changed — `NumberVoter`'s defaults
+are still `min_votes=3, min_margin=0.2`.
+
+**Clip caveat: do not use `data/raw/Hannover.mp4` for read-rate or tracker
+comparisons.** It is 120fps (8.3s of play over 999 frames, 3456x2168) while
+every other evaluation clip is ~25fps. At `ocr_every=5` that is ~4.8x more
+reads per second of real play, which inflates reads-per-player (measured 40.6
+vs FelixClaar's 5.3) and makes association artificially easy — the same
+distortion §8.7 of `docs/tracking-evaluation.md` avoided by subsampling
+BHC-FAG 50->25fps. Hannover was never given that treatment. Its
+`mcbyte+qwen` 5/5 result is correspondingly softer than it looks: one player
+accumulated 81 near-identical reads of "10".
+
+**Not yet done:** number-anchored merge -- resolving the same number on two
+different `player_id`s (McByte fragment or SAM2 re-ID miss) does not yet fold
+their evidence together, though `NumberVoter.merge()` already exists for
+exactly this. Needs its own guard against two different physical players who
+share a jersey number across a team boundary before it can be trusted as an
+identity-correcting signal rather than just a reporting convenience.
+
+## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.
 

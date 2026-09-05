@@ -13,16 +13,17 @@ in place (SAM2 keeps its memory and treats the click as a correction), while
 a mask that has jumped onto a different player should have its memory torn
 down and be re-added fresh under the same `obj_id` (`reset`) -- reprompting
 in place would seed the "correction" from the wrong player's mask and keep
-their appearance in memory. `Track.embedding` (EMA-refreshed at every
+their appearance in memory. `PlayerRecord.embedding` (EMA-refreshed at every
 checkpoint) versus the checkpoint's own detection embedding is what tells
 the two cases apart.
 
-Team is tracked as a running vote (`Track.voted_team_id`), not frozen at
-creation: a single frame-0 read can be wrong (occlusion, an off-colour crop),
-and freezing it means a re-ID hit inherits a stale, possibly incorrect label
-forever. Team and goalkeeper status also gate re-ID candidates -- a retired
-player should never be revived onto the opposing team or across the
-keeper/field-player boundary.
+Identity, team evidence, goalkeeper role, and re-ID are owned by
+`handball_cv.tracking.identity.PlayerRegistry`, the same shared layer McByte's
+`IdentityManager` uses -- SAM2 has no separate short-lived id to translate
+away, so this module uses the registry's `player_id` directly as the SAM2
+`obj_id`. `Track` here holds only the mask-geometry state (centroid/area
+history, pending-action confirmation counters) that is specific to reasoning
+about SAM2 propagation, not identity.
 """
 from collections import deque
 from dataclasses import dataclass, field
@@ -32,10 +33,7 @@ import numpy as np
 import supervision as sv
 from scipy.optimize import linear_sum_assignment
 
-from handball_cv.teams.model import (
-    MIN_STABLE_TEAM_CONFIDENCE, MIN_TEAM_VOTE_CONFIDENCE,
-    record_team_vote, team_vote_confidence, voted_team_id,
-)
+from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, PlayerRegistry
 
 # tunables
 HISTORY_LEN = 30
@@ -77,31 +75,16 @@ def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
 
 @dataclass
 class Track:
+    """Mask-geometry state for one live SAM2 object.
+
+    Identity, team, goalkeeper, and embedding live on the matching
+    `PlayerRecord` in `TrackManager.registry`, keyed by the same `obj_id`.
+    """
     obj_id: int
-    team_id: int            # creation-time guess; prefer `voted_team_id`
-    embedding: np.ndarray
-    is_goalkeeper: bool      # from the detector's own class, never re-guessed
-    created_at: int
-    last_seen: int
     centroids: deque = field(default_factory=lambda: deque(maxlen=HISTORY_LEN))
     areas: deque = field(default_factory=lambda: deque(maxlen=HISTORY_LEN))
-    miss_count: int = 0
-    team_votes: dict = field(default_factory=dict)
     # pending-action confirmation counters, reset whenever the condition lapses
     _pending: dict = field(default_factory=dict)
-
-    @property
-    def voted_team_id(self) -> int:
-        return voted_team_id(self.team_votes, self.team_id)
-
-    @property
-    def team_confidence(self) -> float:
-        return team_vote_confidence(self.team_votes)
-
-    def record_team_vote(
-        self, team_id: int, confidence: float = 1.0, quality: float = 1.0,
-    ) -> None:
-        record_team_vote(self.team_votes, team_id, confidence, quality)
 
     def median_area(self) -> Optional[float]:
         return float(np.median(self.areas)) if self.areas else None
@@ -127,28 +110,41 @@ class Track:
 
 
 class TrackManager:
-    """Owns per-track state and decides add/remove/reprompt actions.
+    """Owns per-track geometry and decides add/remove/reprompt actions.
+
+    Identity (team, goalkeeper, re-ID) is delegated to a `PlayerRegistry`
+    shared with McByte's `IdentityManager`, so both trackers apply the same
+    team-evidence decay/hysteresis and running-majority goalkeeper logic.
 
     Does not call the SAM2 predictor itself -- `checkpoint()` returns a list
     of actions for the caller to apply, since the caller owns the predictor
     session and frame cache.
     """
 
-    def __init__(self, team_model, court_test_fn, next_obj_id_start=1):
+    def __init__(
+        self, team_model, court_test_fn, next_obj_id_start=1,
+        team_switch_observations=TEAM_SWITCH_OBSERVATIONS,
+    ):
         self.team_model = team_model  # a team_model.TeamModel
         self.court_test_fn = court_test_fn  # (xyxy) -> bool, inside playing surface
+        self.registry = PlayerRegistry(
+            reid_cos_sim_min=REID_COS_SIM_MIN,
+            reid_max_gap_frames=REID_MAX_GAP_FRAMES,
+            team_switch_observations=team_switch_observations,
+            next_id_start=next_obj_id_start,
+        )
         self.tracks: dict[int, Track] = {}
-        self.retired: list[Track] = []  # re-ID pool
-        self._next_id = next_obj_id_start
         self.events: list[dict] = []
         # confirmation counters for not-yet-seen players, keyed by a coarse
         # spatial slot (no Track object exists for these yet)
         self._pending_new: dict[str, int] = {}
 
+    @property
+    def retired(self) -> list:
+        return self.registry.retired
+
     def _alloc_id(self) -> int:
-        i = self._next_id
-        self._next_id += 1
-        return i
+        return self.registry.alloc_id()
 
     def seed(
         self, frame_idx: int, boxes_xyxy: np.ndarray, frame: np.ndarray,
@@ -163,19 +159,12 @@ class TrackManager:
         for emb, team, conf, crop_quality, is_gk in zip(
             embeddings, teams, confidence, quality, is_goalkeeper
         ):
-            oid = self._alloc_id()
-            track = Track(
-                obj_id=oid, team_id=int(team), embedding=emb,
-                is_goalkeeper=bool(is_gk), created_at=frame_idx,
-                last_seen=frame_idx,
+            player = self.registry.create(
+                frame_idx, None, int(team), emb, bool(is_gk),
+                confidence=float(conf), quality=float(crop_quality),
             )
-            if (
-                not bool(is_gk)
-                and conf >= MIN_TEAM_VOTE_CONFIDENCE
-                and crop_quality > 0
-            ):
-                track.record_team_vote(int(team), float(conf), float(crop_quality))
-            self.tracks[oid] = track
+            oid = player.player_id
+            self.tracks[oid] = Track(obj_id=oid)
             obj_ids.append(oid)
         return obj_ids
 
@@ -186,6 +175,7 @@ class TrackManager:
         """
         for oid, m in zip(obj_ids, masks):
             t = self.tracks.get(int(oid))
+            player = self.registry.live.get(int(oid))
             if t is None:
                 continue
             area = float(m.sum())
@@ -193,43 +183,8 @@ class TrackManager:
             if area > 0:
                 ys, xs = np.nonzero(m)
                 t.centroids.append((float(xs.mean()), float(ys.mean())))
-                t.last_seen = frame_idx
-
-    def _reid_match(
-        self, crop_embedding: np.ndarray, frame_idx: int,
-        team_id: Optional[int] = None, team_conf: float = 0.0,
-        is_goalkeeper: Optional[bool] = None, taken: Optional[set] = None,
-    ):
-        """Best retired player above the similarity floor, or None.
-
-        Never revives a track across the goalkeeper/field-player boundary --
-        that comes straight from the detector's own class, so it is always
-        trusted. A team mismatch only excludes a candidate when the new
-        detection's own team prediction is confident enough to trust; a
-        low-confidence read must not permanently forbid the correct match.
-        `taken` excludes candidates already claimed by another detection in
-        this same checkpoint, so two new players cannot both revive the same
-        retired identity.
-        """
-        best, best_sim = None, REID_COS_SIM_MIN
-        for cand in self.retired:
-            if taken is not None and cand.obj_id in taken:
-                continue
-            if frame_idx - cand.last_seen > REID_MAX_GAP_FRAMES:
-                continue
-            if is_goalkeeper is not None and cand.is_goalkeeper != is_goalkeeper:
-                continue
-            if (
-                team_id is not None
-                and team_conf >= MIN_TEAM_VOTE_CONFIDENCE
-                and cand.team_confidence >= MIN_STABLE_TEAM_CONFIDENCE
-                and cand.voted_team_id != team_id
-            ):
-                continue
-            sim = _cosine_similarity(crop_embedding, cand.embedding)
-            if sim > best_sim:
-                best, best_sim = cand, sim
-        return best
+                if player is not None:
+                    player.last_seen = frame_idx
 
     def checkpoint(
         self, frame_idx, frame, live_obj_ids, live_masks, det_boxes_xyxy,
@@ -290,29 +245,27 @@ class TrackManager:
         # embedding against the very sample it was just blended with would
         # understate a real swap (it would already be ~30% that sample).
         pre_refresh_embedding = {
-            oid: self.tracks[oid].embedding for oid in track_to_det
+            oid: self.registry.live[oid].embedding for oid in track_to_det
         }
 
         for oid, detection_index in track_to_det.items():
             confidence = float(det_confidence[detection_index])
             quality = float(det_quality[detection_index])
-            track = self.tracks[oid]
+            player = self.registry.live[oid]
             if quality > 0:
                 # Gated on crop legibility alone (not team-vote confidence,
                 # not goalkeeper status) -- this is an appearance estimate,
                 # not a team-color read, and goalkeepers need their embedding
                 # refreshed too so they remain re-ID-able.
-                track.embedding = (
+                player.embedding = (
                     EMBEDDING_EMA_ALPHA * det_embeddings[detection_index]
-                    + (1 - EMBEDDING_EMA_ALPHA) * track.embedding
+                    + (1 - EMBEDDING_EMA_ALPHA) * player.embedding
                 )
-            if (
-                not bool(det_is_goalkeeper[detection_index])
-                and confidence >= MIN_TEAM_VOTE_CONFIDENCE
-                and quality > 0
-            ):
-                track.record_team_vote(
-                    int(det_teams[detection_index]), confidence, quality
+            player.record_role(bool(det_is_goalkeeper[detection_index]))
+            if not bool(det_is_goalkeeper[detection_index]):
+                self.registry.observe_team(
+                    oid, frame_idx, int(det_teams[detection_index]),
+                    confidence, quality, fragment_id=oid,
                 )
 
         # ---- rule 1: duplicate tracks (mask overlap) ----
@@ -345,11 +298,11 @@ class TrackManager:
                             # one of the pair -- retiring it, like rule 2 does,
                             # means a wrong guess is still recoverable by re-ID
                             # instead of permanently destroying that identity.
-                            self.retired.append(jumper)
+                            self.registry.retire(jumper.obj_id, frame_idx)
+                            kept = tb.obj_id if jumper is ta else ta.obj_id
                             self.events.append({
                                 "frame": frame_idx, "type": "remove_duplicate",
-                                "obj_id": jumper.obj_id,
-                                "kept": tb.obj_id if jumper is ta else ta.obj_id,
+                                "obj_id": jumper.obj_id, "kept": kept,
                             })
 
         # ---- rule 2: dropout (empty / collapsed mask, no nearby detection) ----
@@ -368,7 +321,7 @@ class TrackManager:
                 if t.confirm(key):
                     actions.append({"type": "remove", "obj_id": oid})
                     acted_ids.add(oid)
-                    self.retired.append(t)
+                    self.registry.retire(oid, frame_idx)
                     self.events.append({"frame": frame_idx, "type": "remove_gone", "obj_id": oid})
 
         # ---- rule 3: drift (matched but poor IoU, or collapsed with a good detection) ----
@@ -437,40 +390,26 @@ class TrackManager:
             team_conf = float(det_confidence[di])
             team_quality = float(det_quality[di])
 
-            match = self._reid_match(
-                emb, frame_idx, team_id=team,
-                team_conf=team_conf * team_quality, is_goalkeeper=is_gk,
-                taken=taken,
+            match = self.registry.reid_match(
+                emb, frame_idx, taken, team_id=team,
+                confidence=team_conf, quality=team_quality, is_goalkeeper=is_gk,
             )
             if match is not None:
-                oid = match.obj_id
+                oid = match.player_id
                 taken.add(oid)
-                self.retired.remove(match)
-                self.tracks[oid] = match
-                self.tracks[oid].last_seen = frame_idx
-                if (
-                    not is_gk
-                    and team_conf >= MIN_TEAM_VOTE_CONFIDENCE
-                    and team_quality > 0
-                ):
-                    self.tracks[oid].record_team_vote(
-                        team, team_conf, team_quality
-                    )
+                self.registry.revive(
+                    match, frame_idx, oid, is_goalkeeper=is_gk,
+                    team=team, confidence=team_conf, quality=team_quality,
+                )
+                self.tracks[oid] = Track(obj_id=oid)
                 self.events.append({"frame": frame_idx, "type": "reid", "obj_id": oid})
             else:
-                oid = self._alloc_id()
-                track = Track(
-                    obj_id=oid, team_id=team, embedding=emb,
-                    is_goalkeeper=is_gk, created_at=frame_idx,
-                    last_seen=frame_idx,
+                player = self.registry.create(
+                    frame_idx, None, team, emb, is_gk,
+                    confidence=team_conf, quality=team_quality,
                 )
-                if (
-                    not is_gk
-                    and team_conf >= MIN_TEAM_VOTE_CONFIDENCE
-                    and team_quality > 0
-                ):
-                    track.record_team_vote(team, team_conf, team_quality)
-                self.tracks[oid] = track
+                oid = player.player_id
+                self.tracks[oid] = Track(obj_id=oid)
                 self.events.append({"frame": frame_idx, "type": "add_new", "obj_id": oid})
             actions.append({"type": "add", "obj_id": oid, "box": box})
             n_live_after += 1

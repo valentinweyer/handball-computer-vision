@@ -1,10 +1,21 @@
-"""Stable player identity on top of a tracking-by-detection tracker.
+"""Stable player identity, shared by both tracker backends.
 
 McByte assigns a `tracker_id` per tracklet and retires it once the detector has
-missed it for `lost_track_buffer` frames. A player who walks behind the goal and
-reappears therefore comes back under a fresh `tracker_id`. This module maps
-`tracker_id -> player_id`, stitching those fragments back together by SigLIP
+missed it for `lost_track_buffer` frames. SAM2 has no identity concept of its
+own -- `sam2_manager.TrackManager` drives periodic detector checkpoints and
+issues add/remove/reprompt actions keyed by `obj_id`. Both fragment a physical
+player across multiple short-lived ids, so both need the same thing: a stable
+`player_id` that survives the fragmentation, stitched back together by SigLIP
 appearance similarity against a gallery of retired players.
+
+`PlayerRegistry` is that shared layer -- team evidence, goalkeeper role, and
+re-ID, independent of which tracker produced the detection. `IdentityManager`
+(this module) is the McByte adapter: it translates McByte's own volatile
+`tracker_id` into the registry's stable `player_id`. `sam2_manager.TrackManager`
+is the SAM2 adapter: it owns SAM2-specific mask lifecycle (duplicate/dropout/
+drift detection) and asks the same registry to resolve identity, using its own
+`obj_id` directly as the registry's id (SAM2's predictor has no separate
+short-lived id to translate away).
 
 Team is sampled continuously at a bounded cadence. A tracked label is not
 permanent: three consecutive qualified observations for the opposite team
@@ -12,20 +23,16 @@ replace it. This hysteresis corrects an unlucky initial crop without allowing
 one noisy frame to flip the label.
 
 That mechanism corrects *classifier* error, and it must not silently absorb
-*tracker* error too. When McByte swaps two crossing players the observations are
-right about the pixels and wrong about the identity, and they look exactly like
-a correction. Evidence therefore decays instead of accumulating, so confidence
-falls as soon as a label is contested and the identity stops vetoing re-ID
-candidates on a claim it can no longer support; a flip on a settled label is
-reported as `suspected_id_switch` rather than as a clean correction.
+*tracker* error too. When a tracker swaps two crossing players the observations
+are right about the pixels and wrong about the identity, and they look exactly
+like a correction. Evidence therefore decays instead of accumulating, so
+confidence falls as soon as a label is contested and the identity stops vetoing
+re-ID candidates on a claim it can no longer support; a flip on a settled label
+is reported as `suspected_id_switch` rather than as a clean correction.
 
 Team and detector-provided goalkeeper status gate re-ID only from a position of
 evidence -- the incoming observation qualified, the candidate's own label
 settled. Neither is frozen at creation.
-
-Replaces the SAM2-era `track_manager.TrackManager`. The add/remove/reprompt rules
-there existed only to correct a one-time-prompt propagator; McByte re-anchors on
-detector boxes every frame, so all that remains is identity.
 """
 from dataclasses import dataclass, field
 
@@ -77,7 +84,14 @@ def is_qualified(confidence: float, quality: float) -> bool:
 
 
 @dataclass
-class Player:
+class PlayerRecord:
+    """One stable player identity: team evidence, goalkeeper role, appearance.
+
+    Tracker-agnostic -- owned by `PlayerRegistry` and shared by both the McByte
+    and SAM2 adapters. `fragment_ids` holds every short-lived tracker_id/obj_id
+    this player has been seen under; len() > 1 means the tracker fragmented the
+    identity and re-ID stitched it back.
+    """
     player_id: int
     team_id: int             # creation-time guess; prefer `voted_team_id`
     embedding: np.ndarray
@@ -85,9 +99,7 @@ class Player:
     created_at: int
     last_seen: int
     team_switch_observations: int = TEAM_SWITCH_OBSERVATIONS
-    # every tracker_id this player has been seen under; len() > 1 means McByte
-    # fragmented the identity and re-ID stitched it back
-    tracker_ids: list = field(default_factory=list)
+    fragment_ids: list = field(default_factory=list)
     team_votes: dict = field(default_factory=dict)
     team_observations: int = 0
     # observations that passed both gates; `team_observations` also counts the
@@ -117,8 +129,8 @@ class Player:
     def team_is_provisional(self) -> bool:
         """True while `team_id` rests on no qualified observation at all.
 
-        `update()` seeds `team_id` from whatever the first frame said, whether or
-        not that read was confident enough to vote.
+        The registry seeds `team_id` from whatever the first frame said,
+        whether or not that read was confident enough to vote.
         """
         return self.qualified_observations == 0
 
@@ -229,49 +241,44 @@ class Player:
         self.pending_start_confidence = 0.0
 
 
-class IdentityManager:
-    """Maps McByte tracker_ids to stable player_ids.
+# Old name, kept so existing call sites and tests that construct a record
+# directly (`Player(player_id=..., ...)`) keep working unchanged.
+Player = PlayerRecord
 
-    Does not touch the tracker. `update()` is called with the tracker's output
-    for the current frame; `retire_missing()` is called with the set of
-    tracker_ids the tracker still considers alive.
+
+class PlayerRegistry:
+    """Tracker-agnostic identity: team evidence, goalkeeper role, re-ID.
+
+    Owns nothing about *when* an observation happens or *which* detection maps
+    to which live id -- that is each tracker adapter's job (`IdentityManager`
+    for McByte, `sam2_manager.TrackManager` for SAM2). The registry only
+    answers two questions every adapter needs answered the same way: "does this
+    embedding match a retired player?" and "what does one more team/role
+    observation do to a player's label?"
     """
 
     def __init__(
         self,
-        team_model,
         reid_cos_sim_min: float = REID_COS_SIM_MIN,
         reid_max_gap_frames: int = REID_MAX_GAP_FRAMES,
-        goalkeeper_class_id: int = 1,
         team_switch_observations: int = TEAM_SWITCH_OBSERVATIONS,
+        next_id_start: int = 1,
     ):
-        self.team_model = team_model  # a team_model.TeamModel
         self.reid_cos_sim_min = reid_cos_sim_min
         self.reid_max_gap_frames = reid_max_gap_frames
-        self.goalkeeper_class_id = goalkeeper_class_id
         self.team_switch_observations = max(1, int(team_switch_observations))
 
-        self.players: dict[int, Player] = {}
-        self.tracker_to_player: dict[int, int] = {}
-        self.retired: list[Player] = []
+        self.live: dict[int, PlayerRecord] = {}
+        self.retired: list[PlayerRecord] = []
         self.events: list[dict] = []
-        self._next_id = 1
+        self._next_id = next_id_start
 
-    def _alloc_id(self) -> int:
+    def alloc_id(self) -> int:
         i = self._next_id
         self._next_id += 1
         return i
 
-    def _embed(
-        self, frame_rgb: np.ndarray, boxes_xyxy: np.ndarray,
-        context_boxes_xyxy: np.ndarray | None = None,
-    ):
-        """One batched SigLIP pass plus color and crop-quality evidence."""
-        return self.team_model.observe(
-            frame_rgb, boxes_xyxy, context_boxes_xyxy
-        )
-
-    def _reid_match(
+    def reid_match(
         self, embedding: np.ndarray, frame_idx: int, taken: set,
         team_id: int = None, confidence: float = 0.0, quality: float = 0.0,
         is_goalkeeper: bool = None,
@@ -314,6 +321,167 @@ class IdentityManager:
                 best, best_sim = cand, sim
         return best
 
+    def create(
+        self, frame_idx: int, fragment_id: int | None, team: int,
+        embedding: np.ndarray, is_goalkeeper: bool,
+        confidence: float = 0.0, quality: float = 0.0,
+    ) -> PlayerRecord:
+        """Allocate a fresh player identity for an unmatched detection.
+
+        `fragment_id` is the caller's own short-lived id for this detection
+        (McByte's `tracker_id`). Pass None when the tracker has no separate id
+        of its own to record (SAM2's `obj_id` -- the registry's own newly
+        allocated `player_id` is used as the fragment id in that case).
+        """
+        player_id = self.alloc_id()
+        if fragment_id is None:
+            fragment_id = player_id
+        player = PlayerRecord(
+            player_id=player_id,
+            team_id=team,
+            embedding=embedding,
+            created_goalkeeper=is_goalkeeper,
+            created_at=frame_idx,
+            last_seen=frame_idx,
+            team_switch_observations=self.team_switch_observations,
+            fragment_ids=[fragment_id],
+            last_team_observation=frame_idx,
+        )
+        player.record_role(is_goalkeeper)
+        if not is_goalkeeper and confidence >= MIN_TEAM_VOTE_CONFIDENCE and quality > 0:
+            player.record_team_vote(team, confidence, quality)
+        self.live[player_id] = player
+        self.events.append({
+            "frame": frame_idx, "type": "add_new",
+            "player_id": player_id, "fragment_id": fragment_id,
+        })
+        return player
+
+    def revive(
+        self, record: PlayerRecord, frame_idx: int, fragment_id: int,
+        is_goalkeeper: bool = False, team: int = None,
+        confidence: float = 0.0, quality: float = 0.0,
+    ) -> PlayerRecord:
+        """Move a retired player back to `live` under a new fragment id."""
+        self.retired.remove(record)
+        self.live[record.player_id] = record
+        record.last_seen = frame_idx
+        record.last_team_observation = frame_idx
+        record.fragment_ids.append(fragment_id)
+        record.record_role(is_goalkeeper)
+        if (
+            not is_goalkeeper and team is not None
+            and confidence >= MIN_TEAM_VOTE_CONFIDENCE and quality > 0
+        ):
+            record.record_team_vote(team, confidence, quality)
+        self.events.append({
+            "frame": frame_idx, "type": "reid",
+            "player_id": record.player_id, "fragment_id": fragment_id,
+        })
+        return record
+
+    def observe_team(
+        self, player_id: int, frame_idx: int, team_id: int,
+        confidence: float, quality: float, fragment_id: int = None,
+    ) -> str | None:
+        """Feed one more team observation to an already-live player."""
+        player = self.live.get(player_id)
+        if player is None:
+            return None
+        player.last_team_observation = frame_idx
+        if confidence < MIN_TEAM_VOTE_CONFIDENCE or quality <= 0:
+            return None
+        outcome = player.record_team_vote(team_id, confidence, quality)
+        if outcome in ("switch", "id_switch"):
+            self.events.append({
+                "frame": frame_idx,
+                "type": "suspected_id_switch" if outcome == "id_switch" else "team_switch",
+                "player_id": player_id,
+                "fragment_id": fragment_id,
+                "team_id": player.voted_team_id,
+            })
+        return outcome
+
+    def retire(self, player_id: int, frame_idx: int) -> None:
+        player = self.live.pop(player_id, None)
+        if player is not None:
+            self.retired.append(player)
+            self.events.append({
+                "frame": frame_idx, "type": "retire", "player_id": player_id,
+            })
+
+    def team_by_player_id(self) -> dict[int, int]:
+        """Current best (voted) team label for every player_id ever allocated."""
+        everyone = list(self.live.values()) + self.retired
+        return {p.player_id: p.voted_team_id for p in everyone}
+
+    def summary(self) -> dict:
+        everyone = list(self.live.values()) + self.retired
+        fragments = {p.player_id: len(p.fragment_ids) for p in everyone}
+        return {
+            "players": len(everyone),
+            "tracker_ids_consumed": sum(fragments.values()),
+            "reid_hits": sum(1 for e in self.events if e["type"] == "reid"),
+            "team_switches": sum(
+                1 for e in self.events if e["type"] == "team_switch"
+            ),
+            "suspected_id_switches": sum(
+                1 for e in self.events if e["type"] == "suspected_id_switch"
+            ),
+            "new_allocations": sum(1 for e in self.events if e["type"] == "add_new"),
+            "max_fragments_per_player": max(fragments.values()) if fragments else 0,
+            "fragmented_players": sum(1 for n in fragments.values() if n > 1),
+        }
+
+
+class IdentityManager:
+    """Maps McByte tracker_ids to stable player_ids via a `PlayerRegistry`.
+
+    Does not touch the tracker. `update()` is called with the tracker's output
+    for the current frame; `retire_missing()` is called with the set of
+    tracker_ids the tracker still considers alive.
+    """
+
+    def __init__(
+        self,
+        team_model,
+        reid_cos_sim_min: float = REID_COS_SIM_MIN,
+        reid_max_gap_frames: int = REID_MAX_GAP_FRAMES,
+        goalkeeper_class_id: int = 1,
+        team_switch_observations: int = TEAM_SWITCH_OBSERVATIONS,
+    ):
+        self.team_model = team_model  # a team_model.TeamModel
+        self.goalkeeper_class_id = goalkeeper_class_id
+        self.registry = PlayerRegistry(
+            reid_cos_sim_min=reid_cos_sim_min,
+            reid_max_gap_frames=reid_max_gap_frames,
+            team_switch_observations=team_switch_observations,
+        )
+        self.tracker_to_player: dict[int, int] = {}
+
+    # -- back-compat views over the registry, so existing call sites reading
+    # `manager.players` / `manager.retired` / `manager.events` keep working --
+    @property
+    def players(self) -> dict[int, PlayerRecord]:
+        return self.registry.live
+
+    @property
+    def retired(self) -> list[PlayerRecord]:
+        return self.registry.retired
+
+    @property
+    def events(self) -> list[dict]:
+        return self.registry.events
+
+    def _embed(
+        self, frame_rgb: np.ndarray, boxes_xyxy: np.ndarray,
+        context_boxes_xyxy: np.ndarray | None = None,
+    ):
+        """One batched SigLIP pass plus color and crop-quality evidence."""
+        return self.team_model.observe(
+            frame_rgb, boxes_xyxy, context_boxes_xyxy
+        )
+
     def update(
         self, frame_idx: int, frame_rgb: np.ndarray, detections: sv.Detections
     ) -> np.ndarray:
@@ -339,7 +507,7 @@ class IdentityManager:
             player_id = self.tracker_to_player.get(int(tracker_id))
             if player_id is not None:
                 player_ids[i] = player_id
-                player = self.players[player_id]
+                player = self.registry.live[player_id]
                 player.last_seen = frame_idx
                 player.record_role(bool(is_goalkeeper[i]))
 
@@ -347,7 +515,7 @@ class IdentityManager:
         for i, tracker_id in enumerate(tracker_ids):
             if i in unseen_set or is_goalkeeper[i]:
                 continue
-            player = self.players[self.tracker_to_player[int(tracker_id)]]
+            player = self.registry.live[self.tracker_to_player[int(tracker_id)]]
             cadence_ready = (
                 frame_idx - player.last_team_observation
                 >= TEAM_OBSERVATION_INTERVAL
@@ -374,22 +542,11 @@ class IdentityManager:
             if i in unseen_set:
                 continue
             player_id = self.tracker_to_player[int(tracker_ids[i])]
-            player = self.players[player_id]
             _embedding, team, confidence, quality = observations[i]
-            player.last_team_observation = frame_idx
-            if confidence >= MIN_TEAM_VOTE_CONFIDENCE and quality > 0:
-                outcome = player.record_team_vote(team, confidence, quality)
-                if outcome in ("switch", "id_switch"):
-                    self.events.append({
-                        "frame": frame_idx,
-                        "type": (
-                            "suspected_id_switch" if outcome == "id_switch"
-                            else "team_switch"
-                        ),
-                        "player_id": player_id,
-                        "tracker_id": int(tracker_ids[i]),
-                        "team_id": player.voted_team_id,
-                    })
+            self.registry.observe_team(
+                player_id, frame_idx, team, confidence, quality,
+                fragment_id=int(tracker_ids[i]),
+            )
 
         if unseen_pos:
             taken = set()
@@ -397,7 +554,7 @@ class IdentityManager:
                 tracker_id = int(tracker_ids[i])
                 embedding, team, confidence, quality = observations[i]
                 goalkeeper = bool(is_goalkeeper[i])
-                match = self._reid_match(
+                match = self.registry.reid_match(
                     embedding,
                     frame_idx,
                     taken,
@@ -407,53 +564,19 @@ class IdentityManager:
                     is_goalkeeper=goalkeeper,
                 )
                 if match is not None:
-                    self.retired.remove(match)
-                    self.players[match.player_id] = match
-                    match.last_seen = frame_idx
-                    match.last_team_observation = frame_idx
-                    match.tracker_ids.append(tracker_id)
-                    match.record_role(goalkeeper)
-                    if (
-                        not goalkeeper
-                        and confidence >= MIN_TEAM_VOTE_CONFIDENCE
-                        and quality > 0
-                    ):
-                        match.record_team_vote(team, confidence, quality)
+                    self.registry.revive(
+                        match, frame_idx, tracker_id,
+                        is_goalkeeper=goalkeeper, team=team,
+                        confidence=confidence, quality=quality,
+                    )
                     taken.add(match.player_id)
                     player_id = match.player_id
-                    self.events.append({
-                        "frame": frame_idx,
-                        "type": "reid",
-                        "player_id": player_id,
-                        "tracker_id": tracker_id,
-                    })
                 else:
-                    player_id = self._alloc_id()
-                    player = Player(
-                        player_id=player_id,
-                        team_id=team,
-                        embedding=embedding,
-                        created_goalkeeper=goalkeeper,
-                        created_at=frame_idx,
-                        last_seen=frame_idx,
-                        team_switch_observations=self.team_switch_observations,
-                        tracker_ids=[tracker_id],
-                        last_team_observation=frame_idx,
+                    player = self.registry.create(
+                        frame_idx, tracker_id, team, embedding, goalkeeper,
+                        confidence=confidence, quality=quality,
                     )
-                    player.record_role(goalkeeper)
-                    if (
-                        not goalkeeper
-                        and confidence >= MIN_TEAM_VOTE_CONFIDENCE
-                        and quality > 0
-                    ):
-                        player.record_team_vote(team, confidence, quality)
-                    self.players[player_id] = player
-                    self.events.append({
-                        "frame": frame_idx,
-                        "type": "add_new",
-                        "player_id": player_id,
-                        "tracker_id": tracker_id,
-                    })
+                    player_id = player.player_id
                 self.tracker_to_player[tracker_id] = player_id
                 player_ids[i] = player_id
 
@@ -468,32 +591,10 @@ class IdentityManager:
         alive = {int(t) for t in alive_tracker_ids}
         for tid in [t for t in self.tracker_to_player if t not in alive]:
             pid = self.tracker_to_player.pop(tid)
-            player = self.players.pop(pid, None)
-            if player is not None:
-                self.retired.append(player)
-                self.events.append({
-                    "frame": frame_idx, "type": "retire",
-                    "player_id": pid, "tracker_id": tid,
-                })
+            self.registry.retire(pid, frame_idx)
 
     def team_by_player_id(self) -> dict[int, int]:
-        """Current best (voted) team label for every player_id ever allocated."""
-        return {p.player_id: p.voted_team_id for p in list(self.players.values()) + self.retired}
+        return self.registry.team_by_player_id()
 
     def summary(self) -> dict:
-        everyone = list(self.players.values()) + self.retired
-        fragments = {p.player_id: len(p.tracker_ids) for p in everyone}
-        return {
-            "players": len(everyone),
-            "tracker_ids_consumed": sum(fragments.values()),
-            "reid_hits": sum(1 for e in self.events if e["type"] == "reid"),
-            "team_switches": sum(
-                1 for e in self.events if e["type"] == "team_switch"
-            ),
-            "suspected_id_switches": sum(
-                1 for e in self.events if e["type"] == "suspected_id_switch"
-            ),
-            "new_allocations": sum(1 for e in self.events if e["type"] == "add_new"),
-            "max_fragments_per_player": max(fragments.values()) if fragments else 0,
-            "fragmented_players": sum(1 for n in fragments.values() if n > 1),
-        }
+        return self.registry.summary()
