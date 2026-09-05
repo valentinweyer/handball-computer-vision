@@ -150,5 +150,49 @@ class ValidJerseyNumberTests(unittest.TestCase):
             voter.observe(1, value)
         self.assertIsNone(voter.best(1)[0])
 
+
+class VerdictHysteresisTests(unittest.TestCase):
+    """A verdict is held once set, and the bar to set one is high enough to hold."""
+
+    def test_resolved_number_is_not_retracted_by_contrary_noise(self):
+        # Measured on BHC-FAG p13 (jersey 25): partial "2" reads dragged the margin
+        # from 1.0 to 0.14 and the overlay label reverted to "P13" mid-clip.
+        voter = NumberVoter()
+        for value in ["25"] * 5:
+            voter.observe(13, value)
+        self.assertEqual(voter.best(13)[0], "25")
+        for value in ["2", "2", "28"]:
+            voter.observe(13, value)
+        self.assertEqual(voter.best(13)[0], "25")
+
+    def test_a_rival_that_clears_both_gates_still_replaces_the_held_value(self):
+        # Hysteresis must not become ConsecutiveValueTracker's permanent lock.
+        voter = NumberVoter()
+        for value in ["25"] * 5:
+            voter.observe(1, value)
+        self.assertEqual(voter.best(1)[0], "25")
+        for value in ["31"] * 12:
+            voter.observe(1, value)
+        self.assertEqual(voter.best(1)[0], "31")
+
+    def test_three_agreeing_reads_no_longer_qualify(self):
+        # Both #92 (EasyOCR) and #53 (Qwen) committed on exactly three reads at
+        # margin 1.0, then proved wrong. Holding such a verdict would make it stick.
+        voter = NumberVoter()
+        for value in ["53"] * 3:
+            voter.observe(3, value)
+        self.assertIsNone(voter.best(3)[0])
+
+    def test_merge_rederives_rather_than_inheriting_a_verdict(self):
+        voter = NumberVoter()
+        for value in ["25"] * 5:
+            voter.observe(1, value)
+        for value in ["31"] * 5:
+            voter.observe(2, value)
+        voter.merge(1, 2)
+        # 25 and 31 now tie at 5 apiece: neither clears the margin, so no verdict.
+        self.assertIsNone(voter.best(2)[0])
+
+
 if __name__ == "__main__":
     unittest.main()

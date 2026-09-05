@@ -206,7 +206,7 @@ class NumberVoter:
     """
 
     def __init__(
-        self, min_votes: int = 3, min_margin: float = 0.2, min_promote_votes: int = 2,
+        self, min_votes: int = 5, min_margin: float = 0.2, min_promote_votes: int = 2,
         min_promote_ratio: float = 0.5,
     ):
         self.min_votes = min_votes
@@ -214,12 +214,28 @@ class NumberVoter:
         self.min_promote_votes = min_promote_votes
         self.min_promote_ratio = min_promote_ratio
         self._votes: dict = {}
+        # Values that have cleared both gates at least once. Consulted only when
+        # the live tally has fallen back below them -- see `best`.
+        self._settled: dict = {}
 
     def observe(self, identity_id: int, raw_value: str) -> None:
         value = self._normalize(raw_value)
         if value is None:
             return
         self._votes.setdefault(identity_id, _Votes()).add(value)
+        qualified, _count, _margin = self._qualified(identity_id)
+        if qualified is not None:
+            self._settled[identity_id] = qualified
+
+    def _qualified(self, identity_id: int):
+        """(value, count, margin) where value is set only if both gates pass now."""
+        v = self._votes.get(identity_id)
+        if v is None:
+            return None, 0, 0.0
+        value, count, margin = v.best(self.min_promote_votes, self.min_promote_ratio)
+        if value is None or count < self.min_votes or margin < self.min_margin:
+            return None, count, margin
+        return value, count, margin
 
     @staticmethod
     def _normalize(raw_value):
@@ -227,24 +243,56 @@ class NumberVoter:
         return s if s.isdigit() and len(s) <= 2 else None
 
     def best(self, identity_id: int):
-        """(number, votes, margin). number is None until min_votes/min_margin are met."""
+        """(number, votes, margin). None until min_votes/min_margin are first met.
+
+        Once a value has qualified, it is held until a *different* value
+        qualifies -- the verdict does not evaporate merely because contrary
+        reads dragged the margin back under the floor. Measured on BHC-FAG:
+        p13 (jersey 25) reached `{'25': 3}` at margin 1.0, then four partial
+        "2" reads pulled it to 0.143 and the label reverted to `P13` before
+        recovering, and p3 flickered the same way on "53". Recomputing from
+        scratch every frame makes resolution non-monotonic and the overlay
+        flicker visible.
+
+        This is hysteresis, not the permanent lock `ConsecutiveValueTracker`
+        applies: a rival that clears both gates replaces the held value, so
+        re-ID and genuine corrections still work. It is also why `min_votes`
+        defaults to 5 rather than 3 -- holding a verdict is only safe if the
+        bar to set one is high enough that a short run of correlated misreads
+        cannot set it. Both `#92` (EasyOCR) and `#53` (Qwen) qualified on
+        exactly three reads; at 5 neither does, and on Qwen no correct verdict
+        on BHC-FAG is lost by the change.
+        """
         v = self._votes.get(identity_id)
         if v is None:
             return None, 0, 0.0
-        value, count, margin = v.best(self.min_promote_votes, self.min_promote_ratio)
-        if count < self.min_votes or margin < self.min_margin:
-            return None, count, margin
-        return value, count, margin
+        value, count, margin = self._qualified(identity_id)
+        if value is not None:
+            return value, count, margin
+        held = self._settled.get(identity_id)
+        if held is not None:
+            counts = v.resolved_counts(self.min_promote_votes, self.min_promote_ratio)
+            return held, counts.get(held, 0), margin
+        return None, count, margin
 
     def reset(self, identity_id: int) -> None:
         self._votes.pop(identity_id, None)
+        self._settled.pop(identity_id, None)
 
     def merge(self, from_id: int, into_id: int) -> None:
         """Fold one identity's votes into another's -- call this on a re-ID hit
         so accumulated evidence isn't discarded when a tracker-level id changes."""
         src = self._votes.pop(from_id, None)
+        self._settled.pop(from_id, None)
         if src is None:
             return
         dst = self._votes.setdefault(into_id, _Votes())
         for value, count in src.counts.items():
             dst.counts[value] = dst.counts.get(value, 0) + count
+        # The merged tally is new evidence: re-derive rather than inherit either
+        # side's held value, so a merge cannot smuggle in a verdict the combined
+        # counts do not support.
+        self._settled.pop(into_id, None)
+        qualified, _c, _m = self._qualified(into_id)
+        if qualified is not None:
+            self._settled[into_id] = qualified
