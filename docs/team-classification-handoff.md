@@ -623,6 +623,73 @@ suffix-folding into `NumberVoter`, and it is what the digit-wise read mode
   production data, but it measures the detector far more than the reader.
 - 39 `unsure` crops are excluded from all scoring.
 
+## Digit-wise vs whole-number reading: not demonstrated (2026-09-07)
+
+The plan was to test, before building a digit-level model, whether decomposing a
+jersey number into digits helps *at all* -- using the best reader already
+available rather than training something first. Four arms on
+`runs/number_eval_1080p`, same model, same images, read mode x reasoning:
+
+| read mode | reasoning | coverage | accuracy | selective | abstention | wrong |
+|---|---|---|---|---|---|---|
+| whole | on | 0.96 | 0.64 | 0.67 | 0.44 | 102 |
+| whole | **off** | 0.87 | 0.64 | **0.74** | **0.81** | **73** |
+| digit | on | 0.96 | 0.67 | 0.70 | 0.47 | 91 |
+| digit | off | 0.90 | 0.67 | 0.74 | 0.74 | 74 |
+
+641 crops all four arms answered; `unsure` and `truncated` excluded throughout.
+
+**Reasoning off, unambiguously.** Paired McNemar on accuracy: p = 0.824 (whole)
+and p = 1.000 (digit) -- reasoning changes accuracy not at all. It changes
+abstention from 0.44 to 0.81, drops wrong answers 102 -> 73, and costs 2
+completion tokens instead of 133. A reasoning model reasons its way to *an*
+answer, which on a crop with no legible number is the wrong instinct.
+
+**Digit decomposition: not demonstrated.** Digit mode leads on both settings
+(p = 0.064 with reasoning, p = 0.053 without) but never clears the
+pre-registered 0.05, and two things argue against reading the near-misses as a
+real effect:
+
+- **It does not survive the independence check.** Full set 16-6 for digit mode;
+  restricted to the four Bundesliga matches (325 crops, stride 100) it is 5-3,
+  p = 0.727. FelixClaar and Han-Ber4 sample 44% and 55% of *all their frames*, so
+  their near-duplicate crops were inflating the discordant counts.
+- **Selective accuracy is identical at 0.74.** Digit mode is not more reliable per
+  answer; it answers more often (coverage 0.90 vs 0.87) and abstains less (0.74 vs
+  0.81). Trading 7 points of abstention for 3 of accuracy is not obviously a gain
+  under this project's "abstaining beats a confident wrong observation" rule.
+
+**H2 is a clean negative, and it was the stronger half of the original argument.**
+The premise was that per-position reading lets a model report *partial*
+information -- answering `? 7` for a half-visible 17 instead of a confident `7`
+the voter counts as a wrong vote. Measured on the 38 crops where whole mode did
+exactly that: digit mode produced **0** explicit partials with reasoning on and 3
+of 31 with it off. On the same crops it reproduced the truncation as a confident
+single digit with status `exact`. Offering a `?` token does not make the model
+report uncertainty it would otherwise hide.
+
+### What this means for the small-reader plan
+
+The digit-head architecture was motivated by three things, and the first two no
+longer hold:
+
+1. ~~Per-position uncertainty comes free~~ -- H2 says it does not.
+2. ~~Decomposition improves reading~~ -- not demonstrated; the effect vanishes on
+   temporally independent data.
+3. **Class balance is still real**: 100-way is untrainable here (13 of 32 numbers
+   had a single sample), and digits pool to a usable distribution. This argument
+   is unaffected by the above and remains the reason a digit *output layer* may
+   still be right -- but as a data-efficiency measure, not because decomposition
+   makes reading more accurate or more honest.
+
+The measured gap now worth transferring is **whole-number reading with reasoning
+off**: 0.64 accuracy / 0.74 selective / 0.81 abstention, against EasyOCR's
+0.37 / 0.64 / 0.84 on the same 660 crops. That is +27 points of accuracy and +28
+of coverage over the production reader, and it is what distillation should target.
+
+Artifacts: `runs/number_eval_1080p/all_arms_benchmark.json` (four arms),
+`compare_thinking.json`, `compare_nothink.json`, `easyocr_benchmark.json`.
+
 ## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.
