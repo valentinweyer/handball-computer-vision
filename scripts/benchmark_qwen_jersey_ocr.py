@@ -34,6 +34,15 @@ CONTEXT_PROMPT = (
     "nothing else."
 )
 
+DIGITS_PROMPT = (
+    "The red rectangle marks a detected jersey number. Read it one digit "
+    "at a time, left to right. Return the digits separated by single "
+    "spaces, using ? for any digit position you cannot read confidently. "
+    "A jersey number has one or two digits. Examples: '2 5' for 25, "
+    "'7' for 7, '? 3' when only the second digit is legible. Return "
+    "exactly NONE if you cannot read any digit at all. Return nothing else."
+)
+
 VARIANTS = {
     "tight": {
         "path_key": "crop_path",
@@ -55,14 +64,7 @@ VARIANTS = {
     # can fold rather than a wrong answer it has to survive.
     "context_digits": {
         "path_key": "context_path",
-        "prompt": (
-            "The red rectangle marks a detected jersey number. Read it one digit "
-            "at a time, left to right. Return the digits separated by single "
-            "spaces, using ? for any digit position you cannot read confidently. "
-            "A jersey number has one or two digits. Examples: '2 5' for 25, "
-            "'7' for 7, '? 3' when only the second digit is legible. Return "
-            "exactly NONE if you cannot read any digit at all. Return nothing else."
-        ),
+        "prompt": DIGITS_PROMPT,
         "parse": "digits",
     },
     # Identical image and prompt to "context", with the model's reasoning turned off.
@@ -70,6 +72,16 @@ VARIANTS = {
     # abstains on only 44% of the ones a human called unreadable -- a reasoning model
     # talks itself into an answer. This arm isolates that: same everything, no
     # reasoning, ~10x cheaper per request.
+    # The fourth cell of the read-mode x reasoning grid. Reasoning was found to
+    # dominate abstention regardless of read mode, so digit-vs-whole has to be
+    # compared at BOTH settings or the answer only holds in a configuration we
+    # have already decided against using.
+    "context_digits_nothink": {
+        "path_key": "context_path",
+        "prompt": DIGITS_PROMPT,
+        "parse": "digits",
+        "extra_body": {"chat_template_kwargs": {"enable_thinking": False}},
+    },
     "context_nothink": {
         "path_key": "context_path",
         "prompt": CONTEXT_PROMPT,   # byte-identical to "context" -- only thinking differs
