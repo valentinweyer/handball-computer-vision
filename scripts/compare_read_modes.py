@@ -30,6 +30,10 @@ from pathlib import Path
 from scripts.label_jersey_numbers import normalize_prediction
 
 
+# Defaults name the reasoning-enabled pair. The same analysis runs on the
+# reasoning-disabled pair via --whole/--digit: reasoning was measured to
+# dominate abstention regardless of read mode, so digit-vs-whole has to be
+# answered at both settings, not just the one that happened to run first.
 WHOLE_VARIANT = "context"
 DIGIT_VARIANT = "context_digits"
 
@@ -61,24 +65,25 @@ def load_truth(labels_path: Path) -> tuple[dict, set, set]:
     return readable, unreadable, unsure
 
 
-def pair_variants(report: dict, indices) -> dict:
+def pair_variants(report: dict, indices, whole=WHOLE_VARIANT, digit=DIGIT_VARIANT) -> dict:
     """-> {index: {variant: (prediction, parse_status)}} for indices both modes have."""
     raw = report.get("raw", {})
-    whole, digit = raw.get(WHOLE_VARIANT, {}), raw.get(DIGIT_VARIANT, {})
+    whole_raw, digit_raw = raw.get(whole, {}), raw.get(digit, {})
     paired = {}
     for index in indices:
         key = str(index)
-        if key not in whole or key not in digit:
+        if key not in whole_raw or key not in digit_raw:
             continue
         # A truncated response is a harness failure, not a model answer; excluding
         # it keeps a token-budget overrun from being scored as an abstention.
-        if whole[key]["parse_status"] == "truncated" or digit[key]["parse_status"] == "truncated":
+        if (whole_raw[key]["parse_status"] == "truncated"
+                or digit_raw[key]["parse_status"] == "truncated"):
             continue
         paired[index] = {
-            WHOLE_VARIANT: (normalize_prediction(whole[key]["prediction"]),
-                            whole[key]["parse_status"]),
-            DIGIT_VARIANT: (normalize_prediction(digit[key]["prediction"]),
-                            digit[key]["parse_status"]),
+            whole: (normalize_prediction(whole_raw[key]["prediction"]),
+                    whole_raw[key]["parse_status"]),
+            digit: (normalize_prediction(digit_raw[key]["prediction"]),
+                    digit_raw[key]["parse_status"]),
         }
     return paired
 
@@ -121,15 +126,15 @@ def score_arm(paired: dict, variant: str, readable: dict, unreadable: set) -> di
     }
 
 
-def compare_h1(paired: dict, readable: dict) -> dict:
+def compare_h1(paired: dict, readable: dict, whole=WHOLE_VARIANT, digit=DIGIT_VARIANT) -> dict:
     """Paired accuracy comparison on crops with a known number."""
     both = whole_only = digit_only = neither = 0
     for index, arms in paired.items():
         if index not in readable:
             continue
         truth = readable[index]
-        w = arms[WHOLE_VARIANT][0] == truth
-        d = arms[DIGIT_VARIANT][0] == truth
+        w = arms[whole][0] == truth
+        d = arms[digit][0] == truth
         both += w and d
         whole_only += w and not d
         digit_only += d and not w
@@ -143,7 +148,8 @@ def compare_h1(paired: dict, readable: dict) -> dict:
     }
 
 
-def classify_truncations(paired: dict, readable: dict) -> dict:
+def classify_truncations(paired: dict, readable: dict, whole=WHOLE_VARIANT,
+                         digit=DIGIT_VARIANT) -> dict:
     """H2: on two-digit numbers, what does each mode do when it cannot read it all?
 
     A *silent truncation* is whole-number mode confidently returning one digit of a
@@ -155,8 +161,8 @@ def classify_truncations(paired: dict, readable: dict) -> dict:
         truth = readable.get(index)
         if not truth or len(truth) != 2:
             continue
-        w_pred, _ = arms[WHOLE_VARIANT]
-        d_pred, d_status = arms[DIGIT_VARIANT]
+        w_pred, _ = arms[whole]
+        d_pred, d_status = arms[digit]
         if len(w_pred) == 1 and w_pred in truth:
             silent.append((index, truth, w_pred, d_pred, d_status))
     rescued = [row for row in silent if row[4].startswith("partial_")]
@@ -177,12 +183,15 @@ def main() -> None:
     parser.add_argument("report", type=Path)
     parser.add_argument("--labels", type=Path, required=True)
     parser.add_argument("--dataset", type=Path)
+    parser.add_argument("--whole", default=WHOLE_VARIANT)
+    parser.add_argument("--digit", default=DIGIT_VARIANT)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
     report = json.loads(args.report.read_text())
     readable, unreadable, unsure = load_truth(args.labels)
-    paired = pair_variants(report, sorted(set(readable) | unreadable))
+    paired = pair_variants(report, sorted(set(readable) | unreadable),
+                           args.whole, args.digit)
 
     result = {
         "report": str(args.report),
@@ -190,11 +199,12 @@ def main() -> None:
         "paired_crops": len(paired),
         "unsure_excluded": len(unsure),
         "arms": {
-            WHOLE_VARIANT: score_arm(paired, WHOLE_VARIANT, readable, unreadable),
-            DIGIT_VARIANT: score_arm(paired, DIGIT_VARIANT, readable, unreadable),
+            args.whole: score_arm(paired, args.whole, readable, unreadable),
+            args.digit: score_arm(paired, args.digit, readable, unreadable),
         },
-        "h1_accuracy": compare_h1(paired, readable),
-        "h2_partial_honesty": classify_truncations(paired, readable),
+        "h1_accuracy": compare_h1(paired, readable, args.whole, args.digit),
+        "h2_partial_honesty": classify_truncations(paired, readable,
+                                                   args.whole, args.digit),
     }
 
     if args.dataset:
@@ -208,7 +218,7 @@ def main() -> None:
             result[key] = {
                 name: {
                     v: score_arm({i: paired[i] for i in idxs}, v, readable, unreadable)
-                    for v in (WHOLE_VARIANT, DIGIT_VARIANT)
+                    for v in (args.whole, args.digit)
                 }
                 for name, idxs in sorted(groups.items())
             }
