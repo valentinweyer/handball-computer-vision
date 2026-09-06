@@ -206,7 +206,7 @@ class NumberVoter:
     """
 
     def __init__(
-        self, min_votes: int = 5, min_margin: float = 0.2, min_promote_votes: int = 2,
+        self, min_votes: int = 3, min_margin: float = 0.35, min_promote_votes: int = 2,
         min_promote_ratio: float = 0.5,
     ):
         self.min_votes = min_votes
@@ -256,12 +256,18 @@ class NumberVoter:
 
         This is hysteresis, not the permanent lock `ConsecutiveValueTracker`
         applies: a rival that clears both gates replaces the held value, so
-        re-ID and genuine corrections still work. It is also why `min_votes`
-        defaults to 5 rather than 3 -- holding a verdict is only safe if the
-        bar to set one is high enough that a short run of correlated misreads
-        cannot set it. Both `#92` (EasyOCR) and `#53` (Qwen) qualified on
-        exactly three reads; at 5 neither does, and on Qwen no correct verdict
-        on BHC-FAG is lost by the change.
+        re-ID and genuine corrections still work.
+
+        Holding a verdict is only safe if the bar to set one is high enough
+        that a short run of correlated misreads cannot set it, and the useful
+        bar is `min_margin`, not `min_votes`. Both bad commits measured here
+        happened on three votes -- but so did a correct one, and margin
+        separates them: BHC-FAG p3 (visually confirmed jersey 53) committed at
+        {'53': 3}, margin 1.000, while EasyOCR p2 (jersey 22) committed at
+        {'92': 3, '22': 2}, margin 0.200, contested from the first read.
+        Raising `min_votes` to 5 blocked both and cost p3 its correct answer,
+        since every later read of that player was shorts-logo noise; raising
+        `min_margin` to 0.35 blocks only the contested one.
         """
         v = self._votes.get(identity_id)
         if v is None:

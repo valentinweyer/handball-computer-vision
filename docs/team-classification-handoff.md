@@ -444,15 +444,57 @@ number, and displayed it until ~frame 85** before retracting and settling on
 `22` only at frame 175. Reader error is a first-order problem, not a
 second-order one; see the vote-gate defect below.
 
-**Vote-gate defect (open).** That wrong commit cleared on counts `92:3, 22:2`
-→ `margin = (3-2)/5 = 0.200` against `min_margin = 0.200`, and the test is
-`margin < self.min_margin`, so it passed by exactly zero. A 3-vs-2 plurality
-is enough to display a number confidently, which violates this project's
-"abstaining beats injecting a confident wrong observation" rule. Raising
-`min_votes` from 3 to 4-5 blocks it without penalising a genuinely dominant
-value; raising `min_margin` alone would also suppress correct late verdicts
-(`22` resolved at margin 0.235). Not yet changed — `NumberVoter`'s defaults
-are still `min_votes=3, min_margin=0.2`.
+**Vote-gate defect (resolved 2026-09-06; evidence base is thin -- read the
+caveats).** That wrong commit cleared on counts `92:3, 22:2` -> `margin =
+(3-2)/5 = 0.200` against `min_margin = 0.200`, and the test is `margin <
+self.min_margin`, so it passed by exactly zero. A 3-vs-2 plurality is enough to
+display a number confidently, which violates this project's "abstaining beats
+injecting a confident wrong observation" rule.
+
+The fix that was tried first -- raising `min_votes` 3 -> 5 -- is wrong and was
+reverted. It blocks the bad commit, but it also blocked a correct one: BHC-FAG
+player 3 (visually confirmed jersey 53) read `53, 53, 53` and then nothing but
+shorts-logo noise, so at `min_votes=5` that player never resolves. **Count does
+not separate a safe early commit from a premature one; margin does.** Both
+commits happened on three votes, at margin 1.000 and 0.200 respectively.
+Defaults are now `min_votes=3, min_margin=0.35`, paired with verdict hysteresis
+(a resolved value is held until a rival clears both gates).
+
+Three caveats on how well-evidenced `0.35` actually is:
+
+- **It is a lower bound, not a tuned value.** Sweeping `min_margin` from 0.15 to
+  1.00 on BHC-FAG's three contested read sequences, behaviour changes at 0.25
+  and at 0.35 and is then *flat from 0.35 through 1.00*. All BHC-FAG establishes
+  is "must exceed 0.30 to block the 3-vs-2 split"; 0.35 is the conservative edge
+  of a wide plateau, not a fitted point. No clip in the corpus contains a
+  genuinely close-run correct answer, which is what would pin the upper end.
+- **The held-out clips do not validate it.** Felix and Hannover produce
+  identical output at every swept value, because their reports store only final
+  tallies and cannot exercise the temporal early-commit path this gate governs.
+  That is absence of harm, not confirmation. A real test needs per-frame read
+  traces from a second clip -- now cheap, since `render_full_pipeline.py` writes
+  a `<stem>_reads.json` cache.
+- **This clip already had disproportionate influence on the vote layer.**
+  `min_promote_ratio` exists because of BHC-FAG p27 and its docstring cites
+  BHC-FAG p23. The folding constants and the margin gate were all set from one
+  clip.
+
+Known cost of the change: an EasyOCR-style verdict that only becomes dominant
+late (`22` resolved at margin 0.235 on the trace above) is now permanently
+suppressed rather than merely delayed, because hysteresis means a value that
+never qualifies never gets held. That is acceptable while Qwen is the default
+reader -- it resolves the same player at margin 0.831 -- but it would be a
+regression if EasyOCR were ever restored as the default.
+
+**Order-dependence is now a load-bearing property, by design.** Because
+verdicts are held once set, the outcome depends on read *order*, not just final
+tallies. Two of the nine verdicts on the BHC-FAG re-render could not qualify on
+their final counts and survive only because they qualified early: p3 (`53`,
+final margin 0.111, buried by 13 shorts-logo `0` reads) and p8 (`49`, final
+margin 0.333). This is the intended behaviour -- early reads come from frames
+where the player is well-resolved -- but it means a clip that happens to deliver
+its noisy reads first will behave differently from one that does not, and that
+sensitivity has not been measured.
 
 **Clip caveat: do not use `data/raw/Hannover.mp4` for read-rate or tracker
 comparisons.** It is 120fps (8.3s of play over 999 frames, 3456x2168) while

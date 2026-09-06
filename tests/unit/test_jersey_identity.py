@@ -175,13 +175,24 @@ class VerdictHysteresisTests(unittest.TestCase):
             voter.observe(1, value)
         self.assertEqual(voter.best(1)[0], "31")
 
-    def test_three_agreeing_reads_no_longer_qualify(self):
-        # Both #92 (EasyOCR) and #53 (Qwen) committed on exactly three reads at
-        # margin 1.0, then proved wrong. Holding such a verdict would make it stick.
-        voter = NumberVoter()
+    def test_unanimous_early_reads_qualify_but_a_split_does_not(self):
+        # Margin, not count, separates a safe early commit from a premature one --
+        # both of these are three-vote commits, and only one was right.
+        #
+        # BHC-FAG p3 is visually confirmed as jersey 53 and its first three reads
+        # were 53/53/53 (margin 1.0). Requiring more votes suppressed a correct
+        # answer, because the reads that followed were shorts-logo noise.
+        good = NumberVoter()
         for value in ["53"] * 3:
-            voter.observe(3, value)
-        self.assertIsNone(voter.best(3)[0])
+            good.observe(3, value)
+        self.assertEqual(good.best(3)[0], "53")
+
+        # FelixClaar/BHC-FAG p2 is jersey 22, but EasyOCR's 2<->9 confusion put it
+        # at {'92': 3, '22': 2} -- margin 0.2, contested from the very first read.
+        split = NumberVoter()
+        for value in ["92", "92", "22", "22", "92"]:
+            split.observe(2, value)
+        self.assertIsNone(split.best(2)[0])
 
     def test_merge_rederives_rather_than_inheriting_a_verdict(self):
         voter = NumberVoter()
