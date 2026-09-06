@@ -487,15 +487,21 @@ def benchmark(dataset_path: Path, labels_path: Path, output_path: Path, device: 
     if not readable:
         raise ValueError("no readable ground-truth labels found")
     samples = {int(item["index"]): item for item in dataset["samples"]}
+    # These two are replayed from strings baked into the dataset at build time, so
+    # they only exist for the sets that carry them. Including a key no sample has
+    # would report a model that scores 0% because it was never run -- skip it
+    # rather than publish a metric for a reader that did not participate.
+    REPLAYED = {
+        "smolvlm_color_corrected": "correct_bgr_input",
+        "smolvlm_legacy_color": "legacy_rgb_input",
+    }
     predictions = {
-        "smolvlm_color_corrected": {
-            index: sample.get("predictions", {}).get("correct_bgr_input", "")
+        name: {
+            index: sample.get("predictions", {}).get(key, "")
             for index, sample in samples.items()
-        },
-        "smolvlm_legacy_color": {
-            index: sample.get("predictions", {}).get("legacy_rgb_input", "")
-            for index, sample in samples.items()
-        },
+        }
+        for name, key in REPLAYED.items()
+        if any(key in sample.get("predictions", {}) for sample in samples.values())
     }
 
     import easyocr

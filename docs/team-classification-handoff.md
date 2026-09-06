@@ -513,6 +513,116 @@ exactly this. Needs its own guard against two different physical players who
 share a jersey number across a team boundary before it can be trusted as an
 identity-correcting signal rather than just a reporting convenience.
 
+## A 1080p number-reading evaluation set, and what it measured (2026-09-06)
+
+**Why it exists.** Every labelled jersey set before this one was unusable for
+benchmarking a production reader. `runs/jersey_audit` is sampled from the 640x640
+COCO export RF-DETR trains on, where number boxes have median width **11 px**;
+production runs at 1920x1080 where the median is **26-30 px**. That is a 2.7x
+different regime, and a reader scored on the first says nothing about the second.
+The two on-regime sets (`runs/ocr_labels/FelixClaar`, `runs/jersey_native_eval`)
+are both the same clip, so at 1080p there was exactly one venue -- the same
+single-clip weakness that made validating `min_margin` impossible.
+
+`runs/number_eval_1080p` replaces them for reader work: **660 crops, 110 from each
+of six 1920x1080 clips** (four full Bundesliga matches plus BHC-FAG, FelixClaar,
+Han-Ber4), sampled from the production detector's own cached output, stratified by
+box height and round-robined across clips. Built by
+`scripts/build_number_eval_set.py`; ground truth in
+`data/annotations/jersey/number_eval_1080p_labels.json`.
+
+Composition: **323 readable, 298 unreadable, 39 unsure, 190 marked not-a-number.**
+
+### Detector precision at 1080p (new -- never previously measured)
+
+A `not_number` box status means the human judged the detection not to be a jersey
+number at all. That makes this set a detector benchmark as well as a reader one:
+
+| conf bucket | n | not_number | precision |     | band | n | precision |
+|---|---|---|---|---|---|---|---|
+| 0.3-0.4 | 206 | 103 | **50%** | | `<18` | 120 | **45%** |
+| 0.4-0.5 | 121 | 51 | 58% | | `18-21` | 120 | 72% |
+| 0.5-0.6 | 89 | 20 | 78% | | `22-25` | 120 | 73% |
+| 0.6-0.7 | 104 | 13 | 88% | | `26-30` | 120 | **84%** |
+| 0.7-0.8 | 118 | 3 | **97%** | | `31-40` | 120 | 78% |
+| 0.8-1.0 | 22 | 0 | 100% | | `>=41` | 60 | 78% |
+
+Per clip, precision ranges 62% (FelixClaar) to 81% (Eisenach-Hamburg).
+
+**Confidence is a strong, monotonic filter, and the production threshold of 0.3
+looks too low:**
+
+| `--threshold` | boxes kept | junk kept | readable lost |
+|---|---|---|---|
+| 0.3 (current) | 660 | 190 | 0 |
+| 0.5 | 333 | 36 | 73 |
+| 0.6 | 244 | 16 | 117 |
+
+Raising 0.3 -> 0.5 removes **81% of false positives** for **23% of readable
+numbers**. For a voting pipeline that is likely a good trade -- reads accumulate
+over frames, while false positives inject noise into every vote, which is the
+mechanism behind both the `0`-on-the-shorts misread and p3's margin collapsing to
+0.111. **Not yet changed:** confirm end-to-end first by re-running BHC-FAG at 0.5
+and checking resolved-player count does not fall.
+
+Separately, the player-overlap filter (`max_player_containment`, >=0.9) drops
+**26180 of 65039** number detections across the seven 1080p clips -- **40% are on
+no player at all** (hoardings, scoreboards, backdrop lettering). Per-clip keep
+rate 39% (Melsungen) to 89% (Eisenach).
+
+### Reader configuration: reasoning is actively harmful here
+
+`Qwen3.8-Flash-Next` emits `reasoning_content` before `content`. Two consequences,
+both of which produced wrong measurements before being caught:
+
+1. **A token budget that only fits the answer yields an empty string.** At
+   `--max-tokens 16` every request returned `''`; at 320, 10% did. Empty content
+   parses as no-answer and *scores as an abstention*, so a misconfiguration
+   masquerades as the model correctly declining -- corrupting the one metric the
+   benchmark exists to measure. `benchmark_qwen_jersey_ocr.py` now marks these
+   `truncated`, excludes them from scoring, and retries them (reasoning length is
+   not deterministic: a crop that overran 1024 tokens answered in 96 on retry).
+2. **Reasoning roughly halves abstention discipline for no accuracy gain.**
+   Measured on 195 samples of this set, same prompt and images, only
+   `enable_thinking` differing:
+
+   | | coverage | accuracy | selective | abstention | wrong | tokens |
+   |---|---|---|---|---|---|---|
+   | thinking on | 0.99 | 0.69 | 0.70 | **0.41** | 24 | 133 |
+   | thinking off | 0.89 | 0.68 | **0.76** | **0.81** | 17 | **2** |
+
+   Paired McNemar on accuracy: p = 1.00 -- indistinguishable. A reasoning model
+   reasons its way to *an* answer, which on a crop with no legible number is
+   exactly the wrong instinct: a milder form of the SmolVLM failure. This also
+   explains why whole-number reading scored 0.44 abstention here against the
+   0.93 recorded on FelixClaar -- **that earlier benchmark ran without reasoning,
+   so its 0.70/0.90/0.93 is not a like-for-like comparator for anything measured
+   under this server config.**
+
+### Whole-number reading on the full set (thinking on, 660 crops)
+
+coverage 0.96, accuracy 0.64, selective 0.67, abstention 0.44. **37% of all errors
+are silent truncations** -- a two-digit number answered with one of its digits:
+`17->7` (x11), `11->1` (x4), `22->2` (x3), `23->2`, `21->2`, `54->5`. That is 38 of
+103 errors, and 15% of all two-digit readable crops. It is the failure that forced
+suffix-folding into `NumberVoter`, and it is what the digit-wise read mode
+(`context_digits`) is being measured against.
+
+### Caveats on this set
+
+- **Half of it is temporally correlated.** FelixClaar and Han-Ber4 are short clips
+  detected at stride 1, so 110 samples cover 44% and 55% of *all their frames*;
+  109 near-duplicate pairs each. The four Bundesliga matches (stride 100, 440
+  samples) are the temporally independent subset and should be checked separately.
+  Use a minimum frame spacing rather than a fixed stride next time.
+- **`>=41` was under-sampled on a bad call.** Its quota was halved on the basis of
+  eyeballing six crops in a contact sheet; the labels show it is the *cleanest*
+  band (78% precision, 52% readable). The `BAND_QUOTA_SCALE` entry should be
+  dropped if the set is ever rebuilt.
+- **`<18` is the weak band**: 45% detector precision, 23% readable. It is real
+  production data, but it measures the detector far more than the reader.
+- 39 `unsure` crops are excluded from all scoring.
+
 ## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.
