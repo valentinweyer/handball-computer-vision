@@ -38,7 +38,13 @@ from scripts.build_jersey_audit_set import (
     render_crop_pair,
     stratified_sample,
 )
-from scripts.label_jersey_numbers import utc_now, write_json_atomic
+from handball_cv.jersey.identity import NUMBER_CLASS_ID
+from scripts.label_jersey_numbers import (
+    PLAYER_CLASS_IDS,
+    max_player_containment,
+    utc_now,
+    write_json_atomic,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -64,25 +70,48 @@ def clip_name(video: Path) -> str:
     return video.stem
 
 
-def records_from_cache(video: Path, cache_path: Path, min_confidence: float) -> list[dict]:
+def records_from_cache(
+    video: Path,
+    cache_path: Path,
+    min_confidence: float,
+    min_player_containment: float = 0.9,
+) -> tuple[list[dict], int]:
     """Flatten one cached detection npz into per-box records for sampling.
+
+    Only number boxes a player box substantially contains are kept: the detector
+    fires on advertising hoardings, the scoreboard and backdrop lettering, and none
+    of those are jersey numbers the reader will ever be asked about in earnest.
+    Referees are excluded from the containing classes on the same reasoning.
 
     `offsets` spans every frame of the video, so a frame the detector skipped
     (see `cache_number_detections.py --stride`) simply contributes no records.
+
+    Returns the kept records and how many number boxes the containment filter
+    dropped, so the caller can report detector precision rather than hide it.
     """
     cache = np.load(cache_path, allow_pickle=True)
     offsets = np.asarray(cache["offsets"], dtype=np.int64)
     boxes = np.asarray(cache["boxes"], dtype=float).reshape(-1, 4)
     confidence = np.asarray(cache["confidence"], dtype=float)
+    class_ids = np.asarray(cache["class_id"], dtype=np.int64)
     name = clip_name(video)
 
-    records = []
+    records, dropped = [], 0
     for frame_index in range(len(offsets) - 1):
-        for position in range(int(offsets[frame_index]), int(offsets[frame_index + 1])):
+        start, end = int(offsets[frame_index]), int(offsets[frame_index + 1])
+        frame_classes = class_ids[start:end]
+        player_boxes = boxes[start:end][np.isin(frame_classes, PLAYER_CLASS_IDS)]
+        for local, position in enumerate(range(start, end)):
+            if frame_classes[local] != NUMBER_CLASS_ID:
+                continue
             box = boxes[position]
             height = float(box[3] - box[1])
             width = float(box[2] - box[0])
             if height <= 0 or width <= 0 or confidence[position] < min_confidence:
+                continue
+            containment = max_player_containment(box, player_boxes)
+            if containment < min_player_containment:
+                dropped += 1
                 continue
             records.append({
                 "source_clip": name,
@@ -92,9 +121,10 @@ def records_from_cache(video: Path, cache_path: Path, min_confidence: float) -> 
                 "box_height": height,
                 "box_width": width,
                 "confidence": float(confidence[position]),
+                "player_containment": containment,
                 "annotation_id": f"{name}:{frame_index}:{position}",
             })
-    return records
+    return records, dropped
 
 
 def render_selection(
@@ -149,6 +179,7 @@ def render_selection(
             "source_clip": record["source_clip"],
             "source_video": record["video"],
             "detector_confidence": record["confidence"],
+            "player_containment": record["player_containment"],
             "height_band": band_label(record["box_height"], HEIGHT_BANDS_1080P),
             **crop,
         })
@@ -198,6 +229,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument("--per-band-per-clip", type=int, default=20)
     parser.add_argument("--min-confidence", type=float, default=0.3)
+    parser.add_argument(
+        "--min-player-containment",
+        type=float,
+        default=0.9,
+        help="fraction of the number box that must fall inside some player box",
+    )
     parser.add_argument("--seed", type=int, default=20260906)
     return parser.parse_args()
 
@@ -206,11 +243,17 @@ def main() -> None:
     args = parse_args()
     specs = [parse_clip_spec(spec) for spec in args.clip]
 
-    records = []
+    records, total_dropped = [], 0
     for video, cache_path in specs:
-        clip_records = records_from_cache(video, cache_path, args.min_confidence)
-        print(f"{clip_name(video)}: {len(clip_records)} boxes from {cache_path.name}")
+        clip_records, dropped = records_from_cache(
+            video, cache_path, args.min_confidence, args.min_player_containment
+        )
+        kept, seen = len(clip_records), len(clip_records) + dropped
+        print(f"{clip_name(video)}: {kept} on-player numbers of {seen} detected "
+              f"({kept/max(seen,1):.0%} on a player) from {cache_path.name}")
         records.extend(clip_records)
+        total_dropped += dropped
+    print(f"\ncontainment filter dropped {total_dropped} number boxes not on a player")
     if not records:
         raise SystemExit("no boxes survived the confidence filter")
 
@@ -239,9 +282,14 @@ def main() -> None:
         "source_kind": "production_detection_1080p",
         "clips": [str(video) for video, _ in specs],
         "caches": [str(cache) for _, cache in specs],
-        "height_bands": [list(band) for band in HEIGHT_BANDS_1080P],
+        # The top band is unbounded; JSON has no Infinity, so it serialises as null.
+        "height_bands": [
+            [label, low, None if high == float("inf") else high]
+            for label, low, high in HEIGHT_BANDS_1080P
+        ],
         "per_band_per_clip": args.per_band_per_clip,
         "min_confidence": args.min_confidence,
+        "min_player_containment": args.min_player_containment,
         "seed": args.seed,
         "created_at": utc_now(),
         "sample_count": len(samples),

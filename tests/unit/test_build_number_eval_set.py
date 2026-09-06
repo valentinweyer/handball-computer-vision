@@ -120,14 +120,20 @@ class BandQuotaTests(unittest.TestCase):
         self.assertEqual(quota, {">=41": 70})
 
 
+PLAYER = 2       # project-wide class id for a field player
+NUMBER = 4       # project-wide class id for a jersey-number box
+COVERS_ALL = [0, 0, 1000, 1000]
+
+
 class RecordsFromCacheTests(unittest.TestCase):
-    def _cache(self, directory: Path, offsets, boxes, confidence) -> Path:
+    def _cache(self, directory: Path, offsets, boxes, confidence, class_ids) -> Path:
         path = directory / "cache.npz"
         np.savez(
             path,
             offsets=np.asarray(offsets, dtype=np.int64),
             boxes=np.asarray(boxes, dtype=float).reshape(-1, 4),
             confidence=np.asarray(confidence, dtype=float),
+            class_id=np.asarray(class_ids, dtype=np.int64),
         )
         return path
 
@@ -136,25 +142,82 @@ class RecordsFromCacheTests(unittest.TestCase):
             tmp = Path(tmp)
             cache = self._cache(
                 tmp,
-                offsets=[0, 2, 2, 3],  # frame 0 has two boxes, frame 1 none, frame 2 one
-                boxes=[[0, 0, 10, 20], [5, 5, 15, 30], [1, 1, 9, 25]],
-                confidence=[0.9, 0.9, 0.9],
+                # frame 0: player + two numbers, frame 1: nothing, frame 2: player + one
+                offsets=[0, 3, 3, 5],
+                boxes=[COVERS_ALL, [0, 0, 10, 20], [5, 5, 15, 30],
+                       COVERS_ALL, [1, 1, 9, 25]],
+                confidence=[0.9] * 5,
+                class_ids=[PLAYER, NUMBER, NUMBER, PLAYER, NUMBER],
             )
-            records = records_from_cache(Path("clip.mp4"), cache, 0.0)
+            records, dropped = records_from_cache(Path("clip.mp4"), cache, 0.0)
+        self.assertEqual(dropped, 0)
         self.assertEqual([r["frame"] for r in records], [0, 0, 2])
         self.assertEqual([r["box_height"] for r in records], [20.0, 25.0, 24.0])
         self.assertEqual(records[0]["source_clip"], "clip")
+
+    def test_player_boxes_are_not_themselves_emitted_as_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cache = self._cache(
+                tmp, offsets=[0, 2], boxes=[COVERS_ALL, [0, 0, 10, 20]],
+                confidence=[0.9, 0.9], class_ids=[PLAYER, NUMBER],
+            )
+            records, _ = records_from_cache(Path("clip.mp4"), cache, 0.0)
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["box_height"], 20.0)
+
+    def test_a_number_no_player_contains_is_dropped_and_counted(self):
+        # The advertising-hoarding case: a number box far from any player.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cache = self._cache(
+                tmp,
+                offsets=[0, 3],
+                boxes=[[0, 0, 50, 50], [10, 10, 20, 30], [900, 900, 910, 930]],
+                confidence=[0.9, 0.9, 0.9],
+                class_ids=[PLAYER, NUMBER, NUMBER],
+            )
+            records, dropped = records_from_cache(Path("clip.mp4"), cache, 0.0)
+        self.assertEqual(len(records), 1)
+        self.assertEqual(dropped, 1)
+        self.assertEqual(records[0]["player_containment"], 1.0)
+
+    def test_a_number_only_partly_on_a_player_is_dropped_below_threshold(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cache = self._cache(
+                tmp, offsets=[0, 2],
+                boxes=[[0, 0, 15, 100], [10, 10, 20, 30]],  # half the number overlaps
+                confidence=[0.9, 0.9], class_ids=[PLAYER, NUMBER],
+            )
+            strict, dropped = records_from_cache(Path("clip.mp4"), cache, 0.0, 0.9)
+            loose, _ = records_from_cache(Path("clip.mp4"), cache, 0.0, 0.4)
+        self.assertEqual((len(strict), dropped), (0, 1))
+        self.assertEqual(len(loose), 1)
+        self.assertAlmostEqual(loose[0]["player_containment"], 0.5)
+
+    def test_referees_do_not_count_as_containing_players(self):
+        # A number box on a referee is not a player number.
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp = Path(tmp)
+            cache = self._cache(
+                tmp, offsets=[0, 2], boxes=[COVERS_ALL, [10, 10, 20, 30]],
+                confidence=[0.9, 0.9], class_ids=[3, NUMBER],  # 3 == referee
+            )
+            records, dropped = records_from_cache(Path("clip.mp4"), cache, 0.0)
+        self.assertEqual((len(records), dropped), (0, 1))
 
     def test_low_confidence_and_degenerate_boxes_are_dropped(self):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             cache = self._cache(
                 tmp,
-                offsets=[0, 3],
-                boxes=[[0, 0, 10, 20], [0, 0, 10, 0], [0, 0, 10, 20]],
-                confidence=[0.2, 0.9, 0.8],
+                offsets=[0, 4],
+                boxes=[COVERS_ALL, [0, 0, 10, 20], [0, 0, 10, 0], [0, 0, 10, 20]],
+                confidence=[0.9, 0.2, 0.9, 0.8],
+                class_ids=[PLAYER, NUMBER, NUMBER, NUMBER],
             )
-            records = records_from_cache(Path("clip.mp4"), cache, 0.5)
+            records, _ = records_from_cache(Path("clip.mp4"), cache, 0.5)
         # first fails confidence, second is zero-height, only the third survives
         self.assertEqual(len(records), 1)
         self.assertEqual(records[0]["confidence"], 0.8)
@@ -163,10 +226,11 @@ class RecordsFromCacheTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             tmp = Path(tmp)
             cache = self._cache(
-                tmp, offsets=[0, 1, 1, 1, 2],
-                boxes=[[0, 0, 10, 20], [0, 0, 10, 20]], confidence=[0.9, 0.9],
+                tmp, offsets=[0, 2, 2, 2, 4],
+                boxes=[COVERS_ALL, [0, 0, 10, 20], COVERS_ALL, [0, 0, 10, 20]],
+                confidence=[0.9] * 4, class_ids=[PLAYER, NUMBER, PLAYER, NUMBER],
             )
-            records = records_from_cache(Path("clip.mp4"), cache, 0.0)
+            records, _ = records_from_cache(Path("clip.mp4"), cache, 0.0)
         self.assertEqual([r["frame"] for r in records], [0, 3])
 
 

@@ -41,6 +41,19 @@ DEFAULT_CHECKPOINT = Path(
 CHECKPOINT_JERSEY_CLASS_ID = 3
 # What we write into the cache: the id the rest of this project means by "number box".
 NUMBER_CLASS_ID = 4
+
+# The checkpoint detects players and referees in the same forward pass it finds
+# numbers in, so keeping them costs nothing and makes the cache self-sufficient for
+# the player-overlap filter -- a number box that no player contains is a detection
+# on an advertising board or the scoreboard, not a jersey. Emitted under this
+# project's own class numbering (goalkeeper 1, player 2, referee 3, number 4), so
+# consumers never need to know which checkpoint produced the cache.
+CHECKPOINT_TO_PROJECT_CLASS = {
+    0: 1,   # Goalkeeper
+    1: 2,   # Player
+    2: 3,   # Referee
+    CHECKPOINT_JERSEY_CLASS_ID: NUMBER_CLASS_ID,
+}
 INFERENCE_SHAPE = (704, 704)  # the checkpoint's training resolution
 
 
@@ -76,6 +89,7 @@ def detect_all_frames(
     offsets = [0]
     boxes: list[np.ndarray] = []
     confidence: list[float] = []
+    class_ids: list[int] = []
     scored = 0
     try:
         for frame_index in range(total):
@@ -90,18 +104,22 @@ def detect_all_frames(
                 break
             rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
             detections = model.predict(rgb, threshold=threshold, shape=shape)
-            keep = detections.class_id == CHECKPOINT_JERSEY_CLASS_ID
-            frame_boxes = detections.xyxy[keep]
-            frame_scores = detections.confidence[keep]
-            for box, score in zip(frame_boxes, frame_scores):
+            for box, score, checkpoint_class in zip(
+                detections.xyxy, detections.confidence, detections.class_id
+            ):
+                project_class = CHECKPOINT_TO_PROJECT_CLASS.get(int(checkpoint_class))
+                if project_class is None:
+                    continue
                 boxes.append(np.asarray(box, dtype=float))
                 confidence.append(float(score))
+                class_ids.append(project_class)
             offsets.append(len(boxes))
             scored += 1
             if scored % 25 == 0:
+                numbers = sum(c == NUMBER_CLASS_ID for c in class_ids)
                 print(
                     f"  [{frame_index+1}/{total}] {scored} scored, "
-                    f"{len(boxes)} boxes so far",
+                    f"{numbers} numbers / {len(boxes)} boxes so far",
                     flush=True,
                 )
     finally:
@@ -118,7 +136,7 @@ def detect_all_frames(
             np.stack(boxes) if boxes else np.zeros((0, 4), dtype=float)
         ),
         "confidence": np.asarray(confidence, dtype=float),
-        "class_id": np.full(len(boxes), NUMBER_CLASS_ID, dtype=np.int64),
+        "class_id": np.asarray(class_ids, dtype=np.int64),
         "stride": np.asarray(stride),
         "scored_frames": np.asarray(scored),
     }
@@ -160,9 +178,10 @@ def main() -> None:
     )
     frames = len(cache["offsets"]) - 1
     scored = int(cache["scored_frames"])
+    numbers = int((cache["class_id"] == NUMBER_CLASS_ID).sum())
     print(
-        f"\n{len(cache['boxes'])} number boxes over {scored} scored frames "
-        f"({len(cache['boxes'])/max(scored,1):.2f}/frame) "
+        f"\n{numbers} number boxes ({len(cache['boxes'])} total incl. players/referees) "
+        f"over {scored} scored frames ({numbers/max(scored,1):.2f} numbers/frame) "
         f"spanning {frames} frames at stride {args.stride} -> {args.output}"
     )
 
