@@ -690,6 +690,62 @@ of coverage over the production reader, and it is what distillation should targe
 Artifacts: `runs/number_eval_1080p/all_arms_benchmark.json` (four arms),
 `compare_thinking.json`, `compare_nothink.json`, `easyocr_benchmark.json`.
 
+## An off-the-shelf recogniser already matches the VLM (2026-09-07)
+
+Tested because the small-reader plan assumed a model had to be trained. It does
+not. All of these are pretrained, already installed, and needed no domain data.
+
+Scored on the same 660 crops and labels as every other reader
+(`scripts/benchmark_doctr_readers.py`, 619 crops common to all arms):
+
+| reader | coverage | accuracy | selective | abstention | ms/crop |
+|---|---|---|---|---|---|
+| `parseq` @conf 0.5 | 0.76 | 0.62 | **0.82** | **0.88** | **2** |
+| `vitstr_small` @0.5 | 0.76 | 0.61 | 0.80 | 0.85 | 1 |
+| `crnn_vgg16_bn` @0.5 | 0.73 | 0.56 | 0.77 | 0.89 | 1 |
+| Qwen whole, no reasoning | 0.86 | 0.63 | 0.74 | 0.81 | ~700 |
+| Qwen whole, reasoning | 0.96 | 0.64 | 0.67 | 0.44 | ~7400 |
+| **EasyOCR (production)** | 0.57 | 0.37 | 0.64 | 0.84 | ~40 |
+
+**PARSeq is statistically indistinguishable from Qwen**: paired McNemar on
+readable crops, 40 / 37 discordant, **p = 0.82**. It has *better* selective
+accuracy (0.82 vs 0.74) and *better* abstention (0.88 vs 0.81), at roughly 350x
+the speed and no GPU-resident 89 GB model. Against the production reader it is
++25 accuracy points and ~20x faster.
+
+Two things this settles:
+
+**"CTC over digits" was never an untested architecture.** EasyOCR's recogniser is
+already a CRNN -- feature extractor, BiLSTM, CTC prediction, 1.4M params over 96
+characters. It is the production floor at 0.37. What separates it from PARSeq is
+training data and decoder, not the digit-level shape. Any plan justified by "use a
+CTC digit model" needs to explain what it adds over swapping the checkpoint.
+
+**Each reader needs its own input, and they disagree about which.** `parseq`
+scores 0.62 on the tight crop and **0.04** on the context crop -- a recogniser
+trained on cropped text lines is out of distribution on a padded scene with a red
+rectangle drawn on it. The VLM is the reverse (0.30 tight, 0.70 context). Comparing
+them on a single shared input would have badly misrepresented one of them.
+
+### What this does to the plan
+
+Distilling Qwen into a small model was motivated by a 27-point gap over EasyOCR
+that only an 89 GB VLM could reach. A 20M-parameter pretrained model closes most of
+that gap for free, which makes distillation-from-scratch the expensive way to get
+somewhere we can already stand.
+
+The remaining headroom is different in kind: **PARSeq has had no handball data at
+all.** Fine-tuning it on jersey crops -- with Qwen or human labels as the target --
+is now the cheap experiment, and it starts from 0.62 rather than from nothing. The
+digit-level output-layer question folds into that as a decoder choice, where it
+can be measured against the same baseline instead of argued about.
+
+Also worth noting: PARSeq abstains *more* than Qwen (0.88 vs 0.81) while being no
+less accurate, which is the direction this project's invariant prefers.
+
+Artifacts: `runs/number_eval_1080p/doctr_benchmark.json` (all three archs, all
+confidence thresholds, raw reads).
+
 ## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.
