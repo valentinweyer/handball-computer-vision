@@ -55,6 +55,7 @@ from handball_cv.jersey.identity import (
     _Votes,
     match_numbers_to_players,
     read_numbers,
+    read_numbers_doctr,
 )
 from handball_cv.teams.model import TeamModel
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
@@ -116,6 +117,29 @@ def read_with_qwen(
     return out
 
 
+def build_reader(args: argparse.Namespace):
+    """Construct the reader once, for either tracker.
+
+    This existed twice, once per tracker function, and only one copy learned
+    about new readers -- so `--tracker sam2 --reader doctr` silently ran with
+    `ocr_model=None` and reported 0 reads over 99 frames as though it were a
+    measurement. One definition, both callers.
+    """
+    if args.reader == "doctr":
+        import torch
+        from doctr.models import recognition_predictor
+        model = recognition_predictor(args.doctr_arch, pretrained=True).eval()
+        if args.device != "cpu" and torch.cuda.is_available():
+            model = model.cuda()
+        return model
+    if args.reader == "easyocr":
+        import easyocr
+        return easyocr.Reader(
+            ["en"], gpu=args.device != "cpu", detector=False, verbose=False
+        )
+    return None   # qwen reads over HTTP and needs no local model
+
+
 def process_numbers_for_frame(
     frame_index: int,
     frame_bgr: np.ndarray,
@@ -166,6 +190,8 @@ def process_numbers_for_frame(
     boxes = number_xyxy[wanted]
     if args.reader == "easyocr":
         texts = read_with_easyocr(ocr_model, frame_rgb, boxes)
+    elif args.reader == "doctr":
+        texts = read_numbers_doctr(ocr_model, frame_rgb, boxes)
     else:
         texts = read_with_qwen(
             frame_bgr, boxes, output_dir / "_scratch",
@@ -261,12 +287,7 @@ def run_mcbyte(args: argparse.Namespace) -> dict:
     crops_dir = output_dir / "crops"
     crops_dir.mkdir(parents=True, exist_ok=True)
 
-    ocr_model = None
-    if args.reader == "easyocr":
-        import easyocr
-        ocr_model = easyocr.Reader(
-            ["en"], gpu=args.device != "cpu", detector=False, verbose=False
-        )
+    ocr_model = build_reader(args)
 
     enable_masks = not args.no_masks
     if enable_masks and GlobalHydra.instance().is_initialized():
@@ -407,12 +428,7 @@ def run_sam2(args: argparse.Namespace) -> dict:
     crops_dir = output_dir / "crops"
     crops_dir.mkdir(parents=True, exist_ok=True)
 
-    ocr_model = None
-    if args.reader == "easyocr":
-        import easyocr
-        ocr_model = easyocr.Reader(
-            ["en"], gpu=args.device != "cpu", detector=False, verbose=False
-        )
+    ocr_model = build_reader(args)
 
     voter = NumberVoter(
         min_votes=args.min_votes, min_margin=args.min_margin,
@@ -534,7 +550,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--team-model", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--tracker", choices=("mcbyte", "sam2"), default="mcbyte")
-    parser.add_argument("--reader", choices=("easyocr", "qwen"), default="easyocr")
+    parser.add_argument("--reader", choices=("easyocr", "qwen", "doctr"), default="easyocr")
+    parser.add_argument("--doctr-arch", default="parseq",
+                        help="--reader doctr only")
     parser.add_argument("--ocr-every", type=int, default=OCR_EVERY_N_FRAMES)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--no-masks", action="store_true",

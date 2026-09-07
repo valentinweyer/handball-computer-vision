@@ -41,6 +41,7 @@ from tqdm import tqdm
 from trackers import McByteMaskConfig, McByteTracker
 
 from handball_cv.jersey.identity import (
+    read_numbers_doctr,
     NUMBER_CLASS_ID,
     OCR_EVERY_N_FRAMES,
     NumberVoter,
@@ -101,8 +102,10 @@ def parse_args() -> argparse.Namespace:
              "and replayed on later ones, so changing the voting rules does not "
              "re-pay for the reader. Defaults to <output stem>_reads.json",
     )
-    parser.add_argument("--reader", choices=("easyocr", "qwen"), default="easyocr",
+    parser.add_argument("--reader", choices=("easyocr", "qwen", "doctr"), default="easyocr",
                          help="sam2 only; mcbyte always uses EasyOCR")
+    parser.add_argument("--doctr-arch", default="parseq",
+                         help="--reader doctr only; docTR recogniser architecture")
     parser.add_argument("--base-url", default="http://127.0.0.1:8088/v1",
                          help="--reader qwen only")
     parser.add_argument("--model", default="qwen38-flash-next",
@@ -576,6 +579,12 @@ def render_sam2(args: argparse.Namespace) -> dict:
         ocr_model = easyocr.Reader(
             ["en"], gpu=args.device != "cpu", detector=False, verbose=False
         )
+    elif args.reader == "doctr":
+        import torch
+        from doctr.models import recognition_predictor
+        ocr_model = recognition_predictor(args.doctr_arch, pretrained=True).eval()
+        if args.device != "cpu" and torch.cuda.is_available():
+            ocr_model = ocr_model.cuda()
     else:
         # Deferred: evaluate_number_pipeline imports this module at module level,
         # so importing it back at import time would be circular. By call time both
@@ -663,6 +672,10 @@ def render_sam2(args: argparse.Namespace) -> dict:
                         texts = [hit.get(str(n), "") for n in wanted]
                     elif args.reader == "easyocr":
                         texts = read_numbers(ocr_model, frame_rgb, number_xyxy[wanted])
+                    elif args.reader == "doctr":
+                        texts = read_numbers_doctr(
+                            ocr_model, frame_rgb, number_xyxy[wanted]
+                        )
                     else:
                         texts = read_with_qwen(
                             frame_bgr, number_xyxy[wanted],

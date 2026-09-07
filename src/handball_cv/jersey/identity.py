@@ -120,6 +120,53 @@ def read_numbers(model, frame_rgb: np.ndarray, number_xyxy: np.ndarray) -> list:
     return out
 
 
+DOCTR_MIN_CONFIDENCE = 0.5
+
+
+def read_numbers_doctr(predictor, frame_rgb: np.ndarray, number_xyxy: np.ndarray) -> list:
+    """Recognize the same tight crops with a docTR scene-text recogniser.
+
+    Deliberately not routed through `read_numbers`: that path converts to
+    greyscale for EasyOCR, and these models are trained on colour text lines.
+    They also want the *tight* crop specifically -- measured on the 1080p
+    evaluation set, `parseq` scores 0.62 accuracy on the tight crop and 0.04 on
+    the padded context crop, the reverse of the VLM's preference.
+
+    All boxes in a frame go through the predictor in one batch; per-crop calls
+    dominate runtime otherwise. The recogniser emits free text, so a read only
+    counts when it is a legal jersey number, matching what the voter accepts.
+    """
+    number_xyxy = np.asarray(number_xyxy).reshape(-1, 4)
+    if len(number_xyxy) == 0:
+        return []
+    height, width = frame_rgb.shape[:2]
+    boxes = sv.clip_boxes(
+        sv.pad_boxes(xyxy=number_xyxy, px=NUMBER_CROP_PAD, py=NUMBER_CROP_PAD),
+        (width, height),
+    )
+    crops, kept = [], []
+    for position, box in enumerate(boxes):
+        crop = sv.crop_image(frame_rgb, box)
+        if crop.size and crop.shape[0] >= 2 and crop.shape[1] >= 2:
+            crops.append(crop)
+            kept.append(position)
+
+    out = [""] * len(boxes)
+    if not crops:
+        return out
+    # Deliberately not wrapped in try/except. An empty read means "this crop is
+    # not a legible number", and a broken predictor must never be able to say
+    # that: a misconfigured caller once passed predictor=None here and the
+    # resulting crash was swallowed into 0 reads over 99 frames, which looked
+    # like a measurement rather than a bug. Failures belong at the call site.
+    results = predictor(crops)
+    for position, result in zip(kept, results):
+        text, confidence = str(result[0]).strip(), float(result[1])
+        if confidence >= DOCTR_MIN_CONFIDENCE and is_valid_number(text):
+            out[position] = text
+    return out
+
+
 @dataclass
 class _Votes:
     counts: dict = field(default_factory=dict)  # normalized value -> count
