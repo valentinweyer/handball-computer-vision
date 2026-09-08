@@ -42,6 +42,14 @@ DUPLICATE_IOU_MIN = 0.6              # mask intersection-over-min-area
 DROPOUT_AREA_FRAC = 0.2              # of the track's own running median
 DRIFT_IOU_LOW, DRIFT_IOU_HIGH = 0.1, 0.5
 MATCH_IOU_MIN = 0.1                  # below this, a detection counts as unmatched
+# A candidate new player is followed between checkpoints by proximity, not by a
+# fixed spatial grid. Measured on a 25fps 1080p clip at CHECK_EVERY=10, people move
+# a median 30px, p90 93px, so grid bins of any fixed size systematically admit
+# stationary players and reject running ones. IoU is the wrong metric too: a player
+# box is ~40px wide, so a 30px sideways step -- the median -- already drops IoU to
+# 0.14. Centre distance scaled by box height tolerates real movement while staying
+# scale-aware as players change distance from the camera.
+PENDING_MAX_CENTRE_FRAC = 0.6
 REID_COS_SIM_MIN = 0.7
 # Units bug fix: this was previously compared against a *frame* index while
 # named/commented as a checkpoint count ("~300 frames at CHECK_EVERY=10"), so
@@ -67,6 +75,16 @@ EMBEDDING_EMA_ALPHA = 0.3
 # person" -- just asked in-place against a live track instead of against the
 # retired gallery.
 BODY_SWAP_COS_SIM_MIN = REID_COS_SIM_MIN
+
+
+def _centre_gap(a: np.ndarray, b: np.ndarray) -> float:
+    """Centre distance between two boxes, as a fraction of their mean height."""
+    ca = ((a[0] + a[2]) / 2.0, (a[1] + a[3]) / 2.0)
+    cb = ((b[0] + b[2]) / 2.0, (b[1] + b[3]) / 2.0)
+    scale = ((a[3] - a[1]) + (b[3] - b[1])) / 2.0
+    if scale <= 0:
+        return float("inf")
+    return float(np.hypot(ca[0] - cb[0], ca[1] - cb[1]) / scale)
 
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
@@ -137,7 +155,8 @@ class TrackManager:
         self.events: list[dict] = []
         # confirmation counters for not-yet-seen players, keyed by a coarse
         # spatial slot (no Track object exists for these yet)
-        self._pending_new: dict[str, int] = {}
+        # [box, consecutive_checkpoint_count] per unconfirmed candidate
+        self._pending_new_boxes: list = []
 
     @property
     def retired(self) -> list:
@@ -185,6 +204,15 @@ class TrackManager:
                 t.centroids.append((float(xs.mean()), float(ys.mean())))
                 if player is not None:
                     player.last_seen = frame_idx
+
+    def _match_pending(self, box) -> int | None:
+        """Index of the pending candidate this detection continues, if any."""
+        best, best_gap = None, PENDING_MAX_CENTRE_FRAC
+        for index, (pending_box, _count) in enumerate(self._pending_new_boxes):
+            gap = _centre_gap(box, pending_box)
+            if gap < best_gap:
+                best, best_gap = index, gap
+        return best
 
     def checkpoint(
         self, frame_idx, frame, live_obj_ids, live_masks, det_boxes_xyxy,
@@ -370,19 +398,32 @@ class TrackManager:
         # Claimed retired identities within this checkpoint, so two unmatched
         # detections cannot both revive the same one.
         taken: set = set()
+        # Candidates seen at THIS checkpoint. Anything pending that is not seen
+        # again is dropped below, so MIN_CONFIRM_CHECKPOINTS really does mean
+        # consecutive -- previously a counter survived arbitrary absences, so
+        # detection / gap / detection confirmed a player that was never
+        # continuously present.
+        confirmed_this_round: set = set()
         for di, box in enumerate(det_boxes_xyxy):
             if di in matched_det_idx or n_live_after >= MAX_LIVE_OBJECTS:
                 continue
             if not self.court_test_fn(box):
                 continue
-            # coarse spatial slot: a genuinely new player should re-appear in
-            # roughly the same place across consecutive checkpoints
-            key = f"{round(box[0] / 50)}_{round(box[1] / 50)}"
-            cnt = self._pending_new.get(key, 0) + 1
-            self._pending_new[key] = cnt
-            if cnt < MIN_CONFIRM_CHECKPOINTS:
+            # A genuinely new player should be seen again at the next checkpoint --
+            # but "the same place" has to mean "the same person", not "the same
+            # square of the image". Follow the candidate by box overlap so a
+            # running player confirms as readily as a standing one.
+            slot = self._match_pending(box)
+            if slot is None:
+                self._pending_new_boxes.append([box.copy(), 1])
+                confirmed_this_round.add(len(self._pending_new_boxes) - 1)
                 continue
-            del self._pending_new[key]
+            self._pending_new_boxes[slot][0] = box.copy()
+            self._pending_new_boxes[slot][1] += 1
+            confirmed_this_round.add(slot)
+            if self._pending_new_boxes[slot][1] < MIN_CONFIRM_CHECKPOINTS:
+                continue
+            self._pending_new_boxes[slot][1] = 0   # consumed; drop below
 
             is_gk = bool(det_is_goalkeeper[di])
             emb = det_embeddings[di]
@@ -413,5 +454,12 @@ class TrackManager:
                 self.events.append({"frame": frame_idx, "type": "add_new", "obj_id": oid})
             actions.append({"type": "add", "obj_id": oid, "box": box})
             n_live_after += 1
+
+        # Prune: a candidate not seen at this checkpoint has broken its run, and
+        # one already consumed into a track has count 0.
+        self._pending_new_boxes = [
+            entry for index, entry in enumerate(self._pending_new_boxes)
+            if index in confirmed_this_round and entry[1] > 0
+        ]
 
         return actions
