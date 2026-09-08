@@ -1045,6 +1045,48 @@ pairs of them were read in the *same frame* -- so they are different people, and
 a number-anchored merge without the simultaneity guard would have welded them
 together. `15` and `18` sat on two identities each with no shared read frame.
 
+### A verdict cannot outlive the fragment that earned it
+
+The first number-aware run removed every same-team duplicate, but the overlay
+still showed a *different* player wearing 15 after the real one left frame. The
+mechanism is one step upstream of the duplicate: a number is evidence about a
+person, filed against an identity, and re-ID moves an identity onto whoever it
+believes reappeared. The verdict travels with it, and nothing told the voter.
+
+```
+p6   re-ID revivals at frames [560, 1390]
+   f   65..110   read 15  x9        -> settles on 15
+   f  120..340   read 5/1/11/6      -> held; no rival qualifies
+   f  865        read 20            <- after revival @560
+   f  870        read 29            <- after revival @560
+   f 1060        read 2             <- after revival @560
+```
+
+Every read after frame 560 comes off a different shirt. The label stayed `15`
+because the hysteresis in `_verdict` holds a value until a *rival* qualifies --
+three votes past a 0.35 margin -- and `29` got one. That is why the wrong label
+was stable rather than flickering, and why it only came off when the real 15 was
+read again and arbitration stripped the loser. Arbitration was cleaning up after
+a defect one layer down.
+
+`NumberVoter.suspend`, called on every revival by `NumberIdentityResolver`,
+withholds the inherited verdict until a read from the new fragment backs it --
+including a single-digit partial, since the fold rule already treats "5" as
+evidence for "15". Two contradicting reads instead disown the tally outright.
+
+Keeping the votes was the first attempt, and a test caught why it fails: nine
+stale votes stay in the denominator, so the new player needs ~25 reads to clear
+`min_margin` against evidence about somebody else. One contradiction is a misread
+at these crop sizes (the readers run ~0.6 accurate); two is a different shirt.
+
+`claim` is split from `best` for the same reason: on this clip the inherited 15
+carried more folded votes (13) than the real one (17 including folds, but only 6
+raw), so an unvouched verdict left in the contest would have suppressed the
+correct player.
+
+Replaying p6's actual read sequence through the fixed voter: `15` through frame
+340, then no label at all from the first post-revival read onward.
+
 ### Output added for the guards
 
 `identity_report` (shared by both tracker paths) now emits `player_teams`,
