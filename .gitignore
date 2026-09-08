@@ -144,6 +144,15 @@ output/
 segment-anything-2-real-time/
 sam2-upstream/
 SAM-MT/
+prtreid-upstream/
+parseq-upstream/
+
+# Editor and agent configuration: per-machine, not per-project.
+.claude/
+vscode-remote-extensions/
+
+# 12 MB of embedded cell outputs. Strip them before tracking this one.
+notebooks/handball_ai_how_to_detect_track_and_identify_handball_players_sam3_1.ipynb
 
 # Non-destructive migration leftovers and local settings
 *.orig
