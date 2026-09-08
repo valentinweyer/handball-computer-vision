@@ -97,6 +97,7 @@ def drive_sam2(
     max_frames: int | None = None,
     goalkeeper_class_id: int = 1,
     desc: str = "SAM2 reprompt",
+    reid_encoder=None,
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -143,7 +144,9 @@ def drive_sam2(
     if len(det0) == 0:
         raise RuntimeError("no cached detections on frame 0")
 
-    track_manager = TrackManager(team_model, court_test_fn=lambda box: True)
+    track_manager = TrackManager(
+        team_model, court_test_fn=lambda box: True, reid_encoder=reid_encoder
+    )
     is_gk0 = det0.class_id == goalkeeper_class_id
     obj_ids0 = track_manager.seed(0, det0.xyxy, frame0, is_gk0)
 

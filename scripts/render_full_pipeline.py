@@ -88,6 +88,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--team-model", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--reid-embedding", default="team-model", choices=("team-model", "prtreid"),
+        help="appearance features used to recognise a returning player; the "
+             "team-model default cannot separate teammates (0.35 rank-1 vs "
+             "0.55 for prtreid, chance 0.19)",
+    )
+    parser.add_argument("--prtreid-root", type=Path, default=ROOT / "prtreid-upstream")
+    parser.add_argument(
+        "--prtreid-checkpoint", type=Path,
+        default=ROOT / "models/prtreid/prtreid-soccernet-baseline.pth.tar",
+    )
     parser.add_argument("--tracker", choices=("mcbyte", "sam2"), default="mcbyte")
     parser.add_argument(
         "--number-detections", type=Path, default=None,
@@ -333,6 +344,7 @@ def annotate_frame(
     roster: dict,
     mask_annotator,
     label_annotator,
+    canonical=None,
 ) -> np.ndarray:
     """Team-tinted mask fill plus a `#number` label per player.
 
@@ -347,10 +359,15 @@ def annotate_frame(
 
     lookup = np.array([color_index(player) for player in players], dtype=int)
     labels = []
+    resolve = canonical or int
     for player, player_id in zip(players, player_ids):
-        number, _votes, _margin = voter.best(int(player_id))
+        # Number evidence can fold two allocated ids into one player after the
+        # fact (`NumberIdentityResolver`); the label follows the fold so the
+        # overlay shows one person, not two boxes disagreeing about a number.
+        player_id = resolve(int(player_id))
+        number, _votes, _margin = voter.best(player_id)
         if number is None:
-            labels.append(f"P{int(player_id)}")
+            labels.append(f"P{player_id}")
             continue
         name = roster_name(roster, color_index(player), number)
         labels.append(f"#{number} {name}" if name else f"#{number}")
@@ -370,6 +387,122 @@ def annotate_frame(
         scene=annotated, detections=drawn, labels=labels,
         custom_color_lookup=lookup,
     )
+
+
+class NumberIdentityResolver:
+    """Applies number evidence to identities once the reads have accumulated.
+
+    Two jobs, in this order, both of which need the *same* two facts -- what
+    team an identity is on, and whether two identities were ever on screen at
+    the same instant -- which is why they live together:
+
+      1. `link`: same team, same resolved number, never simultaneously live.
+         That is one player the tracker split in two, and the halves are folded.
+      2. `arbitrate`: same team, same resolved number, but they *were* on screen
+         together. That cannot be one player, so the weaker claim is withheld
+         rather than displayed as a second copy of someone else's number.
+
+    Order matters. Linking first means arbitration only ever sees duplicates
+    that genuinely coexisted, so it never suppresses a fragment it should have
+    merged instead.
+    """
+
+    def __init__(self, registry, voter):
+        self.registry = registry
+        self.voter = voter
+        self.co_live: dict[int, set] = {}
+
+    def observe_frame(self, player_ids) -> None:
+        """Note who shared this frame. Two ids seen together are two people."""
+        ids = {int(p) for p in player_ids}
+        for player_id in ids:
+            self.co_live.setdefault(player_id, set()).update(ids - {player_id})
+
+    def _ever_together(self, a: int, b: int) -> bool:
+        """True if any identity folded into `a` shared a frame with one in `b`."""
+        canonical = self.registry.canonical
+        group_a = {p for p in self.co_live if canonical(p) == canonical(a)}
+        group_b = {p for p in self.co_live if canonical(p) == canonical(b)}
+        return any(self.co_live.get(p, set()) & group_b for p in group_a)
+
+    def resolve(self, frame_idx: int) -> None:
+        teams = self.registry.team_by_player_id()
+        claims: dict = {}
+        for player_id, team_id in teams.items():
+            value, count, _margin = self.voter._verdict(player_id)
+            if value is not None:
+                claims.setdefault((team_id, value), []).append((count, player_id))
+
+        for holders in claims.values():
+            if len(holders) < 2:
+                continue
+            # Fold into the best-evidenced holder so the surviving identity is
+            # the one whose number is least likely to be wrong.
+            holders.sort(key=lambda h: (-h[0], h[1]))
+            keeper = holders[0][1]
+            for _count, other in holders[1:]:
+                if self._ever_together(keeper, other):
+                    continue
+                if self.registry.link(other, keeper, frame_idx):
+                    self.voter.merge(other, keeper)
+
+        self.voter.arbitrate({
+            self.registry.canonical(pid): team for pid, team in teams.items()
+        })
+
+
+def build_reid_encoder(args: argparse.Namespace):
+    """`crops_rgb -> (N, D)` for identity, or None to reuse the team features.
+
+    Measured on the labelled 1080p set (`scripts.measure_reid_discriminability`),
+    rank-1 within a team over an identical 256 queries: team-model features 0.35,
+    person re-ID 0.55, chance 0.19. The encoder only runs on people the tracker
+    has not seen before, so it is a small batch a few times a second.
+    """
+    if args.reid_embedding == "team-model":
+        return None
+    from handball_cv.embeddings.prtreid import PRTReIDBackend
+    backend = PRTReIDBackend(
+        source_root=args.prtreid_root, checkpoint=args.prtreid_checkpoint,
+        device=args.device, feature_kind="global",
+    )
+    return backend.encode_images
+
+
+def identity_report(
+    everyone, events, voter, number_reads, presence, teams, aliases,
+) -> dict:
+    """The half of the run summary both tracker paths produce identically.
+
+    `presence` and `teams` are what make the number evidence checkable rather
+    than merely suggestive. Two identities resolving to the same number are
+    either one fragmented player or two different people, and only their teams
+    and whether they were ever live in the same frame can tell those apart --
+    a question the earlier output could not answer, leaving read co-occurrence
+    as the only proxy, which is far too sparse to conclude from.
+    """
+    resolved = {p.player_id: voter.best(p.player_id)[0] for p in everyone}
+    # Raw histograms make a poor number yield diagnosable: too few reads per
+    # player, or enough reads that disagree and never clear the vote margin.
+    raw_votes = {
+        pid: dict(sorted(v.counts.items(), key=lambda kv: -kv[1]))
+        for pid, v in voter._votes.items()
+    }
+    return {
+        "numbers_resolved": {k: v for k, v in resolved.items() if v is not None},
+        "number_votes_raw": raw_votes,
+        "number_reads": number_reads,
+        "player_teams": teams,
+        "player_aliases": aliases,
+        "frame_players": presence,
+        "label_changes_total": sum(p.team_switches for p in everyone),
+        # Counters alone cannot be investigated: a switch is only actionable with
+        # its frame and player_id, so the events themselves travel with the run.
+        "identity_events": [
+            e for e in events
+            if e["type"] in ("suspected_id_switch", "team_switch", "reid", "link")
+        ],
+    }
 
 
 def render(args: argparse.Namespace) -> dict:
@@ -418,6 +551,7 @@ def render(args: argparse.Namespace) -> dict:
         team_model,
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
         team_switch_observations=TEAM_SWITCH_OBSERVATIONS,
+        reid_encoder=build_reid_encoder(args),
     )
     writer = cv2.VideoWriter(
         str(args.output), cv2.VideoWriter_fourcc(*"mp4v"), info.fps,
@@ -431,6 +565,8 @@ def render(args: argparse.Namespace) -> dict:
     ocr_frames = 0
     ocr_reads = 0
     number_reads: list[dict] = []
+    presence: dict[str, list[int]] = {}
+    resolver = NumberIdentityResolver(identity.registry, voter)
     rejected_crops = 0
     for frame_index, frame_bgr in enumerate(tqdm(
         sv.get_video_frames_generator(str(source)),
@@ -499,13 +635,20 @@ def render(args: argparse.Namespace) -> dict:
                                 # Timestamped so a read can be placed before or
                                 # after an identity switch; aggregate vote counts
                                 # cannot tell which physical player produced them.
-                                number_reads.append(
-                                    {"frame": frame_index, "player_id": _pid, "value": raw}
-                                )
+                                number_reads.append({
+                                    "frame": frame_index, "player_id": _pid,
+                                    "value": raw, "number_row": int(number_row),
+                                    "box": number_xyxy[number_row].tolist(),
+                                })
 
+        presence[str(frame_index)] = sorted(int(p) for p in player_ids)
+        resolver.observe_frame(player_ids)
+        if numbers_enabled and frame_index % args.ocr_every == 0:
+            resolver.resolve(frame_index)
         annotated = annotate_frame(
             frame_bgr, tracked.xyxy, player_ids, players, masks,
             voter, roster, mask_annotator, label_annotator,
+            canonical=identity.registry.canonical,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -524,36 +667,22 @@ def render(args: argparse.Namespace) -> dict:
         cv2.imwrite(str(preview_path), preview)
 
     everyone = list(identity.players.values()) + identity.retired
-    resolved = {
-        player.player_id: voter.best(player.player_id)[0] for player in everyone
-    }
-    # Raw histograms make a poor number yield diagnosable: too few reads per
-    # player, or enough reads that disagree and never clear the vote margin.
-    raw_votes = {
-        pid: dict(sorted(v.counts.items(), key=lambda kv: -kv[1]))
-        for pid, v in voter._votes.items()
-    }
     result = {
         "source": str(source),
         "output": str(args.output),
         "preview": str(preview_path),
         "frames": frames_written,
         "tracker": "mcbyte",
+        "reid_embedding": args.reid_embedding,
         "mcbyte_masks": enable_masks,
         "numbers_enabled": numbers_enabled,
         "ocr_frames": ocr_frames,
         "ocr_reads": ocr_reads,
         "rejected_number_crops": rejected_crops,
-        "numbers_resolved": {k: v for k, v in resolved.items() if v is not None},
-        "number_votes_raw": raw_votes,
-        "number_reads": number_reads,
-        "label_changes_total": sum(player.team_switches for player in everyone),
-        # Counters alone cannot be investigated: a switch is only actionable with
-        # its frame and player_id, so the events themselves travel with the run.
-        "identity_events": [
-            e for e in identity.events
-            if e["type"] in ("suspected_id_switch", "team_switch", "reid")
-        ],
+        **identity_report(
+            everyone, identity.events, voter, number_reads, presence,
+            identity.team_by_player_id(), dict(identity.registry.alias),
+        ),
         **identity.summary(),
     }
     args.output.with_suffix(".json").write_text(json.dumps(result, indent=2))
@@ -639,6 +768,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         frame_cache_dir=args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem),
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
         desc=f"full pipeline sam2 {source.stem}",
+        reid_encoder=build_reid_encoder(args),
     )
     registry = track_manager.registry
 
@@ -660,6 +790,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
     preview = None
     frames_written = ocr_frames = ocr_reads = rejected_crops = 0
     number_reads: list[dict] = []
+    presence: dict[str, list[int]] = {}
+    resolver = NumberIdentityResolver(registry, voter)
     for result in frames:
         frame_rgb = result.read_frame()
         frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
@@ -712,11 +844,18 @@ def render_sam2(args: argparse.Namespace) -> dict:
                             number_reads.append({
                                 "frame": result.frame_idx,
                                 "player_id": int(player_ids[local_row]), "value": raw,
+                                "number_row": int(number_row),
+                                "box": number_xyxy[number_row].tolist(),
                             })
 
+        presence[str(result.frame_idx)] = sorted(int(p) for p in player_ids)
+        resolver.observe_frame(player_ids)
+        if result.frame_idx % args.ocr_every == 0:
+            resolver.resolve(result.frame_idx)
         annotated = annotate_frame(
             frame_bgr, result.boxes, player_ids, players, masks,
             voter, roster, mask_annotator, label_annotator,
+            canonical=registry.canonical,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -739,29 +878,21 @@ def render_sam2(args: argparse.Namespace) -> dict:
         print(f"[reads] wrote {sum(len(v) for v in reads_log.values())} reads -> {reads_cache_path}")
 
     everyone = list(registry.live.values()) + registry.retired
-    resolved = {p.player_id: voter.best(p.player_id)[0] for p in everyone}
-    raw_votes = {
-        pid: dict(sorted(v.counts.items(), key=lambda kv: -kv[1]))
-        for pid, v in voter._votes.items()
-    }
     result_dict = {
         "source": str(source),
         "output": str(args.output),
         "preview": str(preview_path),
         "tracker": "sam2",
+        "reid_embedding": args.reid_embedding,
         "frames": frames_written,
         "numbers_enabled": True,
         "ocr_frames": ocr_frames,
         "ocr_reads": ocr_reads,
         "rejected_number_crops": rejected_crops,
-        "numbers_resolved": {k: v for k, v in resolved.items() if v is not None},
-        "number_votes_raw": raw_votes,
-        "number_reads": number_reads,
-        "label_changes_total": sum(p.team_switches for p in everyone),
-        "identity_events": [
-            e for e in registry.events
-            if e["type"] in ("suspected_id_switch", "team_switch", "reid")
-        ],
+        **identity_report(
+            everyone, registry.events, voter, number_reads, presence,
+            registry.team_by_player_id(), dict(registry.alias),
+        ),
         **registry.summary(),
     }
     args.output.with_suffix(".json").write_text(json.dumps(result_dict, indent=2))

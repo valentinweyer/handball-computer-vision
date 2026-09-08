@@ -142,8 +142,13 @@ class TrackManager:
     def __init__(
         self, team_model, court_test_fn, next_obj_id_start=1,
         team_switch_observations=TEAM_SWITCH_OBSERVATIONS,
+        reid_encoder=None,
     ):
         self.team_model = team_model  # a team_model.TeamModel
+        # Optional `crops_rgb -> (N, D)` callable describing people for identity
+        # only; team classification always stays on the team model's features.
+        # See `_appearance` for what it buys.
+        self.reid_encoder = reid_encoder
         self.court_test_fn = court_test_fn  # (xyxy) -> bool, inside playing surface
         self.registry = PlayerRegistry(
             reid_cos_sim_min=REID_COS_SIM_MIN,
@@ -157,6 +162,44 @@ class TrackManager:
         # spatial slot (no Track object exists for these yet)
         # [box, consecutive_checkpoint_count] per unconfirmed candidate
         self._pending_new_boxes: list = []
+
+    def _appearance(self, frame: np.ndarray, boxes_xyxy: np.ndarray, fallback):
+        """Identity vectors for these boxes: the re-ID encoder's, or `fallback`.
+
+        The team model describes a torso well enough to read shirt colour, which
+        is all team classification asks. Identity asks it to tell two people in
+        the *same* shirt apart, and measured on the labelled 1080p set it cannot:
+        different teammates sit as close as two views of one player (0.822 vs
+        0.802 median cosine on Melsungen), for 0.35 rank-1 within a team against
+        a 0.19 chance floor. A person-reID encoder scores 0.55 on the same
+        queries and wins on every clip. Keeping the two feature spaces separate
+        also keeps an identity error from becoming a team error.
+
+        A box too small to crop keeps its fallback vector rather than becoming a
+        zero vector, which would sit at cosine 0 from everything and re-ID as
+        nothing.
+        """
+        if self.reid_encoder is None or not len(boxes_xyxy):
+            return fallback
+        height, width = frame.shape[:2]
+        crops, rows = [], []
+        for row, (x1, y1, x2, y2) in enumerate(
+            np.asarray(boxes_xyxy, dtype=float).round().astype(int)
+        ):
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(width, x2), min(height, y2)
+            if x2 - x1 >= 2 and y2 - y1 >= 2:
+                crops.append(frame[y1:y2, x1:x2])
+                rows.append(row)
+        if not crops:
+            return fallback
+        encoded = np.asarray(self.reid_encoder(crops), dtype=float)
+        out = np.zeros((len(boxes_xyxy), encoded.shape[1]), dtype=float)
+        for slot, row in enumerate(rows):
+            out[row] = encoded[slot]
+        for row in set(range(len(boxes_xyxy))) - set(rows):
+            out[row] = np.resize(np.asarray(fallback[row], dtype=float), out.shape[1])
+        return out
 
     @property
     def retired(self) -> list:
@@ -174,6 +217,7 @@ class TrackManager:
         embeddings, teams, confidence, quality = self.team_model.observe(
             frame, boxes_xyxy
         )
+        embeddings = self._appearance(frame, boxes_xyxy, embeddings)
         obj_ids = []
         for emb, team, conf, crop_quality, is_gk in zip(
             embeddings, teams, confidence, quality, is_goalkeeper
@@ -261,6 +305,7 @@ class TrackManager:
             det_embeddings, det_teams, det_confidence, det_quality = (
                 self.team_model.observe(frame, det_boxes_xyxy)
             )
+            det_embeddings = self._appearance(frame, det_boxes_xyxy, det_embeddings)
         else:
             det_embeddings = np.empty((0, 0), dtype=float)
             det_teams = np.empty(0, dtype=int)

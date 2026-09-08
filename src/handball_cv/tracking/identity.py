@@ -47,6 +47,29 @@ from handball_cv.teams.model import (
 # tunables
 REID_COS_SIM_MIN = 0.7          # cosine similarity floor for reviving a retired player
 REID_MAX_GAP_FRAMES = 300       # don't re-ID against players gone longer than this
+# How far the best candidate must beat the runner-up before a revival is
+# believed. The absolute floor above cannot do this job: measured on the
+# labelled 1080p set, same-person and different-person similarities overlap
+# almost completely within a team (0.792 vs 0.782 median, PRTReID on
+# Eisenach), so no floor separates them and 82-100% of *different*-person
+# pairs clear 0.7. A relative gate can still abstain when the top two
+# candidates are indistinguishable, which is exactly when the pick is a coin
+# flip. Pooled over five clips, by margin:
+#
+#   delta   match rate   precision   wrong match when the player is NEW
+#    0.00         1.00        0.59                                 1.00
+#    0.02         0.23        0.78                                 0.14
+#    0.03         0.11        0.86                                 0.04
+#
+# The delta=0 row is what shipped: re-ID always claims a match, including for
+# players it has never seen, which is how a returning number lands on somebody
+# else. 0.02 buys most of that back. The cost is fragmentation, and the two
+# errors are not equal -- a fragment is repairable from number evidence later,
+# while a wrong revival silently contaminates a vote tally for good.
+#
+# Measured against a ~25-crop gallery; the runtime gallery is smaller, so real
+# margins run larger and this gate fires less often than the table implies.
+REID_MARGIN_MIN = 0.02
 TEAM_OBSERVATION_INTERVAL = 5
 TEAM_SWITCH_OBSERVATIONS = 3
 TEAM_SWITCH_MIN_QUALITY = 0.40
@@ -261,16 +284,25 @@ class PlayerRegistry:
         self,
         reid_cos_sim_min: float = REID_COS_SIM_MIN,
         reid_max_gap_frames: int = REID_MAX_GAP_FRAMES,
+        reid_margin_min: float = REID_MARGIN_MIN,
         team_switch_observations: int = TEAM_SWITCH_OBSERVATIONS,
         next_id_start: int = 1,
     ):
         self.reid_cos_sim_min = reid_cos_sim_min
         self.reid_max_gap_frames = reid_max_gap_frames
+        self.reid_margin_min = reid_margin_min
         self.team_switch_observations = max(1, int(team_switch_observations))
 
         self.live: dict[int, PlayerRecord] = {}
         self.retired: list[PlayerRecord] = []
         self.events: list[dict] = []
+        # player_id -> the identity it has been shown to be the same person as.
+        # An interpretation layer, deliberately not a rewrite: the trackers keep
+        # their own ids (SAM2's obj_id is a live handle into its predictor
+        # session and cannot be renumbered), records stay addressable under the
+        # id that created them, and a link can be dropped without unwinding
+        # anything. See `link`.
+        self.alias: dict[int, int] = {}
         self._next_id = next_id_start
 
     def alloc_id(self) -> int:
@@ -283,7 +315,7 @@ class PlayerRegistry:
         team_id: int = None, confidence: float = 0.0, quality: float = 0.0,
         is_goalkeeper: bool = None,
     ):
-        """Best retired player above the similarity floor, or None.
+        """Best retired player, or None when no candidate is clearly the best.
 
         Team and goalkeeper role may both veto a match, but only from a position
         of evidence: the incoming observation must itself be qualified, and the
@@ -291,9 +323,16 @@ class PlayerRegistry:
         one weak colour read must not permanently forbid the correct match --
         and a label whose team is currently contested has stopped being a
         trustworthy veto, which falling `team_confidence` now expresses.
+
+        Surviving the vetoes is not enough. The winner must also beat the
+        runner-up by `reid_margin_min`, because within a team the similarity
+        score alone carries almost no signal (see the constant). A single
+        eligible candidate has no runner-up to beat and so is judged on the
+        floor alone -- the one case this gate cannot help with, and the reason
+        number evidence still has to arbitrate downstream.
         """
-        best, best_sim = None, self.reid_cos_sim_min
         incoming_qualified = is_qualified(confidence, quality)
+        ranked = []
         for cand in self.retired:
             if cand.player_id in taken:
                 continue
@@ -317,8 +356,15 @@ class PlayerRegistry:
                 np.dot(embedding, cand.embedding)
                 / (np.linalg.norm(embedding) * np.linalg.norm(cand.embedding) + 1e-8)
             )
-            if sim > best_sim:
-                best, best_sim = cand, sim
+            ranked.append((sim, cand))
+        if not ranked:
+            return None
+        ranked.sort(key=lambda item: -item[0])
+        best_sim, best = ranked[0]
+        if best_sim < self.reid_cos_sim_min:
+            return None
+        if len(ranked) > 1 and best_sim - ranked[1][0] < self.reid_margin_min:
+            return None
         return best
 
     def create(
@@ -410,6 +456,39 @@ class PlayerRegistry:
                 "frame": frame_idx, "type": "retire", "player_id": player_id,
             })
 
+    def canonical(self, player_id: int) -> int:
+        """The identity `player_id` has been folded into, or itself."""
+        seen = set()
+        while player_id in self.alias and player_id not in seen:
+            seen.add(player_id)
+            player_id = self.alias[player_id]
+        return player_id
+
+    def link(self, from_id: int, into_id: int, frame_idx: int) -> bool:
+        """Record that two allocated identities are the same player.
+
+        Re-ID has to decide who a reappearing player is from appearance alone,
+        the instant they reappear -- and at that instant the new track has no
+        number reads at all, so the one feature that actually identifies a
+        handball player cannot inform the decision. It takes a few reads for a
+        number to qualify, by which point the identity is already allocated.
+        This is where that later evidence gets to act.
+
+        Deliberately an alias rather than a merge of the records: the caller may
+        be mid-propagation with `from_id` live in a tracker session, and the two
+        records still hold their own team votes and fragment histories, which is
+        what makes the link reversible if it turns out to be wrong.
+        """
+        from_id, into_id = self.canonical(from_id), self.canonical(into_id)
+        if from_id == into_id:
+            return False
+        self.alias[from_id] = into_id
+        self.events.append({
+            "frame": frame_idx, "type": "link",
+            "player_id": from_id, "into_player_id": into_id,
+        })
+        return True
+
     def team_by_player_id(self) -> dict[int, int]:
         """Current best (voted) team label for every player_id ever allocated."""
         everyone = list(self.live.values()) + self.retired
@@ -418,8 +497,11 @@ class PlayerRegistry:
     def summary(self) -> dict:
         everyone = list(self.live.values()) + self.retired
         fragments = {p.player_id: len(p.fragment_ids) for p in everyone}
+        linked = len({self.canonical(p.player_id) for p in everyone})
         return {
             "players": len(everyone),
+            "distinct_players_after_linking": linked,
+            "number_links": sum(1 for e in self.events if e["type"] == "link"),
             "tracker_ids_consumed": sum(fragments.values()),
             "reid_hits": sum(1 for e in self.events if e["type"] == "reid"),
             "team_switches": sum(
@@ -449,8 +531,13 @@ class IdentityManager:
         reid_max_gap_frames: int = REID_MAX_GAP_FRAMES,
         goalkeeper_class_id: int = 1,
         team_switch_observations: int = TEAM_SWITCH_OBSERVATIONS,
+        reid_encoder=None,
     ):
         self.team_model = team_model  # a team_model.TeamModel
+        # Optional `crops_rgb -> (N, D)` callable describing people for re-ID
+        # only. Without one the team model's own features are reused, which is
+        # what shipped -- see `_reid_embeddings` for why that is a poor default.
+        self.reid_encoder = reid_encoder
         self.goalkeeper_class_id = goalkeeper_class_id
         self.registry = PlayerRegistry(
             reid_cos_sim_min=reid_cos_sim_min,
@@ -481,6 +568,38 @@ class IdentityManager:
         return self.team_model.observe(
             frame_rgb, boxes_xyxy, context_boxes_xyxy
         )
+
+    def _reid_embeddings(self, frame_rgb: np.ndarray, boxes_xyxy: np.ndarray):
+        """Appearance vectors for identity, or None to reuse the team features.
+
+        The team model describes a torso well enough to read shirt colour, which
+        is all team classification asks of it. Identity asks something it was
+        never selected for -- telling two people in the *same* shirt apart --
+        and measured on the labelled 1080p set it cannot: different teammates sit
+        as close as two views of one player (0.822 vs 0.802 median cosine on
+        Melsungen), giving 0.35 rank-1 within a team against a 0.19 chance floor.
+        A person-reID encoder scores 0.55 on the same queries and galleries, and
+        wins on every clip. Team classification is untouched by this: it keeps
+        its own features, so an identity error and a team error stay independent.
+
+        Boxes too small to crop fall back to the team embedding rather than
+        contributing a zero vector, which would match everything.
+        """
+        if self.reid_encoder is None:
+            return None
+        height, width = frame_rgb.shape[:2]
+        crops, rows = [], []
+        for row, (x1, y1, x2, y2) in enumerate(
+            np.asarray(boxes_xyxy, dtype=float).round().astype(int)
+        ):
+            x1, y1 = max(0, x1), max(0, y1)
+            x2, y2 = min(width, x2), min(height, y2)
+            if x2 - x1 >= 2 and y2 - y1 >= 2:
+                crops.append(frame_rgb[y1:y2, x1:x2])
+                rows.append(row)
+        if not crops:
+            return None
+        return dict(zip(rows, np.asarray(self.reid_encoder(crops), dtype=float)))
 
     def update(
         self, frame_idx: int, frame_rgb: np.ndarray, detections: sv.Detections
@@ -550,9 +669,11 @@ class IdentityManager:
 
         if unseen_pos:
             taken = set()
-            for i in unseen_pos:
+            reid = self._reid_embeddings(frame_rgb, detections.xyxy[unseen_pos]) or {}
+            for slot, i in enumerate(unseen_pos):
                 tracker_id = int(tracker_ids[i])
                 embedding, team, confidence, quality = observations[i]
+                embedding = reid.get(slot, embedding)
                 goalkeeper = bool(is_goalkeeper[i])
                 match = self.registry.reid_match(
                     embedding,
