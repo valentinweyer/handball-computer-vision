@@ -5,15 +5,52 @@ tracking, identity correction, and court mapping.
 
 ## Current status
 
-- RF-DETR player and goalkeeper detection is the detector baseline.
-- Team classification discovers two anonymous field-player teams separately for
-  each video using clean torso color evidence and guarded visual fallback.
-- Raw classification can be evaluated without a tracker.
-- MCByte is the preferred tracker. `IdentityManager` adds reversible temporal
-  team labels so an early mistake is not frozen for the rest of a track.
-- Mask-derived jersey color is an overlap-only fallback and cannot override a
-  valid clean-crop observation by itself.
-- Team-gated tracking and the SAM2 tracker remain experiments, not defaults.
+**Detection.** A fine-tuned RF-DETR is the baseline, producing goalkeeper,
+player, referee and jersey-number boxes. Its output is cached per video; every
+consumer filters the classes it wants, because a cache that drops classes forces
+a re-detection later.
+
+**Team classification** discovers two anonymous field-player teams separately for
+each video from clean torso colour, with a guarded visual fallback. It stays
+frame-local: a tracker never supplies or freezes a team prediction, and
+mask-derived colour is an overlap-only fallback that cannot override a valid
+clean-crop observation.
+
+**Tracking.** MCByte is the shipped default (`--tracker mcbyte`). SAM2 with
+periodic detector reprompting measured better on every clip tested and is what
+recent work uses; see `docs/tracking-evaluation.md` §8 before changing the
+default.
+
+**Jersey numbers.** Number boxes come from the detector, are matched to players
+by mask intersection-over-smaller, read by a scene-text recogniser, and voted per
+identity. Reader accuracy on 323 human-labelled 1080p crops:
+
+| reader | accuracy | selective | abstention |
+| --- | ---: | ---: | ---: |
+| `--reader parseq` (baudm original) | **0.858** | 0.958 | 0.89 |
+| `--reader doctr --doctr-arch parseq` | 0.622 | 0.817 | 0.88 |
+| `--reader qwen` (Qwen3.8, no-think) | 0.628 | 0.736 | 0.81 |
+| `--reader easyocr` (default) | 0.365 | 0.641 | 0.84 |
+
+All four scored on the same crops with the same rule, at confidence 0.5.
+*Selective* is accuracy over the crops a reader chose to answer; *abstention* is
+how often it correctly stays silent on a crop a human called unreadable. The two
+`parseq` rows are the same architecture with different weights -- docTR trains its
+own on document text, and the gap between them is the largest single measured
+improvement in the pipeline (paired McNemar p=2e-19).
+
+**Identity** is tracker-agnostic. `PlayerRegistry` holds reversible team labels
+so an early mistake is not frozen, and re-ID matches a returning player by
+appearance. That appearance signal is weak within a team -- 0.55 rank-1 against
+a 0.19 chance floor with `--reid-embedding prtreid`, 0.35 with the team model's
+own features -- so jersey numbers arbitrate afterwards: a verdict is suspended
+when re-ID moves an identity, withheld when two identities on one team claim the
+same number, and used to fold identities that are provably the same player.
+
+**Not defaults:** team-gated association, and the court test, which is still a
+no-op (`docs/architecture.md`, `TODO.md`).
+
+Open work, each with the measurement that motivates it, is in `TODO.md`.
 
 ## Repository layout
 
@@ -29,11 +66,20 @@ data/cache/         ignored reproducible caches
 models/             ignored local checkpoints
 runs/               ignored generated results
 notebooks/          actual notebooks plus untouched migration originals
+docs/               architecture, handoff, and per-experiment findings
+TODO.md             deferred work, each entry with its evidence
 ```
 
-The old `notebooks/*.py`, `outputs/`, `source/`, model duplicates, and nested
-upstream repositories are still present. Nothing was deleted during the first
-migration pass; see `docs/legacy-layout.md`.
+External research checkouts are cloned beside the project and gitignored:
+`sam2-upstream/` (`--tracker sam2`), `prtreid-upstream/` (`--reid-embedding
+prtreid`) and `parseq-upstream/` (`--reader parseq`). Each is overridable by
+`SAM2_UPSTREAM_DIR`, `--prtreid-root` and `PARSEQ_UPSTREAM_DIR`.
+
+The old `notebooks/*.py`, `outputs/`, model duplicates, and nested upstream
+repositories are still present. Nothing was deleted during the first migration
+pass; see `docs/legacy-layout.md`. Source clips have since moved to `data/raw/`,
+but note the `notebooks/*.py` copies have drifted from the modules that replaced
+them -- `TODO.md` item 12 lists how.
 
 ## Setup
 
@@ -52,11 +98,12 @@ read from `ROBOFLOW_API_KEY`; copy `.env.example` to `.env` and fill it locally.
 ## Tests
 
 ```bash
-conda run -n NewEnv pytest -q
+conda run -n NewEnv pytest -q tests
 ```
 
-Pytest is scoped to `tests/unit/`, so vendored ONNX Runtime and model repositories
-are no longer collected.
+`testpaths` is scoped to `tests/unit/`, so vendored ONNX Runtime and model
+repositories are never collected. Do not run bare `pytest` from the repository
+root -- those trees carry unrelated test entry points that break collection.
 
 ## Team-classification diagnostics
 
@@ -67,6 +114,34 @@ python -m scripts.render_raw_team_classification --help
 python -m scripts.render_mcbyte_team_correction --help
 python -m scripts.render_mask_team_comparison --help
 python -m scripts.evaluate_team_embeddings --help
+```
+
+## End-to-end and measurement
+
+`render_full_pipeline` is the one command that runs detection, tracking, team
+classification and number reading together and writes both an overlay video and
+a run summary (per-frame identities, votes, reads, teams and events):
+
+```bash
+python -m scripts.render_full_pipeline data/raw/<clip>.mp4 \
+    --detections <cache>.npz --number-detections <cache>.npz \
+    --team-model <model>.pkl \
+    --tracker sam2 --reader parseq --reid-embedding prtreid \
+    --output runs/full_pipeline/<name>.mp4
+```
+
+Reader output is cached beside the run as `<name>_reads.json` and replayed on
+re-render, so iterating on voting rules costs one tracking pass rather than a
+full reader pass.
+
+The claims in *Current status* are reproducible:
+
+```bash
+python -m scripts.benchmark_jersey_parseq        --help   # reader accuracy table
+python -m scripts.benchmark_doctr_readers        --help
+python -m scripts.measure_reid_discriminability  --help   # can re-ID separate teammates?
+python -m scripts.sweep_number_crop_padding      --help
+python -m scripts.compare_read_modes             --help
 ```
 
 The architectural dependency rules and artifact boundaries are documented in
