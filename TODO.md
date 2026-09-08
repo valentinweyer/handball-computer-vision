@@ -153,12 +153,67 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 10. Housekeeping
+## 11. Do not commit `docs/outputs-migration-manifest.csv` as it stands
 
-- `pytest -q tests` fails collection: `test_team_model.py`,
-  `test_team_dataset.py`, `test_team_calibration.py` and `test_team_evaluation.py`
-  exist in **both** `tests/` and `tests/unit/`, and without `__init__.py` pytest
-  cannot import both. Run the two directories separately (216 + 41 pass) until
-  the basenames are disambiguated.
+```
+committed in git    2.16 MB
+working tree      135.70 MB    same 3,314 rows
+```
+
+The regenerated audit reclassified 3,294 files as `directory_level_reference`
+(up from 72) and puts a reference list of up to 713 entries on nearly every row,
+so rows went from short to ~41 KB each. Committing it adds **135 MB to history
+permanently** -- git history cannot be trimmed afterwards without a rewrite that
+invalidates every clone.
+
+Either regenerate the manifest without per-row reference lists (a count plus the
+report's summary table carries the same information), or keep the CSV out of git
+and track only `outputs-migration-reference-report.md`.
+
+The tracked 2.16 MB version is fine and unaffected.
+
+---
+
+## 12. `notebooks/*.py` have diverged from the modules that replaced them
+
+CLAUDE.md calls them migration fallbacks that "still work". They no longer work
+the *same*, which is worse than not working. 13 of 14 differ from their
+`src/`/`scripts/` counterpart; only `mask_cache.py` is identical.
+
+Most differences are the expected import-path change (`from team_model import`
+vs `from handball_cv.teams.model import`). This one is not:
+
+```
+notebooks/render_raw_team_classification.py    32 lines behind scripts/
+  missing PERSON_CLASS_IDS, person_detections(), number_detections()
+```
+
+That is commit `6dc4ff1` -- the fix that stopped the tracker following jersey
+*number boxes* as people, where 16,689 of 36,686 cached detections on the 60s
+Melsungen clip were numbers. The notebooks copy still has the old behaviour and
+will silently reproduce the bug.
+
+Decide one way: re-sync the copies from their canonical modules, or delete them
+and let `git log` be the fallback. Leaving them to drift is the only option that
+is definitely wrong. Not done here because CLAUDE.md protects them explicitly.
+
+---
+
+## 13. Hardcoded absolute paths in tracked files
+
+`/home/valentinweyer/...` appears in five notebooks and, more importantly, three
+scripts: `build_jersey_audit_set.py`, `cache_number_detections.py`,
+`evaluate_checkpoint_against_labels.py`. Those cannot run on another machine.
+`.env.example` already defines the override pattern (`HANDBALL_CV_VIDEO`,
+`SAM2_UPSTREAM_DIR`); these should use it.
+
+---
+
+## 14. Housekeeping
+
+
+- ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
+  `a0a5a9e` by deleting the superseded root copies. The documented command now
+  collects and passes 226 tests in one run.
 - `runs/reid_analysis/` is gitignored, so the re-ID discriminability reports live
   on disk only. Regenerate with `scripts/measure_reid_discriminability.py`.
