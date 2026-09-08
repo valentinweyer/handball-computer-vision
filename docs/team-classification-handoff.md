@@ -936,6 +936,123 @@ conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
   --reference-min-iou 0.65
 ```
 
+## Re-ID cannot tell teammates apart, and what was built because of it
+
+Watching the 60s Melsungen overlay surfaced two complaints: jersey `15` moved to
+a different player after its wearer left frame, and later two players on the same
+team both wore `15`. Both trace to one mechanism.
+
+`PlayerRegistry.reid_match` picks the retired player with the highest cosine
+similarity above `REID_COS_SIM_MIN`. Team and goalkeeper role can veto, but
+within a team both are silent -- every outfield player wears the same kit -- so
+the appearance embedding is the entire discriminator.
+
+### Measurement
+
+`scripts/measure_reid_discriminability.py` scores that embedding against the
+labelled 1080p set: two readable crops in the same clip carrying the same number
+are the same person, different numbers are different people. Each labelled number
+box is traced to the player box containing it (the containment rule the set was
+built with) and embedded exactly as the runtime embeds it. Rank-1 retrieval is
+the operation `reid_match` performs.
+
+```
+clip                     crops  players   same   other   >0.7   rank1  chance
+Melsungen_Berlin            55       17  0.802   0.822   0.98    0.19    0.10
+Kiel_Lemgo                  54       18  0.829   0.825   0.96    0.26    0.11
+Eisenach_Hamburg            56       17  0.829   0.829   0.91    0.06    0.11
+BHC-FAG                     61        9  0.801   0.822   0.95    0.55    0.21
+FelixClaar                  41        8  0.862   0.845   1.00    0.89    0.50
+
+overall rank-1 within team: 90/243 = 0.37   (chance 0.19)
+```
+
+**Different-person same-team pairs are as similar as same-person pairs** -- 0.822
+vs 0.802 on Melsungen -- and 91-100% of them clear the 0.7 floor, so the
+threshold rejects nothing within a team, and no threshold could: the two
+distributions sit on top of each other. The two clips that look competent are the
+two with 8-9 labelled players, where chance is 0.21 and 0.50.
+
+**PRTReID, already in `models/` and consumed by nothing, is substantially
+better.** Identical 256 queries and galleries:
+
+```
+clip                      team-model      prtreid       chance
+Melsungen_Berlin        0.17 ( 9/52)   0.27 (14/52)      0.06
+Kiel_Lemgo              0.26 (13/50)   0.42 (21/50)      0.07
+Eisenach_Hamburg        0.04 ( 2/54)   0.33 (18/54)      0.06
+BHC-FAG                 0.53 (32/60)   0.87 (52/60)      0.18
+FelixClaar              0.85 (34/40)   0.90 (36/40)      0.27
+OVERALL                 0.35 (90/256)  0.55 (141/256)
+```
+
+Two caveats on these figures. The measurement embeds a **single crop** on both
+sides, while `TrackManager` refreshes a live track's embedding with an EMA
+(`EMBEDDING_EMA_ALPHA = 0.3`), so the runtime *gallery* is smoother than measured
+-- the query side is still a single crop. And the measured gallery is ~25
+same-team crops against a runtime gallery of retired players within 300 frames,
+usually far fewer. Both make the absolute numbers pessimistic; neither changes
+the ordering, which holds on every clip.
+
+### The margin sweep, and why the floor was replaced
+
+Pooled over five clips, for a rule that requires the winner to beat the runner-up
+by delta (PRTReID):
+
+```
+ delta   match rate   precision   wrong match when the player is NEW
+  0.00         1.00        0.59                                 1.00
+  0.01         0.46        0.66                                 0.41
+  0.02         0.23        0.78                                 0.14
+  0.03         0.11        0.86                                 0.04
+  0.05         0.02        1.00                                 0.01
+```
+
+The `delta = 0` row is what shipped. **Re-ID always claims a match, including for
+players it has never seen** -- there is no path through `reid_match` that says
+"this is somebody new". That is the renaming mechanism, stated exactly.
+
+`REID_MARGIN_MIN = 0.02` is the chosen point. The two errors it trades between
+are not equal: a fragment is repairable from number evidence afterwards, while a
+wrong revival silently contaminates a vote tally for the rest of the clip.
+
+### Number evidence, applied where it can act
+
+At the instant of re-ID the returning track is a brand-new tracker id with **zero
+reads**, so the number cannot gate that decision -- it takes a few reads for
+`NumberVoter` to qualify a value. `NumberIdentityResolver`
+(`scripts/render_full_pipeline.py`) is where the later evidence acts, in two
+steps that need the same two facts:
+
+1. **link** -- same team, same resolved number, never simultaneously live. That
+   is one player the tracker split; `PlayerRegistry.link` aliases the ids and
+   `NumberVoter.merge` folds the tallies. An alias, not a rewrite: SAM2's
+   `obj_id` is a live handle into its predictor session and cannot be renumbered,
+   and an alias stays reversible.
+2. **arbitrate** -- same team, same resolved number, but they *were* on screen
+   together. That cannot be one player, so `NumberVoter.arbitrate` withholds the
+   weaker claim. It reports no number rather than a wrong one, per the standing
+   rule that abstaining beats injecting a confident wrong observation.
+
+Order matters: linking first means arbitration only ever sees duplicates that
+genuinely coexisted.
+
+**Arbitration is not a repair.** The losing identity is still whoever the tracker
+mistakenly grabbed; it is now unlabelled instead of mislabelled.
+
+The 60s clip is the worked example. Three identities resolved to `25`, and two
+pairs of them were read in the *same frame* -- so they are different people, and
+a number-anchored merge without the simultaneity guard would have welded them
+together. `15` and `18` sat on two identities each with no shared read frame.
+
+### Output added for the guards
+
+`identity_report` (shared by both tracker paths) now emits `player_teams`,
+`frame_players`, `player_aliases`, and a `number_row`/`box` on every read. Before
+this, simultaneity could only be approximated by read co-occurrence, which is far
+too sparse to conclude from, and reads could not be traced back to the crop that
+produced them.
+
 ## Repository-state warning
 
 The working tree contains many pre-existing modified and untracked experiment files. They belong to the ongoing project. Do not run destructive cleanup, reset, or checkout commands. Work only on the requested files and preserve unrelated changes.

@@ -264,6 +264,10 @@ class NumberVoter:
         # Values that have cleared both gates at least once. Consulted only when
         # the live tally has fallen back below them -- see `best`.
         self._settled: dict = {}
+        # identity_id -> the identity that outvoted it for the same squad number.
+        # Rebuilt from scratch by every `arbitrate` call, so it is a view of the
+        # current evidence and never an accumulating penalty.
+        self._suppressed: dict = {}
 
     def observe(self, identity_id: int, raw_value: str) -> None:
         value = self._normalize(raw_value)
@@ -289,7 +293,7 @@ class NumberVoter:
         s = (raw_value or "").strip()
         return s if s.isdigit() and len(s) <= 2 else None
 
-    def best(self, identity_id: int):
+    def _verdict(self, identity_id: int):
         """(number, votes, margin). None until min_votes/min_margin are first met.
 
         Once a value has qualified, it is held until a *different* value
@@ -328,15 +332,67 @@ class NumberVoter:
             return held, counts.get(held, 0), margin
         return None, count, margin
 
+    def best(self, identity_id: int):
+        """`_verdict`, withheld while another identity holds the same number.
+
+        See `arbitrate`. A suppressed identity reports no number rather than a
+        wrong one, which is the project's standing rule: abstaining beats
+        injecting a confident wrong observation.
+        """
+        if identity_id in self._suppressed:
+            _value, count, margin = self._verdict(identity_id)
+            return None, count, margin
+        return self._verdict(identity_id)
+
+    def arbitrate(self, team_by_identity: dict) -> dict:
+        """One squad number, one player per team: withhold the weaker claims.
+
+        A number is unique within a team, so two identities holding the same one
+        at the same time is proof that at least one of them is wrong -- and the
+        pipeline could previously state it anyway, because votes are counted per
+        identity in isolation with nothing comparing them. Measured on the 60s
+        Melsungen clip, three identities resolved to `25` and two pairs of them
+        were read in the *same frame*, so they cannot be one fragmented player.
+
+        This does not repair the underlying identity error: the loser is still
+        whoever the tracker mistakenly grabbed. It stops the run asserting
+        something that cannot be true, and it is reversible -- the ranking is
+        recomputed from current vote counts on every call, so a loser that later
+        overtakes the holder takes the number back.
+
+        `team_by_identity` should carry the identities in play; pass live ones to
+        arbitrate what is on screen. Returns {suppressed: identity that kept it}.
+        """
+        claims: dict = {}
+        for identity_id, team_id in team_by_identity.items():
+            value, count, margin = self._verdict(identity_id)
+            if value is not None:
+                claims.setdefault((team_id, value), []).append(
+                    (count, margin, identity_id)
+                )
+        self._suppressed = {}
+        for holders in claims.values():
+            if len(holders) < 2:
+                continue
+            # Votes first, then margin; identity_id last only so a tie resolves
+            # the same way twice rather than flickering between frames.
+            holders.sort(key=lambda h: (-h[0], -h[1], h[2]))
+            keeper = holders[0][2]
+            for _count, _margin, loser in holders[1:]:
+                self._suppressed[loser] = keeper
+        return dict(self._suppressed)
+
     def reset(self, identity_id: int) -> None:
         self._votes.pop(identity_id, None)
         self._settled.pop(identity_id, None)
+        self._suppressed.pop(identity_id, None)
 
     def merge(self, from_id: int, into_id: int) -> None:
         """Fold one identity's votes into another's -- call this on a re-ID hit
         so accumulated evidence isn't discarded when a tracker-level id changes."""
         src = self._votes.pop(from_id, None)
         self._settled.pop(from_id, None)
+        self._suppressed.pop(from_id, None)
         if src is None:
             return
         dst = self._votes.setdefault(into_id, _Votes())

@@ -107,6 +107,59 @@ def cosine_matrix(embeddings: np.ndarray) -> np.ndarray:
     return unit @ unit.T
 
 
+MARGIN_THRESHOLDS = (0.0, 0.01, 0.02, 0.03, 0.05, 0.08, 0.12)
+
+
+def margin_sweep(similarity, numbers, teams) -> list[dict]:
+    """What a "beat the runner-up by delta" rule would do, per delta.
+
+    `reid_match` returns the single best candidate over an absolute floor. The
+    floor cannot work here -- same-person and different-person similarities
+    overlap -- but a *relative* rule can still abstain when the top two
+    candidates are indistinguishable, which is when the pick is a coin flip.
+
+    Both cases a returning detection can be are scored, because a rule that only
+    ever matches is not a rule:
+      - `known`: the person really is in the gallery, so matching is right and
+        the pick must be the correct one.
+      - `novel`: every crop of that person is removed from the gallery, so the
+        person is genuinely new and any match at all is wrong. This is the case
+        the current code cannot express, and the one that renames a player.
+    """
+    known, novel = [], []
+    for i in range(len(numbers)):
+        team_rows = [j for j in range(len(numbers)) if j != i and teams[j] == teams[i]]
+        same = [j for j in team_rows if numbers[j] == numbers[i]]
+        if same:
+            ranked = sorted(team_rows, key=lambda j: -similarity[i, j])
+            gap = float(similarity[i, ranked[0]] - similarity[i, ranked[1]]) \
+                if len(ranked) > 1 else float("inf")
+            known.append((gap, numbers[ranked[0]] == numbers[i]))
+        other = [j for j in team_rows if numbers[j] != numbers[i]]
+        if len(other) > 1:
+            ranked = sorted(other, key=lambda j: -similarity[i, j])
+            gap = float(similarity[i, ranked[0]] - similarity[i, ranked[1]])
+            novel.append(gap)
+
+    rows = []
+    for delta in MARGIN_THRESHOLDS:
+        accepted = [ok for gap, ok in known if gap >= delta]
+        rows.append({
+            "margin": delta,
+            "known_coverage": len(accepted) / len(known) if known else None,
+            "known_precision": (
+                sum(accepted) / len(accepted) if accepted else None
+            ),
+            "known_correct_of_all": (
+                sum(accepted) / len(known) if known else None
+            ),
+            "novel_false_accept": (
+                sum(gap >= delta for gap in novel) / len(novel) if novel else None
+            ),
+        })
+    return rows
+
+
 def analyse_clip(similarity, numbers, teams) -> dict:
     """Pair statistics and rank-1 retrieval for one clip."""
     count = len(numbers)
@@ -256,7 +309,9 @@ def main() -> None:
         teams = KMeans(n_clusters=2, n_init=10, random_state=0).fit_predict(
             embeddings
         ).tolist()
-        stats = analyse_clip(cosine_matrix(embeddings), numbers, teams)
+        similarity = cosine_matrix(embeddings)
+        stats = analyse_clip(similarity, numbers, teams)
+        stats["margin_sweep"] = margin_sweep(similarity, numbers, teams)
         report["clips"][clip] = stats
         same = stats["same_person_pairs"]
         other = stats["different_person_same_team_pairs"]
@@ -286,6 +341,20 @@ def main() -> None:
         }
         print(f"\noverall rank-1 within team: {correct}/{queries} = "
               f"{correct / queries:.2f}" if queries else "")
+    if report["clips"]:
+        print(f"\nmargin sweep, pooled over clips ({args.embedding}):")
+        print(f"{'delta':>7}{'match rate':>12}{'precision':>11}"
+              f"{'correct/all':>13}{'wrong match when new':>22}")
+        for position, delta in enumerate(MARGIN_THRESHOLDS):
+            rows = [c["margin_sweep"][position] for c in report["clips"].values()]
+            def pooled(key):
+                values = [r[key] for r in rows if r[key] is not None]
+                return sum(values) / len(values) if values else float("nan")
+            print(f"{delta:>7.2f}{pooled('known_coverage'):>12.2f}"
+                  f"{pooled('known_precision'):>11.2f}"
+                  f"{pooled('known_correct_of_all'):>13.2f}"
+                  f"{pooled('novel_false_accept'):>22.2f}")
+
     if args.output:
         write_json_atomic(args.output, report)
         print(f"-> {args.output}")
