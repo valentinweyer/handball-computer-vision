@@ -153,7 +153,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 11. Do not commit `docs/outputs-migration-manifest.csv` as it stands
+## 10. Do not commit `docs/outputs-migration-manifest.csv` as it stands
 
 ```
 committed in git    2.16 MB
@@ -174,42 +174,42 @@ The tracked 2.16 MB version is fine and unaffected.
 
 ---
 
-## 12. `notebooks/*.py` have diverged from the modules that replaced them
+## 11. `notebooks/*.py` have diverged from the modules that replaced them — RESOLVED 2026-09-09
 
-CLAUDE.md calls them migration fallbacks that "still work". They no longer work
-the *same*, which is worse than not working. 13 of 14 differ from their
-`src/`/`scripts/` counterpart; only `mask_cache.py` is identical.
+The 29 legacy `notebooks/*.py` copies were deleted. Verified before removal: no
+`.ipynb` imported any of them, they formed a closed import cluster referencing
+only each other, and every one had a current counterpart (15 under a new name).
+All were last touched between 2026-07-29 and 2026-08-25; their counterparts
+carry changes through 2026-09-08.
 
-Most differences are the expected import-path change (`from team_model import`
-vs `from handball_cv.teams.model import`). This one is not:
+The concrete drift that motivated this — the legacy
+`render_raw_team_classification.py` copy sitting 32 lines behind `scripts/`,
+missing `PERSON_CLASS_IDS`, `person_detections()` and `number_detections()` from
+commit `6dc4ff1`, and so silently reproducing the bug where the tracker followed
+jersey *number boxes* as people — is gone with the copy. `git log` is the
+fallback now.
 
-```
-notebooks/render_raw_team_classification.py    32 lines behind scripts/
-  missing PERSON_CLASS_IDS, person_detections(), number_detections()
-```
-
-That is commit `6dc4ff1` -- the fix that stopped the tracker following jersey
-*number boxes* as people, where 16,689 of 36,686 cached detections on the 60s
-Melsungen clip were numbers. The notebooks copy still has the old behaviour and
-will silently reproduce the bug.
-
-Decide one way: re-sync the copies from their canonical modules, or delete them
-and let `git log` be the fallback. Leaving them to drift is the only option that
-is definitely wrong. Not done here because CLAUDE.md protects them explicitly.
+`notebooks/` itself stays: it holds the four `.ipynb` files plus `fonts/`
+(`DEFAULT_FONT` in `scripts/render_full_pipeline.py`), `.env`, `models/` and the
+two dataset directories.
 
 ---
 
-## 13. Hardcoded absolute paths in tracked files
+## 12. Hardcoded absolute paths in tracked files
 
-`/home/valentinweyer/...` appears in five notebooks and, more importantly, three
-scripts: `build_jersey_audit_set.py`, `cache_number_detections.py`,
-`evaluate_checkpoint_against_labels.py`. Those cannot run on another machine.
-`.env.example` already defines the override pattern (`HANDBALL_CV_VIDEO`,
-`SAM2_UPSTREAM_DIR`); these should use it.
+`/home/valentinweyer/...` remains in three scripts: `build_jersey_audit_set.py`,
+`cache_number_detections.py`, `evaluate_checkpoint_against_labels.py`. Those
+cannot run on another machine. `.env.example` already defines the override
+pattern (`HANDBALL_CV_VIDEO`, `SAM2_UPSTREAM_DIR`); these should use it.
+
+The five notebook copies that also carried absolute paths went with the deletion
+in item 11, and `data/annotations/team/Han-Ber4.json` was made repo-relative in
+`c616040`. The remaining tracked annotations under `data/annotations/` still
+carry absolute paths in their provenance fields.
 
 ---
 
-## 14. Housekeeping
+## 13. Housekeeping
 
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in

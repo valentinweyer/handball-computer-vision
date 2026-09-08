@@ -5,10 +5,10 @@ in browser localStorage while working; the Export button downloads a validated
 manifest which this script can ingest back into the repository.
 
 Examples:
-    conda run -n NewEnv python notebooks/label_team_detections.py build \
+    conda run -n NewEnv python -m scripts.label_team_detections build \
         data/raw/FelixClaar.mp4 data/raw/Hannover.mp4 --frames-per-video 12
 
-    conda run -n NewEnv python notebooks/label_team_detections.py ingest \
+    conda run -n NewEnv python -m scripts.label_team_detections ingest \
         ~/Downloads/FelixClaar-team-labels.json \
         --output annotations/team/FelixClaar.json
 """

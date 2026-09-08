@@ -67,7 +67,7 @@ data/raw/           ignored source media
 data/cache/         ignored reproducible caches
 models/             ignored local checkpoints
 runs/               ignored generated results
-notebooks/          actual notebooks plus untouched migration originals
+notebooks/          the .ipynb files, fonts, and their local assets
 docs/               architecture, handoff, and per-experiment findings
 TODO.md             deferred work, each entry with its evidence
 ```
@@ -83,11 +83,11 @@ External research checkouts are cloned beside the project and gitignored:
 prtreid`) and `parseq-upstream/` (`--reader parseq`). Each is overridable by
 `SAM2_UPSTREAM_DIR`, `--prtreid-root` and `PARSEQ_UPSTREAM_DIR`.
 
-The old `notebooks/*.py`, `outputs/`, model duplicates, and nested upstream
-repositories are still present. Nothing was deleted during the first migration
-pass; see `docs/legacy-layout.md`. Source clips have since moved to `data/raw/`,
-but note the `notebooks/*.py` copies have drifted from the modules that replaced
-them -- `TODO.md` item 12 lists how.
+`outputs/`, model duplicates and nested upstream repositories are still present
+from the first migration pass; see `docs/legacy-layout.md`. Source clips have
+since moved to `data/raw/`, and the 29 legacy `notebooks/*.py` module copies were
+deleted on 2026-09-09 once they had drifted from the modules that replaced them
+(`TODO.md` item 11). `git log` is the fallback for those.
 
 ## Setup
 

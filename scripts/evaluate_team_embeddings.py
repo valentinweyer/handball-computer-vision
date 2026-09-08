@@ -112,7 +112,7 @@ def build_backend(args):
     if args.backend == "siglip":
         return SiglipBackend(args.device)
     if args.backend in {"prtreid", "prtreid_team", "prtreid_team_logits"}:
-        from prtreid_inference import PRTReIDBackend
+        from handball_cv.embeddings.prtreid import PRTReIDBackend
 
         return PRTReIDBackend(
             source_root=args.prtreid_root,

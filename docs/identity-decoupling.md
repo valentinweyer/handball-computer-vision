@@ -9,7 +9,7 @@ discovery narrative, verification evidence, and measurements behind them.
 
 The reversible-switch mechanism above was built to correct *classifier* error (an unlucky initial crop). It was found to also silently absorb *tracker* error: when McByte swaps two crossing players under one `tracker_id`, the resulting observations are correct about the pixels and wrong about the identity, and look exactly like a legitimate correction. The old mechanism reset `team_votes` to just the switch-triggering weight, so a long-lived, well-evidenced player who flipped this way still read as "stable" (confidence ~0.78, above `MIN_STABLE_TEAM_CONFIDENCE = 0.70`) immediately after flipping — and its new, wrong team label then hard-excluded the correct re-ID candidates. Tracking error became team error became re-ID error, the exact circular failure the architecture is meant to prevent, arriving by a different route.
 
-Fix, in `notebooks/identity_manager.py`:
+Fix, in `src/handball_cv/tracking/identity.py`:
 
 - **Evidence decays instead of accumulating without bound.** `TEAM_EVIDENCE_DECAY = 0.85`, applied to `team_votes` before each new observation is added. An unbounded accumulator saturates `team_confidence` near 1.0 within a few hundred frames and can never again express doubt. Decay bounds the mass at roughly `weight / (1 - decay)` (≈6 at 0.85) and caps confidence at ≈0.93, so a *contested* label — not just a flipped one — drops below the stable gate and stops vetoing re-ID candidates before the label itself has switched.
 - **Prior evidence is kept, not discarded, on a switch.** The old `self.team_votes = {team_id: pending_weight}` reset is gone; the decayed history stays.

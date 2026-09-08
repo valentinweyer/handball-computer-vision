@@ -89,7 +89,7 @@ MCByte does not classify teams. TeamModel does not use previous team labels. Ide
 
 ## Per-video team-model calibration
 
-`notebooks/team_model.py` fits two anonymous clusters per video.
+`src/handball_cv/teams/model.py` fits two anonymous clusters per video.
 
 Calibration flow:
 
@@ -122,7 +122,7 @@ The current color model is:
 
 Cluster IDs are anonymous and are aligned to display labels A/B separately for each video.
 
-Important thresholds in `team_model.py`:
+Important thresholds in `teams/model.py`:
 
 - `CENTERED_CROP_SCALE_W = 0.4`
 - `CENTERED_CROP_SCALE_H = 0.4`
@@ -160,7 +160,7 @@ For a normal, non-masked observation, `TeamModel.observe()` currently does this:
 6. Compute how much another person box covers the target torso.
 7. Reduce observation quality continuously as contamination approaches 25%; quality becomes zero at or above 25%.
 
-`predict_masked()` in `team_model.py` still intentionally ignores masks. The new masked fallback is implemented and tested separately but is not yet wired into `IdentityManager`.
+`predict_masked()` in `teams/model.py` still intentionally ignores masks. The new masked fallback is implemented and tested separately but is not yet wired into `IdentityManager`.
 
 ## Tracking and identity
 
@@ -168,15 +168,15 @@ For a normal, non-masked observation, `TeamModel.observe()` currently does this:
 
 Use plain `McByteTracker` from the `trackers` package. The user explicitly rejected ByteTrack because MCByte performed materially better on these videos.
 
-The current comparison/correction renderer uses plain MCByte, not the experimental `TeamGatedMcByteTracker`. Team-aware association exists in `notebooks/team_aware_tracker.py`, but should not be enabled for this work: using the same uncertain team classification to gate tracking creates circular failure modes.
+The current comparison/correction renderer uses plain MCByte, not the experimental `TeamGatedMcByteTracker`. Team-aware association exists in `experiments/team_gated_tracking/tracker.py`, but should not be enabled for this work: using the same uncertain team classification to gate tracking creates circular failure modes.
 
 MCByte uses detector boxes for association and, when enabled, SAM + Cutie masks for mask-conditioned association. The frame supplied to MCByte must be RGB.
 
-**Unresolved architectural fork (2026-08-26):** there are now two parallel implementations of track lifecycle, team voting, and SigLIP re-ID, one per tracker family — `notebooks/identity_manager.py` (below) for MCByte, and `src/handball_cv/tracking/sam2_manager.TrackManager` for SAM2. They share some primitives from `handball_cv.teams.model` but are not the same code. If the SAM2 tracker direction above (see "SAM2 as the main tracker") is pursued further, this fork needs a decision — one identity layer, not two — before it compounds.
+**Architectural fork resolved (2026-09-08):** track lifecycle, team voting and re-ID were once implemented twice, one per tracker family. They are now a single shared layer: `PlayerRegistry` in `src/handball_cv/tracking/identity.py` owns team evidence, goalkeeper role and re-ID, and both tracker-facing managers delegate to it — `IdentityManager` (McByte, same module) and `sam2_manager.TrackManager` (SAM2). Keep it that way: identity invariants belong in `PlayerRegistry`, not in a tracker-specific manager, or the decay, veto and reversibility rules below have to be re-proved per tracker.
 
 ### IdentityManager
 
-`notebooks/identity_manager.py` maps short-lived MCByte `tracker_id` values to longer-lived `player_id` values. It can reconnect retired fragments using SigLIP cosine similarity.
+`src/handball_cv/tracking/identity.py` maps short-lived MCByte `tracker_id` values to longer-lived `player_id` values. It can reconnect retired fragments using SigLIP cosine similarity.
 
 Current re-ID constants:
 
@@ -208,7 +208,7 @@ This mechanism fixed the persistent-wrong-label behavior in the Felix and Han-Be
 A tracker swap used to become a team error and then a re-ID error — the circular
 failure this architecture forbids — because the reversible-switch mechanism could
 not distinguish a classifier correction from a tracker swap. Two fixes landed in
-`notebooks/identity_manager.py`. The invariants they establish, which later edits
+`src/handball_cv/tracking/identity.py`. The invariants they establish, which later edits
 must preserve:
 
 - Team evidence **decays** (`TEAM_EVIDENCE_DECAY = 0.85`) before each new vote, so
@@ -254,7 +254,7 @@ Masks are therefore an evidence-recovery fallback, not the team-label authority.
 
 ### Guarded mask construction
 
-Implemented in `notebooks/mask_team_features.py`. MCByte's `_last_mask_output`
+Implemented in `src/handball_cv/teams/masks.py`. MCByte's `_last_mask_output`
 (`masks`, `tracklet_mask_dict`, `mask_avg_prob_dict`) is spatially aligned to the
 current frame but produced from prior track state.
 
@@ -272,18 +272,18 @@ safe jersey pixels = torso ROI
 
 Cutie masks are already mutually exclusive; neighbor dilation supplies the
 uncertainty margin. The eleven numeric gate thresholds live in
-`mask_team_features.py` and are tabulated with rationale in
+`teams/masks.py` and are tabulated with rationale in
 `docs/overlap-mask-experiment.md`.
 
 ### Masked color features
 
-`masked_jersey_color_features()` in `notebooks/team_model.py` computes the same 62-D descriptor as the normal path, but histograms and moments use only selected safe pixels. Empty masks return zero features and invalid mask dimensions raise an error.
+`masked_jersey_color_features()` in `src/handball_cv/teams/model.py` computes the same 62-D descriptor as the normal path, but histograms and moments use only selected safe pixels. Empty masks return zero features and invalid mask dimensions raise an error.
 
 The mask experiment is deliberately color-only, so it measures what the mask changed rather than hiding the result behind an unmasked SigLIP fallback. It loads a lightweight placeholder classifier to avoid loading SigLIP alongside SAM/Cutie.
 
 ## Mask experiment results
 
-Diagnostic: `notebooks/render_mask_team_comparison.py` — frame-local raw box-color
+Diagnostic: `scripts/render_mask_team_comparison.py` — frame-local raw box-color
 vs guarded mask-color on identical detections, no temporal vote. Overlap begins at
 torso contamination 0.05; a mask is usable only with geometry accepted, team
 confidence >= 0.30, and effective observation quality >= 0.40.
@@ -326,7 +326,7 @@ Rejected by user based on observed tracking quality. Use MCByte.
 
 ### Team-gated tracking association
 
-Implemented experimentally in `team_aware_tracker.py` but not retained for the current tests. Gating tracking with uncertain team predictions creates circular errors. Keep tracking team-agnostic until team evidence is independently validated; even then, any later use should be soft and separately evaluated.
+Implemented experimentally in `team_gated_tracking/tracker.py` but not retained for the current tests. Gating tracking with uncertain team predictions creates circular errors. Keep tracking team-agnostic until team evidence is independently validated; even then, any later use should be soft and separately evaluated.
 
 ### Run the tracker twice, once per predicted team
 
@@ -873,14 +873,14 @@ Independent Han-Ber reference evaluation:
 
 ## Important source files
 
-- `notebooks/team_model.py`: crop geometry, quality, color/visual model, prediction, persistence.
-- `notebooks/identity_manager.py`: stable player IDs, re-ID, temporal observations, reversible switching.
-- `notebooks/render_raw_team_classification.py`: raw frame-local baseline.
-- `notebooks/render_mcbyte_team_correction.py`: plain MCByte plus reversible tracked team overlay, dense per-player diagnostic text (team/confidence/obs/switches).
-- `notebooks/render_team_overlay.py`: same MCByte/IdentityManager pipeline, clean broadcast-style overlay (translucent team-colored mask fill + box border, small legend, no per-player text) matching the original notebook's "Full video team clustering" cell style. Masks are pulled directly from MCByte's `tracklet_mask_dict` for visualization only, not through the guarded spatial-assignment checks in `mask_team_features.py` (an occasional wrong mask here is cosmetic, not a label error).
-- `notebooks/mask_team_features.py`: guarded spatial mask assignment and safe-pixel construction.
-- `notebooks/render_mask_team_comparison.py`: isolated box-versus-mask experiment and metrics.
-- `notebooks/team_aware_tracker.py`: experimental team-gated association; do not enable by default.
+- `src/handball_cv/teams/model.py`: crop geometry, quality, color/visual model, prediction, persistence.
+- `src/handball_cv/tracking/identity.py`: stable player IDs, re-ID, temporal observations, reversible switching.
+- `scripts/render_raw_team_classification.py`: raw frame-local baseline.
+- `scripts/render_mcbyte_team_correction.py`: plain MCByte plus reversible tracked team overlay, dense per-player diagnostic text (team/confidence/obs/switches).
+- `scripts/render_team_overlay.py`: same MCByte/IdentityManager pipeline, clean broadcast-style overlay (translucent team-colored mask fill + box border, small legend, no per-player text) matching the original notebook's "Full video team clustering" cell style. Masks are pulled directly from MCByte's `tracklet_mask_dict` for visualization only, not through the guarded spatial-assignment checks in `teams/masks.py` (an occasional wrong mask here is cosmetic, not a label error).
+- `src/handball_cv/teams/masks.py`: guarded spatial mask assignment and safe-pixel construction.
+- `scripts/render_mask_team_comparison.py`: isolated box-versus-mask experiment and metrics.
+- `experiments/team_gated_tracking/tracker.py`: experimental team-gated association; do not enable by default.
 - `tests/test_team_model.py`: feature, mask-guard, and switching tests.
 
 ## Result artifacts
@@ -907,12 +907,12 @@ Use the existing conda environment:
 conda run -n NewEnv pytest -q tests
 ```
 
-The scoped project suite currently passes: 28 tests. Do not run bare `pytest` from repository root because vendored `onnxruntime` and other upstream trees contain unrelated test entry points that break global collection.
+The scoped project suite currently passes: 226 tests (measured 2026-09-09). Do not run bare `pytest` from repository root because vendored `onnxruntime` and other upstream trees contain unrelated test entry points that break global collection.
 
 Render Felix mask comparison:
 
 ```bash
-conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
+conda run -n NewEnv python -m scripts.render_mask_team_comparison \
   data/raw/FelixClaar.mp4 \
   --detections outputs/team_comparison/.FelixClaar_detections_v1.npz \
   --team-model outputs/team_comparison/.FelixClaar_team.pkl \
@@ -924,7 +924,7 @@ conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
 Render Han-Ber with independent reference scoring:
 
 ```bash
-conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
+conda run -n NewEnv python -m scripts.render_mask_team_comparison \
   data/raw/Han-Ber4_cached.mp4 \
   --detections outputs/team_dataset/.Han-Ber4_detections_v1.npz \
   --team-model outputs/team_correction_mcbyte/.Han-Ber4_team.pkl \

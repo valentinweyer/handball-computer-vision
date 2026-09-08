@@ -16,9 +16,12 @@ tracker claims), `docs/identity-decoupling.md`,
 
 Reusable code is `src/handball_cv/`; CLI diagnostics are `scripts/`; rejected or
 non-default approaches are `experiments/`; protected label copies are
-`data/annotations/`. Older `notebooks/*.py`, `outputs/`, and `source/` paths
-still exist and still work as migration fallbacks. New code imports from
-`handball_cv`; new commands run as modules:
+`data/annotations/`. Older `outputs/` and `source/` paths still exist and still
+work as migration fallbacks. The 29 legacy `notebooks/*.py` module copies were
+deleted on 2026-09-09 after they drifted from the modules that replaced them;
+`notebooks/` now holds only the `.ipynb` files and their assets (`fonts/`,
+`.env`, `models/`, dataset directories). New code imports from `handball_cv`;
+new commands run as modules:
 
 ```bash
 python -m scripts.render_mcbyte_team_correction --help

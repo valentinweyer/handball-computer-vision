@@ -6,12 +6,12 @@ Full record of the guarded overlap-mask fallback experiment, moved out of
 finding and its anti-claim caveats; everything below is the construction detail,
 the numeric gate table, and the per-clip measurements behind them.
 
-Diagnostic source: `notebooks/render_mask_team_comparison.py`.
-Implementation: `notebooks/mask_team_features.py`.
+Diagnostic source: `scripts/render_mask_team_comparison.py`.
+Implementation: `src/handball_cv/teams/masks.py`.
 
 ## Guarded mask construction (detail)
 
-Implemented in `notebooks/mask_team_features.py`.
+Implemented in `src/handball_cv/teams/masks.py`.
 
 MCByte's `_last_mask_output` is spatially aligned to the current frame, although it is produced before current-frame association using prior track state. It contains:
 
@@ -59,7 +59,7 @@ The diagnostic also used a stricter MCByte mask-creation overlap threshold of 0.
 
 ## Measured results (detail)
 
-Diagnostic: `notebooks/render_mask_team_comparison.py`.
+Diagnostic: `scripts/render_mask_team_comparison.py`.
 
 It performs frame-local raw box-color classification and frame-local guarded mask-color classification on identical detections. Tracking supplies masks and diagnostic IDs only. There is no temporal team vote in this experiment.
 
