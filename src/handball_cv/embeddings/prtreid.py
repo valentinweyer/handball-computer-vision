@@ -147,6 +147,45 @@ class PRTReIDBackend:
             align_corners=False,
         )[0]
 
+    def _array_tensor(self, image_rgb: np.ndarray) -> torch.Tensor:
+        """Same preprocessing as `_read_tensor`, for an in-memory RGB crop."""
+        image = torch.from_numpy(np.ascontiguousarray(image_rgb))
+        image = image.permute(2, 0, 1).float() / 255.0
+        return torch.nn.functional.interpolate(
+            image[None], size=(self.height, self.width), mode="bilinear",
+            align_corners=False,
+        )[0]
+
+    @torch.inference_mode()
+    def encode_images(
+        self, crops_rgb: list, batch_size: int = 64,
+    ) -> np.ndarray:
+        """Embed already-cropped RGB player images.
+
+        `encode` reads a manifest of files, which suits offline crop datasets.
+        Tracking produces crops in memory frame by frame, and writing each one
+        to disk purely to read it back dominates the cost.
+        """
+        if not len(crops_rgb):
+            return np.zeros((0, 0), dtype=np.float32)
+        batches = []
+        for start in range(0, len(crops_rgb), batch_size):
+            images = torch.stack([
+                self._array_tensor(crop)
+                for crop in crops_rgb[start:start + batch_size]
+            ]).to(self.device)
+            output = self.model((images - self.mean) / self.std)
+            embeddings, team_scores = output[0], output[3]
+            global_embedding = embeddings[GLOBAL]
+            if self.feature_kind == "global":
+                selected = global_embedding
+            elif self.feature_kind == "team":
+                selected = self.model.global_team_classifier.bn(global_embedding)
+            else:
+                selected = team_scores[GLOBAL]
+            batches.append(selected.float().cpu().numpy())
+        return np.concatenate(batches).astype(np.float32)
+
     @torch.inference_mode()
     def encode(self, manifest_path: Path, manifest: dict, batch_size: int) -> np.ndarray:
         root = manifest_path.parent
