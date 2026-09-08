@@ -209,7 +209,70 @@ carry absolute paths in their provenance fields.
 
 ---
 
-## 13. Housekeeping
+## 13. Chunked SAM2 propagation, without resetting identity at the seam
+
+**This is the hard cap on clip length, and it is a memory cap, not a compute
+one.** `SAM2VideoPredictor.init_state` allocates the whole video up front:
+
+```python
+images = torch.zeros(num_frames, 3, 1024, 1024, dtype=torch.float32)
+```
+
+12.58 MB per frame at model resolution, before a single frame is tracked:
+
+```
+ 1,500 frames   60s @25fps    17.6 GiB   proven (the Melsungen clip)
+ 3,000 frames    2min         35.2 GiB   comfortable
+ 9,000 frames    6min        105.5 GiB   at the limit
+15,000 frames   10min        175.8 GiB   exceeds the machine
+```
+
+The machine has 121 GiB. `offload_video_to_cpu=True` is the usual escape and
+**does not help on GB10**, whose memory is unified -- CPU and GPU draw on the
+same pool. A second term grows on top: `output_dict_per_obj[obj]
+["non_cond_frame_outputs"][frame_idx]` accumulates for every propagated frame
+per object, and `clear_non_cond_mem_around_input` defaults to False, so nothing
+is pruned as propagation advances.
+
+Compute, by contrast, is flat: ~1.07 s/frame at any length, because the
+attention memory bank is bounded (`num_maskmem=7`). Frame 15,000 costs what
+frame 100 costs.
+
+### What "seamless" has to mean
+
+Naively restarting per chunk would retire every track at each boundary and let
+re-ID re-acquire them -- and re-ID is 0.55 rank-1 within a team, so a boundary
+every 3,000 frames would inject a burst of exactly the identity errors the rest
+of this work removes. The seam must not go through re-ID at all.
+
+Carry across the boundary:
+
+- **`PlayerRegistry` whole.** It is already tracker-agnostic: identities, team
+  votes, embeddings and the retired gallery survive a predictor swap untouched.
+- **`NumberVoter` whole.** Keyed by `player_id`, so it needs nothing.
+- **The `obj_id -> player_id` mapping.** This is the actual seam. Re-seed the
+  new chunk with the *final masks/boxes of the live tracks*, not with fresh
+  detections, and assign each new `obj_id` the `player_id` it already had. No
+  retire, no revive, no re-ID call, no `suspend()`.
+- **Overlap a few frames** so the new state has real content to prompt from and
+  SAM2's memory bank refills before the first output frame is kept.
+
+What is genuinely lost is SAM2's own memory bank (7 frames) -- unavoidable, and
+small against a 3,000-frame chunk. Expect a brief quality dip in the overlap,
+which is why the overlap frames should be discarded from the output rather than
+written.
+
+### Verification that would actually prove it
+
+Render one clip that fits in memory both ways -- unchunked, and chunked with a
+boundary deliberately placed mid-possession -- and require the run summaries to
+match: same `players`, same `numbers_resolved`, and no `reid`/`link`/
+`suspected_id_switch` event within the overlap window. Anything else means the
+seam is leaking.
+
+---
+
+## 14. Housekeeping
 
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
