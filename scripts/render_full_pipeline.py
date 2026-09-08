@@ -90,17 +90,25 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--device", default="cuda")
     parser.add_argument(
-        "--reid-embedding", default="team-model", choices=("team-model", "prtreid"),
-        help="appearance features used to recognise a returning player; the "
-             "team-model default cannot separate teammates (0.35 rank-1 vs "
-             "0.55 for prtreid, chance 0.19)",
+        "--reid-embedding", default="prtreid", choices=("prtreid", "team-model"),
+        help="appearance features used to recognise a returning player. The "
+             "team model's own features cannot separate teammates (0.35 rank-1 "
+             "against a 0.19 chance floor, versus 0.55 for prtreid); they remain "
+             "selectable so the pipeline runs without the prtreid checkout",
     )
     parser.add_argument("--prtreid-root", type=Path, default=ROOT / "prtreid-upstream")
     parser.add_argument(
         "--prtreid-checkpoint", type=Path,
         default=ROOT / "models/prtreid/prtreid-soccernet-baseline.pth.tar",
     )
-    parser.add_argument("--tracker", choices=("mcbyte", "sam2"), default="mcbyte")
+    parser.add_argument(
+        "--tracker", choices=("sam2", "mcbyte"), default="sam2",
+        help="SAM2 with periodic detector reprompting wins on all three clips "
+             "scored against ground truth -- 93.8/89.2/98.9%% correct, against "
+             "81.5/86.7/95.9%% for the best box tracker on each; see "
+             "docs/tracking-evaluation.md section 8. It costs ~1s/frame against "
+             "McByte's ~0.1s and needs --number-detections and a sam2 checkout",
+    )
     parser.add_argument(
         "--number-detections", type=Path, default=None,
         help="cached number-detector npz; required by --tracker sam2, which "
@@ -117,10 +125,11 @@ def parse_args() -> argparse.Namespace:
              "re-pay for the reader. Defaults to <output stem>_reads.json",
     )
     parser.add_argument(
-        "--reader", choices=("easyocr", "qwen", "doctr", "parseq"), default="easyocr",
-        help="sam2 only; mcbyte always uses EasyOCR. `parseq` is the original "
-             "baudm/parseq checkpoint and reads 0.858 of the labelled 1080p "
-             "crops against docTR parseq's 0.622",
+        "--reader", choices=("parseq", "doctr", "qwen", "easyocr"), default="parseq",
+        help="jersey-number recogniser, honoured by both trackers. Accuracy on "
+             "the 323 labelled 1080p crops: parseq 0.858, qwen 0.628, "
+             "doctr 0.622, easyocr 0.365. `parseq` needs a baudm/parseq checkout "
+             "and models/jersey_parseq/parseq_original.ckpt",
     )
     parser.add_argument("--doctr-arch", default="parseq",
                          help="--reader doctr only; docTR recogniser architecture")
@@ -199,15 +208,16 @@ def load_env() -> Path | None:
     return None
 
 
-def load_number_models(mode: str, device: str):
-    """(player_model, ocr_model) for the number stage, or (None, None).
+def load_number_detector(mode: str):
+    """The Roboflow class-4 number detector, or None.
 
-    Number detection uses Roboflow; recognition runs locally with EasyOCR.
-    Returning None rather than raising keeps the rest of the pipeline runnable
-    on a machine without a detector key.
+    Recognition is chosen separately by `--reader`; this used to build an EasyOCR
+    reader here as well, which is why the McByte path ignored that flag.
+    Returning None rather than raising keeps the rest of the pipeline runnable on
+    a machine without a detector key.
     """
     if mode == "off":
-        return None, None
+        return None
     env_path = load_env()
     api_key = os.getenv("ROBOFLOW_API_KEY", "").strip()
     if not api_key:
@@ -219,23 +229,19 @@ def load_number_models(mode: str, device: str):
         if mode == "on":
             raise RuntimeError(message)
         print(f"[numbers] disabled: {message}")
-        return None, None
+        return None
     if env_path is not None:
         print(f"[numbers] credentials loaded from {env_path}")
     try:
-        import easyocr
         from inference import get_model
 
         player_model = get_model(model_id=PLAYER_MODEL_ID, api_key=api_key)
-        ocr_model = easyocr.Reader(
-            ["en"], gpu=device != "cpu", detector=False, verbose=False
-        )
     except Exception as error:  # network, auth, or missing model access
         if mode == "on":
             raise
-        print(f"[numbers] disabled: could not load number models ({error})")
-        return None, None
-    return player_model, ocr_model
+        print(f"[numbers] disabled: could not load the number detector ({error})")
+        return None
+    return player_model
 
 
 def tracklet_masks(mask_output, tracker_ids) -> list:
@@ -473,6 +479,51 @@ class NumberIdentityResolver:
         })
 
 
+def build_ocr_model(args):
+    """(recogniser, qwen_callable) for `--reader`; exactly one is not None."""
+    if args.reader == "easyocr":
+        import easyocr
+        return easyocr.Reader(
+            ["en"], gpu=args.device != "cpu", detector=False, verbose=False
+        ), None
+    if args.reader == "doctr":
+        import torch
+        from doctr.models import recognition_predictor
+        model = recognition_predictor(args.doctr_arch, pretrained=True).eval()
+        if args.device != "cpu" and torch.cuda.is_available():
+            model = model.cuda()
+        return model, None
+    if args.reader == "parseq":
+        from handball_cv.jersey.parseq_backend import load_jersey_parseq
+        return load_jersey_parseq(args.parseq_checkpoint, args.device), None
+    # Deferred: evaluate_number_pipeline imports this module at module level, so
+    # importing it back at import time would be circular. By call time both
+    # modules are loaded and this resolves cleanly.
+    from scripts.evaluate_number_pipeline import read_with_qwen
+    return None, read_with_qwen
+
+
+def build_reader(args, ocr_model, read_with_qwen=None):
+    """`(frame_bgr, frame_rgb, boxes) -> [text]` for the selected reader.
+
+    Both tracker paths used to choose a reader independently, and the McByte one
+    simply called EasyOCR whatever `--reader` said. That was survivable while
+    EasyOCR was the default and everything agreed; it stops being survivable the
+    moment the default is a reader that is twice as accurate, because the flag
+    and the behaviour would silently disagree.
+    """
+    if args.reader == "easyocr":
+        return lambda bgr, rgb, boxes: read_numbers(ocr_model, rgb, boxes)
+    if args.reader == "doctr":
+        return lambda bgr, rgb, boxes: read_numbers_doctr(ocr_model, rgb, boxes)
+    if args.reader == "parseq":
+        return lambda bgr, rgb, boxes: read_numbers_parseq(ocr_model, rgb, boxes)
+    return lambda bgr, rgb, boxes: read_with_qwen(
+        bgr, boxes, args.output.parent / "_scratch",
+        args.base_url, args.model, args.max_tokens,
+    )
+
+
 def build_reid_encoder(args: argparse.Namespace):
     """`crops_rgb -> (N, D)` for identity, or None to reuse the team features.
 
@@ -536,8 +587,12 @@ def render(args: argparse.Namespace) -> dict:
     preview_path = args.output.with_name(f"{args.output.stem}_preview.jpg")
 
     enable_masks = not args.no_masks
-    player_model, ocr_model = load_number_models(args.numbers, args.device)
-    numbers_enabled = player_model is not None and ocr_model is not None
+    player_model = load_number_detector(args.numbers)
+    numbers_enabled = player_model is not None
+    read = None
+    if numbers_enabled:
+        ocr_model, read_with_qwen = build_ocr_model(args)
+        read = build_reader(args, ocr_model, read_with_qwen)
     roster = load_roster(args.roster)
     voter = NumberVoter()
 
@@ -645,9 +700,7 @@ def render(args: argparse.Namespace) -> dict:
                     rejected_crops += len(number_xyxy) - len(pairs)
                     if pairs:
                         wanted = sorted({number_row for _, number_row in pairs})
-                        texts = read_numbers(
-                            ocr_model, frame_rgb, number_xyxy[wanted]
-                        )
+                        texts = read(frame_bgr, frame_rgb, number_xyxy[wanted])
                         text_by_row = dict(zip(wanted, texts))
                         for local_row, number_row in pairs:
                             raw = text_by_row.get(number_row, "")
@@ -741,27 +794,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     preview_path = args.output.with_name(f"{args.output.stem}_preview.jpg")
 
-    ocr_model = None
-    read_with_qwen = None
-    if args.reader == "easyocr":
-        import easyocr
-        ocr_model = easyocr.Reader(
-            ["en"], gpu=args.device != "cpu", detector=False, verbose=False
-        )
-    elif args.reader == "doctr":
-        import torch
-        from doctr.models import recognition_predictor
-        ocr_model = recognition_predictor(args.doctr_arch, pretrained=True).eval()
-        if args.device != "cpu" and torch.cuda.is_available():
-            ocr_model = ocr_model.cuda()
-    elif args.reader == "parseq":
-        from handball_cv.jersey.parseq_backend import load_jersey_parseq
-        ocr_model = load_jersey_parseq(args.parseq_checkpoint, args.device)
-    else:
-        # Deferred: evaluate_number_pipeline imports this module at module level,
-        # so importing it back at import time would be circular. By call time both
-        # modules are loaded and this resolves cleanly.
-        from scripts.evaluate_number_pipeline import read_with_qwen
+    ocr_model, read_with_qwen = build_ocr_model(args)
+    read = build_reader(args, ocr_model, read_with_qwen)
     roster = load_roster(args.roster)
     voter = NumberVoter()
 
@@ -847,22 +881,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
                     if cached_reads is not None:
                         hit = cached_reads.get(str(result.frame_idx), {})
                         texts = [hit.get(str(n), "") for n in wanted]
-                    elif args.reader == "easyocr":
-                        texts = read_numbers(ocr_model, frame_rgb, number_xyxy[wanted])
-                    elif args.reader == "doctr":
-                        texts = read_numbers_doctr(
-                            ocr_model, frame_rgb, number_xyxy[wanted]
-                        )
-                    elif args.reader == "parseq":
-                        texts = read_numbers_parseq(
-                            ocr_model, frame_rgb, number_xyxy[wanted]
-                        )
                     else:
-                        texts = read_with_qwen(
-                            frame_bgr, number_xyxy[wanted],
-                            args.output.parent / "_scratch",
-                            args.base_url, args.model, args.max_tokens,
-                        )
+                        texts = read(frame_bgr, frame_rgb, number_xyxy[wanted])
                     text_by_row = dict(zip(wanted, texts))
                     reads_log.setdefault(str(result.frame_idx), {}).update(
                         {str(n): t for n, t in zip(wanted, texts)}

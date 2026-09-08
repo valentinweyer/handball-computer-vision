@@ -57,6 +57,7 @@ from handball_cv.jersey.identity import (
     match_numbers_to_players,
     read_numbers,
     read_numbers_doctr,
+    read_numbers_parseq,
 )
 from handball_cv.teams.model import TeamModel
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
@@ -134,6 +135,9 @@ def build_reader(args: argparse.Namespace):
         if args.device != "cpu" and torch.cuda.is_available():
             model = model.cuda()
         return model
+    if args.reader == "parseq":
+        from handball_cv.jersey.parseq_backend import load_jersey_parseq
+        return load_jersey_parseq(args.parseq_checkpoint, args.device)
     if args.reader == "easyocr":
         import easyocr
         return easyocr.Reader(
@@ -194,6 +198,8 @@ def process_numbers_for_frame(
         texts = read_with_easyocr(ocr_model, frame_rgb, boxes)
     elif args.reader == "doctr":
         texts = read_numbers_doctr(ocr_model, frame_rgb, boxes)
+    elif args.reader == "parseq":
+        texts = read_numbers_parseq(ocr_model, frame_rgb, boxes)
     else:
         texts = read_with_qwen(
             frame_bgr, boxes, output_dir / "_scratch",
@@ -552,9 +558,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--team-model", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--tracker", choices=("mcbyte", "sam2"), default="mcbyte")
-    parser.add_argument("--reader", choices=("easyocr", "qwen", "doctr"), default="easyocr")
+    parser.add_argument(
+        "--reader", choices=("parseq", "doctr", "qwen", "easyocr"), default="parseq",
+        help="see render_full_pipeline --reader; parseq reads 0.858 of the "
+             "labelled 1080p crops against easyocr's 0.365",
+    )
     parser.add_argument("--doctr-arch", default="parseq",
                         help="--reader doctr only")
+    parser.add_argument(
+        "--parseq-checkpoint", type=Path,
+        default=ROOT / "models/jersey_parseq/parseq_original.ckpt",
+        help="--reader parseq only",
+    )
     parser.add_argument("--ocr-every", type=int, default=OCR_EVERY_N_FRAMES)
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--no-masks", action="store_true",

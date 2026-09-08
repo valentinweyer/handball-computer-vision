@@ -27,10 +27,19 @@ python -m scripts.render_mcbyte_team_correction --help
 ## Hard constraints
 
 - Use the local RF-DETR/Roboflow detector.
-- MCByte is the production tracker default. Do not switch to ByteTrack. Tracker
-  choice is under active reconsideration — SAM2 with periodic detector
-  reprompting measured best on all three clips tested — so consult
-  `docs/tracking-evaluation.md` §8 before changing the default.
+- SAM2 with periodic detector reprompting is the tracker default as of
+  2026-09-08, on the strength of three clips scored against ground truth
+  (`docs/tracking-evaluation.md` §8: 93.8/89.2/98.9% correct against
+  81.5/86.7/95.9% for the best box tracker on each). MCByte remains supported
+  and is roughly 10x faster (~0.1s/frame against ~1s); pick it explicitly when
+  cost matters. Do not switch to ByteTrack.
+- The jersey reader default is `parseq` (the original baudm/parseq checkpoint),
+  measured at 0.858 accuracy on the 323 labelled 1080p crops against docTR
+  parseq's 0.622, Qwen's 0.628 and EasyOCR's 0.365. It needs an external
+  checkout and a local checkpoint and fails loudly without them.
+- Re-ID appearance features default to `prtreid`. The team model's own features
+  cannot separate teammates (0.35 rank-1 against a 0.19 chance floor, versus
+  0.55), and team classification keeps its own features either way.
 - Raw team classification stays frame-local. A tracker must not supply or freeze
   a raw team prediction.
 - Team labels attached to identities must stay reversible.
