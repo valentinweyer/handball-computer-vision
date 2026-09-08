@@ -25,6 +25,15 @@ scikit-learn==1.7.2
 torch==2.9.1+cu130
 torchvision==0.24.1
 
+# ── jersey reading ───────────────────────────────────────────────────────────
+# `--reader parseq` runs the original baudm/parseq checkpoint, which reads 0.858
+# of the labelled 1080p crops against docTR parseq's 0.622. The model code is not
+# on PyPI: clone https://github.com/baudm/parseq to ./parseq-upstream (or set
+# PARSEQ_UPSTREAM_DIR) and put the checkpoint in models/jersey_parseq/. These two
+# are imported by that checkout, not by handball_cv itself.
+pytorch-lightning==2.6.5
+nltk==3.10.3
+
 # ── misc ─────────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
 tqdm==4.67.1

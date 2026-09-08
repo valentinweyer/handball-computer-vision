@@ -26,6 +26,12 @@ pipeline = [
     "python-dotenv>=1.0",
     "trackers[mask]==2.6.0",
 ]
+jersey-parseq = [
+    # For `--reader parseq`. The model code itself is an external baudm/parseq
+    # checkout (see requirements.txt), not a package.
+    "pytorch-lightning>=2.0",
+    "nltk>=3.9",
+]
 dev = [
     "pytest>=8",
 ]
