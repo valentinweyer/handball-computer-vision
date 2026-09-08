@@ -72,7 +72,7 @@ from scripts.render_full_pipeline import (
     unique_pairs,
 )
 from scripts.label_jersey_numbers import clipped_box, utc_now, write_json_atomic
-from scripts.render_raw_team_classification import frame_detections, load_detection_cache
+from scripts.render_raw_team_classification import frame_detections, load_detection_cache, number_detections, person_detections
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -117,21 +117,6 @@ def read_with_qwen(
         out.append(prediction)
     return out
 
-
-def number_boxes(number_cache: dict, frame_index: int) -> np.ndarray:
-    """Class-4 boxes only, as (N, 4) xyxy.
-
-    The detection caches deliberately store every class the detector produced
-    (goalkeeper 1, player 2, referee 3, number 4) so a later question never forces
-    a re-detection. That makes filtering the *consumer's* job: `frame_detections`
-    returns all of them, and handing a 174px-tall player box to the reader as
-    though it were a number produced confident garbage -- a scene-text recogniser
-    on a whole-player crop scores 0.04 accuracy.
-    """
-    detections = frame_detections(number_cache, frame_index)
-    if detections.class_id is None:
-        return detections.xyxy
-    return detections.xyxy[detections.class_id == NUMBER_CLASS_ID]
 
 
 def build_reader(args: argparse.Namespace):
@@ -188,7 +173,7 @@ def process_numbers_for_frame(
     masked_rows = [i for i, mask in enumerate(masks) if mask is not None]
     if not masked_rows:
         return False, 0
-    number_xyxy = number_boxes(number_cache, frame_index)
+    number_xyxy = number_detections(number_cache, frame_index)
     if not len(number_xyxy):
         return False, 0
 
@@ -355,7 +340,7 @@ def run_mcbyte(args: argparse.Namespace) -> dict:
         total=info.total_frames, desc=f"number pipeline ({args.reader})",
     )):
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        detections = frame_detections(cache, frame_index)
+        detections = person_detections(cache, frame_index)
         tracked = tracker.update(detections, frame=frame_rgb)
         tracked = tracked[tracked.tracker_id >= 0]
         player_ids = identity.update(frame_index, frame_rgb, tracked)
@@ -470,7 +455,7 @@ def run_sam2(args: argparse.Namespace) -> dict:
 
     frame_cache_dir = args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem)
     _track_manager, _seed_boxes, frames = drive_sam2(
-        source, lambda idx: frame_detections(cache, idx), team_model,
+        source, lambda idx: person_detections(cache, idx), team_model,
         checkpoint=args.checkpoint, check_every=args.check_every,
         frame_cache_dir=frame_cache_dir, max_frames=args.max_frames,
         desc=f"number pipeline sam2 ({args.reader})",

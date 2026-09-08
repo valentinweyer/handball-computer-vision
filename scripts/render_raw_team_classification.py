@@ -56,6 +56,36 @@ def frame_detections(cache: dict[str, np.ndarray], frame_index: int) -> sv.Detec
     )
 
 
+# Project-wide class ids in the detection caches: 1 goalkeeper, 2 player,
+# 3 referee, 4 jersey number.
+PERSON_CLASS_IDS = (1, 2)
+NUMBER_CLASS_ID = 4
+
+
+def person_detections(cache: dict[str, np.ndarray], frame_index: int) -> sv.Detections:
+    """Only the people a tracker should follow: goalkeepers and field players.
+
+    The caches deliberately store every class the detector produced so a later
+    question never forces a re-detection, which makes filtering the consumer's
+    job. Feeding a tracker the unfiltered cache makes it follow referees and --
+    since the caches gained a jersey-number class -- the number boxes too: on the
+    60s Melsungen window, 16689 of 36686 cached detections are numbers, so 45% of
+    what the tracker was asked to follow were not people at all.
+    """
+    detections = frame_detections(cache, frame_index)
+    if detections.class_id is None:
+        return detections
+    return detections[np.isin(detections.class_id, PERSON_CLASS_IDS)]
+
+
+def number_detections(cache: dict[str, np.ndarray], frame_index: int) -> np.ndarray:
+    """Class-4 jersey-number boxes for this frame, as (N, 4) xyxy."""
+    detections = frame_detections(cache, frame_index)
+    if detections.class_id is None:
+        return detections.xyxy
+    return detections.xyxy[detections.class_id == NUMBER_CLASS_ID]
+
+
 def draw_text(
     frame: np.ndarray,
     text: str,

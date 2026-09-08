@@ -51,6 +51,8 @@ from handball_cv.jersey.identity import (
 from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE, TeamModel, crop_quality
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
 from scripts.render_raw_team_classification import (
+    number_detections,
+    person_detections,
     frame_detections,
     load_detection_cache,
 )
@@ -254,21 +256,6 @@ NUMBER_DETECTION_IOU = 0.9
 MIN_NUMBER_BOX_AREA = 120
 
 
-def number_boxes(number_cache: dict, frame_index: int) -> np.ndarray:
-    """Class-4 boxes only, as (N, 4) xyxy.
-
-    The detection caches deliberately store every class the detector produced
-    (goalkeeper 1, player 2, referee 3, number 4) so a later question never forces
-    a re-detection. That makes filtering the *consumer's* job: `frame_detections`
-    returns all of them, and handing a 174px-tall player box to the reader as
-    though it were a number produced confident garbage -- a scene-text recogniser
-    on a whole-player crop scores 0.04 accuracy.
-    """
-    detections = frame_detections(number_cache, frame_index)
-    if detections.class_id is None:
-        return detections.xyxy
-    return detections.xyxy[detections.class_id == NUMBER_CLASS_ID]
-
 
 def detect_number_boxes(player_model, frame_bgr: np.ndarray) -> np.ndarray:
     """Class-4 jersey-number boxes for this frame, as (N, 4) xyxy.
@@ -451,7 +438,7 @@ def render(args: argparse.Namespace) -> dict:
         desc=f"full pipeline {source.stem}",
     )):
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        detections = frame_detections(cache, frame_index)
+        detections = person_detections(cache, frame_index)
         tracked = tracker.update(detections, frame=frame_rgb)
         tracked = tracked[tracked.tracker_id >= 0]
         player_ids = identity.update(frame_index, frame_rgb, tracked)
@@ -647,7 +634,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         raise RuntimeError(f"could not open video writer: {args.output}")
 
     track_manager, _seed_boxes, frames = drive_sam2(
-        source, lambda idx: frame_detections(cache, idx), team_model,
+        source, lambda idx: person_detections(cache, idx), team_model,
         checkpoint=args.checkpoint, check_every=args.check_every,
         frame_cache_dir=args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem),
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
@@ -685,7 +672,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         ]
 
         if result.frame_idx % args.ocr_every == 0 and len(player_ids):
-            number_xyxy = number_boxes(number_cache, result.frame_idx)
+            number_xyxy = number_detections(number_cache, result.frame_idx)
             if len(number_xyxy):
                 ocr_frames += 1
                 pairs = unique_pairs(match_numbers_to_players(
