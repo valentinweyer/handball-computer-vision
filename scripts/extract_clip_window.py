@@ -11,10 +11,10 @@ numbering.
 
 Usage:
     python -m scripts.extract_clip_window \\
-        source/BHC-FAG.mp4 \\
+        data/raw/BHC-FAG.mp4 \\
         --detections outputs/team_confidence_v2/.BHC-FAG_detections_v1.npz \\
         --start 3030 --stop 4030 --step 2 \\
-        --output-video outputs/team_dataset/BHC-FAG_window_cached.mp4 \\
+        --output-video data/raw/BHC-FAG_window_cached.mp4 \\
         --output-detections outputs/team_dataset/.BHC-FAG_window_detections_v1.npz
 """
 from __future__ import annotations

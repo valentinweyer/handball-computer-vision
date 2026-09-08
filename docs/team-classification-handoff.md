@@ -749,7 +749,7 @@ confidence thresholds, raw reads).
 ## First minute-long clip, and the class-filter bug it exposed (2026-09-08)
 
 Every tracker and identity claim in this repo rested on clips of 8-20 seconds.
-`outputs/team_dataset/Melsungen_window_cached.mp4` is the first longer test: 60s
+`data/raw/Melsungen_window_cached.mp4` is the first longer test: 60s
 at 25fps (1500 frames), carved from a real Bundesliga broadcast at 88:00 by
 `scripts/extract_clip_window.py`, chosen for continuous 7v7 play (12.3 players
 +-1.1 per frame, 11.2 numbers per frame). Team model fitted unsupervised from 1412
@@ -855,7 +855,7 @@ Videos and caches:
 
 - `data/raw/FelixClaar.mp4`: 249-frame short clip.
 - `outputs/team_comparison/.FelixClaar_detections_v1.npz`
-- `outputs/team_dataset/Han-Ber4_cached.mp4`: 199-frame short clip.
+- `data/raw/Han-Ber4_cached.mp4`: 199-frame short clip.
 - `outputs/team_dataset/.Han-Ber4_detections_v1.npz`
 - `data/raw/Hannover.mp4` and its existing detection/model assets are also available, but the recent overlap-mask evaluation focused on Felix and Han-Ber.
 
@@ -925,7 +925,7 @@ Render Han-Ber with independent reference scoring:
 
 ```bash
 conda run -n NewEnv python notebooks/render_mask_team_comparison.py \
-  outputs/team_dataset/Han-Ber4_cached.mp4 \
+  data/raw/Han-Ber4_cached.mp4 \
   --detections outputs/team_dataset/.Han-Ber4_detections_v1.npz \
   --team-model outputs/team_correction_mcbyte/.Han-Ber4_team.pkl \
   --manifest outputs/team_dataset/Han-Ber4/manifest.json \

@@ -432,7 +432,7 @@ result corroborating rather than independent. This closes that gap with a
 third clip whose reference was verified by hand against the specific failure
 mode §4.2/§3.4 warned about (sparse verification missing a real swap).
 
-**Clip**: `source/BHC-FAG.mp4` (4554 frames, 50fps, 1080p), a match not used
+**Clip**: `data/raw/BHC-FAG.mp4` (4554 frames, 50fps, 1080p), a match not used
 anywhere else in this evaluation. A 500-frame derived clip was cut at
 `scripts.extract_clip_window` from original frames 3030-4029 (the densest
 continuous span found, 11-14 detections/frame, no dropouts), subsampled

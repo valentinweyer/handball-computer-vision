@@ -20,7 +20,7 @@ frame legitimately create new ids -- so allocations are also reported per minute
 the count of ids alive at once, which is bounded by how many players are actually on
 screen. Sustained allocation far above that ceiling is drift, not roster change.
 
-    python -m scripts.evaluate_identity_persistence source/BHC-FAG.mp4 \
+    python -m scripts.evaluate_identity_persistence data/raw/BHC-FAG.mp4 \
         --detections outputs/team_confidence_v2/.BHC-FAG_detections_v1.npz \
         --team-model outputs/team_confidence_v2/.BHC-FAG_team.pkl \
         --output runs/identity_persistence/BHC-FAG.json

@@ -18,7 +18,7 @@ dataset works unchanged in `label_jersey_numbers.py`'s reviewer and in
 
 Example:
     python -m scripts.build_number_eval_set \
-        --clip source/BHC-FAG.mp4:outputs/number_cache/.BHC-FAG_numbers_v1.npz \
+        --clip data/raw/BHC-FAG.mp4:outputs/number_cache/.BHC-FAG_numbers_v1.npz \
         --clip data/raw/FelixClaar.mp4:outputs/number_cache/.FelixClaar_numbers_v1.npz \
         --per-band-per-clip 20 --output-dir runs/number_eval_1080p
 """
