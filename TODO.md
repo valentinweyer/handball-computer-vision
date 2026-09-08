@@ -50,43 +50,32 @@ voting path changes.
 
 ---
 
-## 2. Reader accuracy on legible crops (active)
+## 2. Reader accuracy -- RESOLVED by swapping weights (2026-09-08)
 
-`scripts/benchmark_doctr_readers.py`, PARSeq, 262 labelled two-digit crops a
-human called readable, all six 1080p clips:
+Three docTR recognisers converged near 0.62 with a shared ~6% floor of
+confidently-wrong reads, which read as a domain limit. It was not. The original
+`baudm/parseq` checkpoint, same architecture trained on scene text rather than
+docTR's document-text corpus, scores **0.858 / 0.958 selective** on the identical
+crops -- paired McNemar b=4 c=80, **p=2e-19** -- at the same speed and abstention.
+Wired in as `--reader parseq`. See the handoff for the full table and the
+end-to-end check on the `#6` failure.
 
-```
-  correct                163   62%
-  abstained               57   22%
-  trailing digit only     20    8%
-  different number        17    6%
-  leading digit only       5    2%
+Fine-tuning on other sports was measured and rejected: hockey weights match on
+accuracy but collapse abstention (0.49), SoccerNet weights fall to 0.266.
 
-by crop aspect ratio (w/h)
-         w/h    n   correct   partial   diff num
-   0.00-0.70   27        4%       44%        11%
-   0.70-0.85   33       52%       24%         6%
-   0.85-1.00   39       77%        3%         5%
-   1.00-1.20   91       71%        3%         7%
-   1.20+       72       69%        1%         6%
-```
+**Consequences for items 3 and 4 below: both were measured against the weak
+reader and should be re-run before being trusted.**
 
-Two distinct failures:
-
-- **Narrow crops lose a digit.** Below w/h 0.70 the reader is 4% correct and 44%
-  partial. Note the partial reads are *useful* -- `5` folds into `15` under the
-  existing rule -- so gating narrow crops away would discard evidence. Only the
-  11% wholly-wrong portion hurts.
-- **A flat ~6% floor of wholly-wrong reads at every crop shape.** Unmoved by
-  aspect ratio, so not a geometry problem. This is what produced `#6` on a
-  clearly legible jersey 15 (player 20, frames 875-885).
-
-**These errors are correlated** -- same shirt, same font, same angle gives the
-same wrong answer repeatedly. Three consecutive `6`s is one systematic confusion
-sampled three times, not three independent 6% events, so `NumberVoter` cannot
-cancel it: three agreeing wrong reads clear `min_votes=3` at margin 1.0.
-
----
+Remaining reader work, if 0.858 is not enough: no public handball video matches
+our regime (TeamTrack is 6K fisheye, "Play by play" is JSON coordinates not
+video, the GTS action set is practice footage), so training data means labelling
+new broadcast matches -- starting with finishing the truncated
+`data/raw/2026-06-07_1284786_VfL_GM_Loewen.mp4` transfer (65 MB of ~3.2 GB).
+**The 660-crop evaluation set must stay out of any training set**; every
+measurement in the handoff is anchored to it. Where the two readers agree on a
+number they are right 92% of the time and agree on human-unreadable crops only
+1% of the time, so agreement is a good *pre-fill* for a labelling pass -- but not
+an auto-label, because agreement selects exactly the easy crops.
 
 ## 3. Crop padding is untested between its two extremes
 

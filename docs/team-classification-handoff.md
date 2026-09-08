@@ -1095,6 +1095,69 @@ this, simultaneity could only be approximated by read co-occurrence, which is fa
 too sparse to conclude from, and reads could not be traced back to the crop that
 produced them.
 
+### The reader was never the domain's fault -- it was docTR's weights
+
+Three docTR recognisers converged near 0.62 on the labelled 1080p crops, shared a
+~6% floor of confidently-wrong reads, and reached an oracle of only 0.71 between
+them. That pattern says "the domain beats this model family", and the conclusion
+drawn from it -- collect handball data and fine-tune -- was wrong.
+
+docTR trains its own recognisers, largely on document text. The **original
+`baudm/parseq` checkpoint**, the same architecture trained on scene-text
+benchmarks, scores on the identical crops, labels and scoring function:
+
+```
+reader                     accuracy   selective   abstention   ms/crop
+docTR parseq (shipped)        0.622       0.817         0.88       2.0
+baudm parseq (original)       0.858       0.958         0.89       1.6
+baudm parseq (hockey FT)      0.851       0.893         0.49       0.9
+baudm parseq (SoccerNet FT)   0.266       0.336         0.39       1.5
+```
+
+Paired McNemar, docTR vs baudm-original: **b=4, c=80, p=2e-19**. Eighty crops
+docTR misses that this reads, four the other way, at the same speed and with
+better abstention.
+
+The errors it removes are exactly the ones that were driving pipeline failures:
+`22` read as `2`, `17`/`10`/`11`/`21` abstained on, `7` read as `1`, `54` as
+`51`. Those were the "digit loss" failures the crop-padding sweep chased and
+could not fix -- because the crops were fine and the reader was not.
+
+**Fine-tuning on another sport does not help.** The same repository's hockey
+weights match the original on accuracy but collapse its abstention (0.49 vs
+0.89), and its SoccerNet weights fall to 0.266 -- adapting to SoccerNet's tiny
+blurred tracklet thumbnails costs more than the jersey-domain match buys.
+
+Verified end to end on the failure that prompted this. Player 20 wears 15;
+docTR read `6` three times in a row, which cleared `min_votes=3` at margin 1.0
+and put `#6` on screen. Re-reading the same 24 crops:
+
+```
+    frame   docTR   baudm
+      875       6       6      genuinely ambiguous -- both say 6
+      880       6      15      conf 0.99
+      885       6      15      conf 0.85
+      890       5      15      conf 0.99
+      ...
+    correct   6/24   15/24
+```
+
+The first four reads become `6, 15, 15, 15`, so `6` never reaches three votes
+and the wrong label never appears.
+
+Two consequences worth stating plainly:
+
+- The crop-padding sweep and the ensemble analysis both measured a weak reader,
+  not a hard domain. Their negative results stand for docTR parseq and say
+  nothing about this one; they should be re-run if they matter.
+- **No new footage is needed to fix reading.** The data question stays open only
+  for whatever comes after 0.858.
+
+LICENCE: the checkpoints come from `mkoshkina/jersey-number-pipeline` (CC BY-NC
+3.0). The *original* parseq checkpoint it redistributes is Apache-2.0 upstream
+(`baudm/parseq`) and is the one wired in; the hockey and SoccerNet fine-tunes
+are the NC-licensed ones and are measured here but not used.
+
 ## Repository-state warning
 
 The working tree contains many pre-existing modified and untracked experiment files. They belong to the ongoing project. Do not run destructive cleanup, reset, or checkout commands. Work only on the requested files and preserve unrelated changes.

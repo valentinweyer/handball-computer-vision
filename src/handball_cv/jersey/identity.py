@@ -167,6 +167,61 @@ def read_numbers_doctr(predictor, frame_rgb: np.ndarray, number_xyxy: np.ndarray
     return out
 
 
+PARSEQ_MIN_CONFIDENCE = 0.5
+
+
+def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray) -> list:
+    """Recognize the tight crops with the original `baudm/parseq` weights.
+
+    Same architecture as `read_numbers_doctr`, different training. Measured on
+    the 323 human-readable crops of the 1080p evaluation set, scored identically:
+
+        reader                    accuracy   selective   abstention
+        docTR parseq                 0.622       0.817         0.88
+        baudm parseq (this)          0.858       0.958         0.89
+
+    Paired McNemar b=4 c=80, p=2e-19 -- 80 crops docTR misses that this reads,
+    against 4 the other way, at the same ~1.6 ms/crop. The failures it removes
+    are the ones that were driving pipeline errors: 22 read as 2, 17 and 10 and
+    11 abstained on, 7 read as 1. docTR trains its own recognisers largely on
+    document text; these weights are trained on scene-text benchmarks, which
+    is far closer to a number on a moving shirt.
+
+    Fine-tuning on other sports was measured and does not help: the same repo's
+    hockey weights score 0.851 with much worse abstention (0.49), and its
+    SoccerNet weights collapse to 0.266.
+
+    `reader` is the `(model, transform)` pair from `_jersey_parseq.load_jersey_parseq`.
+    Not wrapped in try/except, for the reason `read_numbers_doctr` gives.
+    """
+    number_xyxy = np.asarray(number_xyxy).reshape(-1, 4)
+    if len(number_xyxy) == 0:
+        return []
+    height, width = frame_rgb.shape[:2]
+    boxes = sv.clip_boxes(
+        sv.pad_boxes(xyxy=number_xyxy, px=NUMBER_CROP_PAD, py=NUMBER_CROP_PAD),
+        (width, height),
+    )
+    crops, kept = [], []
+    for position, box in enumerate(boxes):
+        crop = sv.crop_image(frame_rgb, box)
+        if crop.size and crop.shape[0] >= 2 and crop.shape[1] >= 2:
+            crops.append(crop)
+            kept.append(position)
+
+    out = [""] * len(boxes)
+    if not crops:
+        return out
+    model, transform = reader
+    from handball_cv.jersey.parseq_backend import read_crops
+
+    for position, (text, confidence) in zip(kept, read_crops(model, transform, crops)):
+        text = str(text).strip()
+        if confidence >= PARSEQ_MIN_CONFIDENCE and is_valid_number(text):
+            out[position] = text
+    return out
+
+
 @dataclass
 class _Votes:
     counts: dict = field(default_factory=dict)  # normalized value -> count
