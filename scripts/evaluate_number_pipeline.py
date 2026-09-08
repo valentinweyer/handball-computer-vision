@@ -50,6 +50,7 @@ from tqdm import tqdm
 from trackers import McByteMaskConfig, McByteTracker
 
 from handball_cv.jersey.identity import (
+    NUMBER_CLASS_ID,
     OCR_EVERY_N_FRAMES,
     NumberVoter,
     _Votes,
@@ -117,6 +118,22 @@ def read_with_qwen(
     return out
 
 
+def number_boxes(number_cache: dict, frame_index: int) -> np.ndarray:
+    """Class-4 boxes only, as (N, 4) xyxy.
+
+    The detection caches deliberately store every class the detector produced
+    (goalkeeper 1, player 2, referee 3, number 4) so a later question never forces
+    a re-detection. That makes filtering the *consumer's* job: `frame_detections`
+    returns all of them, and handing a 174px-tall player box to the reader as
+    though it were a number produced confident garbage -- a scene-text recogniser
+    on a whole-player crop scores 0.04 accuracy.
+    """
+    detections = frame_detections(number_cache, frame_index)
+    if detections.class_id is None:
+        return detections.xyxy
+    return detections.xyxy[detections.class_id == NUMBER_CLASS_ID]
+
+
 def build_reader(args: argparse.Namespace):
     """Construct the reader once, for either tracker.
 
@@ -171,7 +188,7 @@ def process_numbers_for_frame(
     masked_rows = [i for i, mask in enumerate(masks) if mask is not None]
     if not masked_rows:
         return False, 0
-    number_xyxy = frame_detections(number_cache, frame_index).xyxy
+    number_xyxy = number_boxes(number_cache, frame_index)
     if not len(number_xyxy):
         return False, 0
 

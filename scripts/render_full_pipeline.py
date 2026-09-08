@@ -254,6 +254,22 @@ NUMBER_DETECTION_IOU = 0.9
 MIN_NUMBER_BOX_AREA = 120
 
 
+def number_boxes(number_cache: dict, frame_index: int) -> np.ndarray:
+    """Class-4 boxes only, as (N, 4) xyxy.
+
+    The detection caches deliberately store every class the detector produced
+    (goalkeeper 1, player 2, referee 3, number 4) so a later question never forces
+    a re-detection. That makes filtering the *consumer's* job: `frame_detections`
+    returns all of them, and handing a 174px-tall player box to the reader as
+    though it were a number produced confident garbage -- a scene-text recogniser
+    on a whole-player crop scores 0.04 accuracy.
+    """
+    detections = frame_detections(number_cache, frame_index)
+    if detections.class_id is None:
+        return detections.xyxy
+    return detections.xyxy[detections.class_id == NUMBER_CLASS_ID]
+
+
 def detect_number_boxes(player_model, frame_bgr: np.ndarray) -> np.ndarray:
     """Class-4 jersey-number boxes for this frame, as (N, 4) xyxy.
 
@@ -427,6 +443,7 @@ def render(args: argparse.Namespace) -> dict:
     frames_written = 0
     ocr_frames = 0
     ocr_reads = 0
+    number_reads: list[dict] = []
     rejected_crops = 0
     for frame_index, frame_bgr in enumerate(tqdm(
         sv.get_video_frames_generator(str(source)),
@@ -490,8 +507,13 @@ def render(args: argparse.Namespace) -> dict:
                             raw = text_by_row.get(number_row, "")
                             if raw:
                                 ocr_reads += 1
-                                voter.observe(
-                                    int(player_ids[masked_rows[local_row]]), raw
+                                _pid = int(player_ids[masked_rows[local_row]])
+                                voter.observe(_pid, raw)
+                                # Timestamped so a read can be placed before or
+                                # after an identity switch; aggregate vote counts
+                                # cannot tell which physical player produced them.
+                                number_reads.append(
+                                    {"frame": frame_index, "player_id": _pid, "value": raw}
                                 )
 
         annotated = annotate_frame(
@@ -529,6 +551,7 @@ def render(args: argparse.Namespace) -> dict:
         "output": str(args.output),
         "preview": str(preview_path),
         "frames": frames_written,
+        "tracker": "mcbyte",
         "mcbyte_masks": enable_masks,
         "numbers_enabled": numbers_enabled,
         "ocr_frames": ocr_frames,
@@ -536,7 +559,14 @@ def render(args: argparse.Namespace) -> dict:
         "rejected_number_crops": rejected_crops,
         "numbers_resolved": {k: v for k, v in resolved.items() if v is not None},
         "number_votes_raw": raw_votes,
+        "number_reads": number_reads,
         "label_changes_total": sum(player.team_switches for player in everyone),
+        # Counters alone cannot be investigated: a switch is only actionable with
+        # its frame and player_id, so the events themselves travel with the run.
+        "identity_events": [
+            e for e in identity.events
+            if e["type"] in ("suspected_id_switch", "team_switch", "reid")
+        ],
         **identity.summary(),
     }
     args.output.with_suffix(".json").write_text(json.dumps(result, indent=2))
@@ -642,6 +672,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
 
     preview = None
     frames_written = ocr_frames = ocr_reads = rejected_crops = 0
+    number_reads: list[dict] = []
     for result in frames:
         frame_rgb = result.read_frame()
         frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
@@ -654,7 +685,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         ]
 
         if result.frame_idx % args.ocr_every == 0 and len(player_ids):
-            number_xyxy = frame_detections(number_cache, result.frame_idx).xyxy
+            number_xyxy = number_boxes(number_cache, result.frame_idx)
             if len(number_xyxy):
                 ocr_frames += 1
                 pairs = unique_pairs(match_numbers_to_players(
@@ -691,6 +722,10 @@ def render_sam2(args: argparse.Namespace) -> dict:
                         if raw:
                             ocr_reads += 1
                             voter.observe(int(player_ids[local_row]), raw)
+                            number_reads.append({
+                                "frame": result.frame_idx,
+                                "player_id": int(player_ids[local_row]), "value": raw,
+                            })
 
         annotated = annotate_frame(
             frame_bgr, result.boxes, player_ids, players, masks,
@@ -734,7 +769,12 @@ def render_sam2(args: argparse.Namespace) -> dict:
         "rejected_number_crops": rejected_crops,
         "numbers_resolved": {k: v for k, v in resolved.items() if v is not None},
         "number_votes_raw": raw_votes,
+        "number_reads": number_reads,
         "label_changes_total": sum(p.team_switches for p in everyone),
+        "identity_events": [
+            e for e in registry.events
+            if e["type"] in ("suspected_id_switch", "team_switch", "reid")
+        ],
         **registry.summary(),
     }
     args.output.with_suffix(".json").write_text(json.dumps(result_dict, indent=2))
