@@ -16,10 +16,12 @@ frame-local: a tracker never supplies or freezes a team prediction, and
 mask-derived colour is an overlap-only fallback that cannot override a valid
 clean-crop observation.
 
-**Tracking.** MCByte is the shipped default (`--tracker mcbyte`). SAM2 with
-periodic detector reprompting measured better on every clip tested and is what
-recent work uses; see `docs/tracking-evaluation.md` §8 before changing the
-default.
+**Tracking.** SAM2 with periodic detector reprompting is the default. Scored
+against ground truth on three clips it wins each one -- 93.8 / 89.2 / 98.9%
+correct, against 81.5 / 86.7 / 95.9% for the best box tracker on each
+(`docs/tracking-evaluation.md` §8). It costs about 1 s/frame against MCByte's
+0.1 s, so `--tracker mcbyte` stays supported and is the right pick when that
+matters.
 
 **Jersey numbers.** Number boxes come from the detector, are matched to players
 by mask intersection-over-smaller, read by a scene-text recogniser, and voted per
@@ -27,10 +29,10 @@ identity. Reader accuracy on 323 human-labelled 1080p crops:
 
 | reader | accuracy | selective | abstention |
 | --- | ---: | ---: | ---: |
-| `--reader parseq` (baudm original) | **0.858** | 0.958 | 0.89 |
-| `--reader doctr --doctr-arch parseq` | 0.622 | 0.817 | 0.88 |
+| `--reader parseq` (baudm original, **default**) | **0.858** | 0.958 | 0.89 |
 | `--reader qwen` (Qwen3.8, no-think) | 0.628 | 0.736 | 0.81 |
-| `--reader easyocr` (default) | 0.365 | 0.641 | 0.84 |
+| `--reader doctr --doctr-arch parseq` | 0.622 | 0.817 | 0.88 |
+| `--reader easyocr` | 0.365 | 0.641 | 0.84 |
 
 All four scored on the same crops with the same rule, at confidence 0.5.
 *Selective* is accuracy over the crops a reader chose to answer; *abstention* is
@@ -42,8 +44,8 @@ improvement in the pipeline (paired McNemar p=2e-19).
 **Identity** is tracker-agnostic. `PlayerRegistry` holds reversible team labels
 so an early mistake is not frozen, and re-ID matches a returning player by
 appearance. That appearance signal is weak within a team -- 0.55 rank-1 against
-a 0.19 chance floor with `--reid-embedding prtreid`, 0.35 with the team model's
-own features -- so jersey numbers arbitrate afterwards: a verdict is suspended
+a 0.19 chance floor with `--reid-embedding prtreid` (the default), 0.35 with the
+team model's own features -- so jersey numbers arbitrate afterwards: a verdict is suspended
 when re-ID moves an identity, withheld when two identities on one team claim the
 same number, and used to fold identities that are provably the same player.
 
@@ -69,6 +71,12 @@ notebooks/          actual notebooks plus untouched migration originals
 docs/               architecture, handoff, and per-experiment findings
 TODO.md             deferred work, each entry with its evidence
 ```
+
+The default configuration is the most accurate one measured, which means it
+depends on all three external checkouts below plus a downloaded PARSeq
+checkpoint. Every failure is loud and names its fix, and
+`--tracker mcbyte --reader easyocr --reid-embedding team-model` is the fully
+self-contained fallback, at the accuracies shown above.
 
 External research checkouts are cloned beside the project and gitignored:
 `sam2-upstream/` (`--tracker sam2`), `prtreid-upstream/` (`--reid-embedding
@@ -126,7 +134,6 @@ a run summary (per-frame identities, votes, reads, teams and events):
 python -m scripts.render_full_pipeline data/raw/<clip>.mp4 \
     --detections <cache>.npz --number-detections <cache>.npz \
     --team-model <model>.pkl \
-    --tracker sam2 --reader parseq --reid-embedding prtreid \
     --output runs/full_pipeline/<name>.mp4
 ```
 
