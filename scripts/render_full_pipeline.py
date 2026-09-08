@@ -696,6 +696,7 @@ def render(args: argparse.Namespace) -> dict:
         "frames": frames_written,
         "tracker": "mcbyte",
         "reid_embedding": args.reid_embedding,
+        "reader": "easyocr",   # the mcbyte path has no reader choice
         "mcbyte_masks": enable_masks,
         "numbers_enabled": numbers_enabled,
         "ocr_frames": ocr_frames,
@@ -913,6 +914,13 @@ def render_sam2(args: argparse.Namespace) -> dict:
         "preview": str(preview_path),
         "tracker": "sam2",
         "reid_embedding": args.reid_embedding,
+        # Two different recognisers are both called "parseq" -- docTR's
+        # reimplementation (`--reader doctr --doctr-arch parseq`, 0.622 on the
+        # labelled set) and the original baudm weights (`--reader parseq`,
+        # 0.858). A run that does not say which it used cannot be compared.
+        "reader": (
+            f"doctr:{args.doctr_arch}" if args.reader == "doctr" else args.reader
+        ),
         "frames": frames_written,
         "numbers_enabled": True,
         "ocr_frames": ocr_frames,
