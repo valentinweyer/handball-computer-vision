@@ -243,6 +243,12 @@ class _Votes:
         return value, count, margin
 
 
+# Reads off a different shirt before an identity disowns the number it inherited
+# across a re-ID. One is a misread -- the readers in use are ~0.6 accurate on
+# these crops -- and must not discard a well-supported tally; two is a pattern.
+CONTRADICTIONS_BEFORE_DISOWNING = 2
+
+
 class NumberVoter:
     """Per-identity jersey-number histogram that can change its mind.
 
@@ -268,6 +274,9 @@ class NumberVoter:
         # Rebuilt from scratch by every `arbitrate` call, so it is a view of the
         # current evidence and never an accumulating penalty.
         self._suppressed: dict = {}
+        # identity_id -> [verdict inherited across a re-ID, reads contradicting it].
+        # See `suspend`.
+        self._unconfirmed: dict = {}
 
     def observe(self, identity_id: int, raw_value: str) -> None:
         value = self._normalize(raw_value)
@@ -277,6 +286,28 @@ class NumberVoter:
         qualified, _count, _margin = self._qualified(identity_id)
         if qualified is not None:
             self._settled[identity_id] = qualified
+        pending = self._unconfirmed.get(identity_id)
+        if pending is None:
+            return
+        inherited = pending[0]
+        # The same fold rule `resolved_counts` uses: a partial view of "15"
+        # reads "5", so a single digit backs the number it could have come from.
+        if value == inherited or (len(value) == 1 and inherited.endswith(value)):
+            self._unconfirmed.pop(identity_id, None)
+            return
+        pending[1] += 1
+        if pending[1] < CONTRADICTIONS_BEFORE_DISOWNING:
+            return
+        # This identity is now reading a different shirt, so the inherited
+        # tally describes somebody else and has to go -- leaving it in place
+        # would sit in the denominator forever, and a fresh number would need
+        # ~25 corroborating reads to clear `min_margin` against it. Only the
+        # contradicting reads survive, as the new fragment's own first evidence.
+        self._unconfirmed.pop(identity_id, None)
+        self._settled.pop(identity_id, None)
+        self._votes[identity_id] = _Votes()
+        for _ in range(pending[1]):
+            self._votes[identity_id].add(value)
 
     def _qualified(self, identity_id: int):
         """(value, count, margin) where value is set only if both gates pass now."""
@@ -332,17 +363,50 @@ class NumberVoter:
             return held, counts.get(held, 0), margin
         return None, count, margin
 
-    def best(self, identity_id: int):
-        """`_verdict`, withheld while another identity holds the same number.
+    def suspend(self, identity_id: int):
+        """Stop asserting this identity's number until a fresh read backs it.
 
-        See `arbitrate`. A suppressed identity reports no number rather than a
-        wrong one, which is the project's standing rule: abstaining beats
-        injecting a confident wrong observation.
+        A verdict is evidence about a *person*, but it is filed against an
+        identity -- and re-ID moves an identity onto whoever it believes has
+        reappeared, which within a team is right about half the time. Measured
+        on the 60s Melsungen clip, p6 settled on 15 from nine reads over frames
+        65-110, was revived onto a different player at frame 560, then read
+        20, 29 and 2 off that player's shirt while still labelled 15. The
+        hysteresis in `_verdict` is what makes that stable: it holds a value
+        until a *rival* qualifies, and one or two contrary reads never do.
+
+        Votes are kept rather than cleared, so a correct revival is vouched for
+        by its first agreeing read, while a wrong one never asserts the number
+        it inherited. Call this on every re-ID revival.
+        """
+        held = self._verdict(identity_id)[0]
+        if held is not None:
+            self._unconfirmed[identity_id] = [held, 0]
+        return held
+
+    def claim(self, identity_id: int):
+        """`_verdict`, unless it was inherited across a re-ID and never vouched.
+
+        What this identity may assert against *others* -- who owns a squad
+        number, and which identities are the same player. Distinct from `best`,
+        which additionally withholds a claim that lost such a contest.
+        """
+        if identity_id in self._unconfirmed:
+            _value, count, margin = self._verdict(identity_id)
+            return None, count, margin
+        return self._verdict(identity_id)
+
+    def best(self, identity_id: int):
+        """What may be displayed: a `claim` that no stronger one has beaten.
+
+        A suppressed identity reports no number rather than a wrong one, which
+        is the project's standing rule: abstaining beats injecting a confident
+        wrong observation. See `arbitrate`.
         """
         if identity_id in self._suppressed:
             _value, count, margin = self._verdict(identity_id)
             return None, count, margin
-        return self._verdict(identity_id)
+        return self.claim(identity_id)
 
     def arbitrate(self, team_by_identity: dict) -> dict:
         """One squad number, one player per team: withhold the weaker claims.
@@ -365,7 +429,7 @@ class NumberVoter:
         """
         claims: dict = {}
         for identity_id, team_id in team_by_identity.items():
-            value, count, margin = self._verdict(identity_id)
+            value, count, margin = self.claim(identity_id)
             if value is not None:
                 claims.setdefault((team_id, value), []).append(
                     (count, margin, identity_id)
@@ -386,6 +450,7 @@ class NumberVoter:
         self._votes.pop(identity_id, None)
         self._settled.pop(identity_id, None)
         self._suppressed.pop(identity_id, None)
+        self._unconfirmed.pop(identity_id, None)
 
     def merge(self, from_id: int, into_id: int) -> None:
         """Fold one identity's votes into another's -- call this on a re-ID hit
@@ -393,6 +458,7 @@ class NumberVoter:
         src = self._votes.pop(from_id, None)
         self._settled.pop(from_id, None)
         self._suppressed.pop(from_id, None)
+        self._unconfirmed.pop(from_id, None)
         if src is None:
             return
         dst = self._votes.setdefault(into_id, _Votes())

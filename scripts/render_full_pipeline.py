@@ -411,9 +411,21 @@ class NumberIdentityResolver:
         self.registry = registry
         self.voter = voter
         self.co_live: dict[int, set] = {}
+        self._events_seen = 0
 
-    def observe_frame(self, player_ids) -> None:
-        """Note who shared this frame. Two ids seen together are two people."""
+    def begin_frame(self, player_ids) -> None:
+        """Note who shared this frame, and un-vouch anything re-ID just moved.
+
+        Called before this frame's reads are voted, because a revival makes the
+        identity's existing number stale from that instant: the verdict was
+        earned by a fragment that has ended, and the new fragment may well be a
+        different person.
+        """
+        for event in self.registry.events[self._events_seen:]:
+            if event["type"] == "reid":
+                self.voter.suspend(event["player_id"])
+        self._events_seen = len(self.registry.events)
+
         ids = {int(p) for p in player_ids}
         for player_id in ids:
             self.co_live.setdefault(player_id, set()).update(ids - {player_id})
@@ -429,7 +441,7 @@ class NumberIdentityResolver:
         teams = self.registry.team_by_player_id()
         claims: dict = {}
         for player_id, team_id in teams.items():
-            value, count, _margin = self.voter._verdict(player_id)
+            value, count, _margin = self.voter.claim(player_id)
             if value is not None:
                 claims.setdefault((team_id, value), []).append((count, player_id))
 
@@ -590,6 +602,7 @@ def render(args: argparse.Namespace) -> dict:
             tracklet_masks(getattr(tracker, "_last_mask_output", None), tracked.tracker_id)
             if enable_masks else [None] * len(tracked)
         )
+        resolver.begin_frame(player_ids)
 
         players = []
         for player_id in player_ids:
@@ -642,7 +655,6 @@ def render(args: argparse.Namespace) -> dict:
                                 })
 
         presence[str(frame_index)] = sorted(int(p) for p in player_ids)
-        resolver.observe_frame(player_ids)
         if numbers_enabled and frame_index % args.ocr_every == 0:
             resolver.resolve(frame_index)
         annotated = annotate_frame(
@@ -802,6 +814,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             or next(p for p in reversed(registry.retired) if p.player_id == int(pid))
             for pid in player_ids
         ]
+        resolver.begin_frame(player_ids)
 
         if result.frame_idx % args.ocr_every == 0 and len(player_ids):
             number_xyxy = number_detections(number_cache, result.frame_idx)
@@ -849,7 +862,6 @@ def render_sam2(args: argparse.Namespace) -> dict:
                             })
 
         presence[str(result.frame_idx)] = sorted(int(p) for p in player_ids)
-        resolver.observe_frame(player_ids)
         if result.frame_idx % args.ocr_every == 0:
             resolver.resolve(result.frame_idx)
         annotated = annotate_frame(

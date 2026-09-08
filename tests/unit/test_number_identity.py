@@ -115,8 +115,8 @@ class LinkingTests(unittest.TestCase):
 
     def test_two_halves_of_one_player_are_folded(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 0})
-        resolver.observe_frame([1])          # never on screen together
-        resolver.observe_frame([2])
+        resolver.begin_frame([1])          # never on screen together
+        resolver.begin_frame([2])
         vote(voter, 1, "15", 9)
         vote(voter, 2, "15", 6)
         resolver.resolve(100)
@@ -126,7 +126,7 @@ class LinkingTests(unittest.TestCase):
 
     def test_identities_seen_together_are_never_folded(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 0})
-        resolver.observe_frame([1, 2])
+        resolver.begin_frame([1, 2])
         vote(voter, 1, "25", 9)
         vote(voter, 2, "25", 6)
         resolver.resolve(100)
@@ -138,8 +138,8 @@ class LinkingTests(unittest.TestCase):
 
     def test_opposite_teams_keep_their_own_number(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 1})
-        resolver.observe_frame([1])
-        resolver.observe_frame([2])
+        resolver.begin_frame([1])
+        resolver.begin_frame([2])
         vote(voter, 1, "7", 5)
         vote(voter, 2, "7", 5)
         resolver.resolve(100)
@@ -151,8 +151,8 @@ class LinkingTests(unittest.TestCase):
     def test_a_fold_inherits_co_liveness(self):
         # 3 shared a frame with 1. After 2 folds into 1, 3 must not fold in too.
         registry, voter, resolver = self._resolver({1: 0, 2: 0, 3: 0})
-        resolver.observe_frame([1, 3])
-        resolver.observe_frame([2])
+        resolver.begin_frame([1, 3])
+        resolver.begin_frame([2])
         vote(voter, 1, "15", 9)
         vote(voter, 2, "15", 6)
         vote(voter, 3, "15", 4)
@@ -163,8 +163,8 @@ class LinkingTests(unittest.TestCase):
 
     def test_linking_is_recorded_as_an_event(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 0})
-        resolver.observe_frame([1])
-        resolver.observe_frame([2])
+        resolver.begin_frame([1])
+        resolver.begin_frame([2])
         vote(voter, 1, "15", 9)
         vote(voter, 2, "15", 6)
         resolver.resolve(250)
@@ -175,6 +175,111 @@ class LinkingTests(unittest.TestCase):
             {k: links[0][k] for k in ("frame", "player_id", "into_player_id")},
             {"frame": 250, "player_id": 2, "into_player_id": 1},
         )
+
+
+class InheritedVerdictTests(unittest.TestCase):
+    """A number earned by one fragment must not speak for the next one.
+
+    The 60s Melsungen case, exactly: p6 settled on 15 from nine reads over
+    frames 65-110, was revived onto a different player at frame 560, and read
+    20, 29 and 2 off that player's shirt while still labelled 15.
+    """
+
+    def test_a_revived_identity_stops_asserting_its_old_number(self):
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        self.assertEqual(voter.best(6)[0], "15")
+
+        voter.suspend(6)
+        self.assertIsNone(voter.best(6)[0])
+
+    def test_reads_off_a_different_shirt_never_restore_it(self):
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        voter.suspend(6)
+        for value in ("20", "29", "2"):        # the reads p6 actually produced
+            voter.observe(6, value)
+        self.assertIsNone(voter.best(6)[0])
+
+    def test_one_agreeing_read_vouches_for_a_correct_revival(self):
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        voter.suspend(6)
+        voter.observe(6, "15")
+        self.assertEqual(voter.best(6)[0], "15")
+
+    def test_a_partial_read_of_the_same_number_also_vouches(self):
+        # A crop catching only the trailing digit of 15 reads "5"; the fold rule
+        # already treats that as corroboration, and so must this.
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        voter.suspend(6)
+        voter.observe(6, "5")
+        self.assertEqual(voter.best(6)[0], "15")
+
+    def test_a_contradicted_tally_is_disowned_so_the_new_player_can_be_read(self):
+        # Keeping the inherited votes would leave 9 stale ones in the
+        # denominator, and a fresh number would need ~25 reads to clear
+        # min_margin against them.
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        voter.suspend(6)
+        vote(voter, 6, "29", 4)
+        self.assertEqual(voter.best(6), ("29", 4, 1.0))
+
+    def test_one_stray_misread_does_not_discard_the_tally(self):
+        voter = NumberVoter()
+        vote(voter, 6, "15", 9)
+        voter.suspend(6)
+        voter.observe(6, "29")           # a misread, not a new player
+        voter.observe(6, "15")
+        self.assertEqual(voter.best(6)[0], "15")
+        self.assertEqual(voter._votes[6].counts["15"], 10)
+
+    def test_an_unvouched_claim_cannot_suppress_a_first_hand_one(self):
+        # p6 carries more folded votes for 15 than the real 15 does. Unless the
+        # inherited claim is excluded, arbitration hands the number to the wrong
+        # player and withholds it from the right one.
+        voter = NumberVoter()
+        vote(voter, 6, "15", 13)
+        voter.suspend(6)
+        vote(voter, 20, "15", 6)
+        self.assertEqual(voter.arbitrate({6: 0, 20: 0}), {})
+        self.assertEqual(voter.best(20)[0], "15")
+        self.assertIsNone(voter.best(6)[0])
+
+    def test_suspending_an_identity_with_no_verdict_is_a_no_op(self):
+        voter = NumberVoter()
+        voter.observe(9, "7")
+        self.assertIsNone(voter.suspend(9))
+        self.assertIsNone(voter.best(9)[0])
+
+
+class ResolverSuspensionTests(unittest.TestCase):
+    def test_a_reid_event_suspends_before_the_frames_reads_are_counted(self):
+        voter = NumberVoter()
+        registry = _Registry({6: 0})
+        resolver = NumberIdentityResolver(registry, voter)
+        vote(voter, 6, "15", 9)
+
+        resolver.begin_frame([6])
+        self.assertEqual(voter.best(6)[0], "15")
+
+        registry.events.append({"frame": 560, "type": "reid", "player_id": 6})
+        resolver.begin_frame([6])
+        self.assertIsNone(voter.best(6)[0])
+
+    def test_each_reid_event_is_acted_on_once(self):
+        voter = NumberVoter()
+        registry = _Registry({6: 0})
+        resolver = NumberIdentityResolver(registry, voter)
+        vote(voter, 6, "15", 9)
+        registry.events.append({"frame": 560, "type": "reid", "player_id": 6})
+
+        resolver.begin_frame([6])
+        voter.observe(6, "15")                 # vouched by the next read
+        resolver.begin_frame([6])              # must not re-suspend
+        self.assertEqual(voter.best(6)[0], "15")
 
 
 if __name__ == "__main__":
