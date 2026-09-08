@@ -746,6 +746,72 @@ less accurate, which is the direction this project's invariant prefers.
 Artifacts: `runs/number_eval_1080p/doctr_benchmark.json` (all three archs, all
 confidence thresholds, raw reads).
 
+## First minute-long clip, and the class-filter bug it exposed (2026-09-08)
+
+Every tracker and identity claim in this repo rested on clips of 8-20 seconds.
+`outputs/team_dataset/Melsungen_window_cached.mp4` is the first longer test: 60s
+at 25fps (1500 frames), carved from a real Bundesliga broadcast at 88:00 by
+`scripts/extract_clip_window.py`, chosen for continuous 7v7 play (12.3 players
++-1.1 per frame, 11.2 numbers per frame). Team model fitted unsupervised from 1412
+torso crops.
+
+**It immediately exposed a bug the short clips could not.** The detection caches
+were changed to keep every class (goalkeeper 1, player 2, referee 3, number 4) so
+a later question would not force a re-detection. The number-reading consumer was
+filtered in `799676d`; the *tracking* consumers were not. Both trackers were
+handed the unfiltered cache and followed referees and jersey-number boxes as
+people -- **16689 of 36686 cached detections on this clip are number boxes, so 45%
+of what the tracker was asked to follow were not people.**
+
+| | all classes | + pending fix | people only |
+|---|---|---|---|
+| players | 30 | 29 | **18** |
+| tracker ids consumed | 87 | 79 | **35** |
+| re-ID hits | 57 | 50 | **17** |
+| fragmented players | 22 | 22 | **10** |
+| max fragments / player | 7 | 6 | **4** |
+| ocr reads | 1235 | 1333 | **392** |
+
+The read count is the clearest tell: a tracked number box *contains itself*, so it
+scored mask-IoS 1.0 against its own detection and produced a read every OCR frame.
+Roughly 3.4x of the reads on this clip were numbers reading themselves.
+
+Only this clip used a multi-class cache for `--detections`; FelixClaar, BHC-FAG and
+Han-Ber4 all used two-class Roboflow caches, so the earlier tracker comparisons are
+unaffected. Fixed in `6dc4ff1`: `person_detections` / `number_detections` now live
+beside `frame_detections` and both scripts share them.
+
+### New-player confirmation was unreachable for moving players
+
+`_pending_new` binned unmatched detections by `round(x/50)_round(y/50)` and
+required two hits in the same bin. Measured on this clip at `CHECK_EVERY=10`,
+people move a median **30px** between checkpoints (p75 55, p90 93): 57% cross a bin
+edge and 28% move more than a whole bin. The rule therefore admitted stationary
+people and rejected running ones. The counter also never expired despite the
+constant being named `MIN_CONFIRM_CHECKPOINTS`, so detection / gap / detection
+confirmed a player who was never continuously present.
+
+Both fixed in `a989e9f` by following candidates on centre distance scaled by box
+height. IoU was tried first and is wrong here: a player box is ~40px wide, so a
+30px sideways step -- the median -- drops IoU to 0.14.
+
+### What the clip still shows, after both fixes
+
+- **Fragmentation is the dominant remaining failure**: 10 of 18 players fragmented,
+  worst into 4 pieces, 35 tracker ids for 18 identities.
+- **Duplicate numbers persist**: `25` resolves on three player_ids, `15` and `18` on
+  two each -- 13 resolved ids carrying only 9 distinct numbers. This is the
+  evidence the number-anchored merge (`NumberVoter.merge()`, already written) was
+  waiting for. It needs per-player team in the render output as a guard, since two
+  players on opposite teams may legitimately share a number.
+- **Bench players are still tracked**, correctly -- they are people. Excluding them
+  needs a real court test; `court_test_fn` in `drive_sam2` is currently
+  `lambda box: True`. A colour-based court mask was tried and **abandoned**: the
+  bench sits at the court edge with the crowd directly behind it, so a floor-colour
+  mask cannot separate them (it excluded 8% of person detections and none of the
+  bench). The workable route is the homography in `scripts/run_court_mapping.py` --
+  map the foot point to court coordinates and test the 40x20m rectangle.
+
 ## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.
