@@ -12,12 +12,13 @@ trackers[mask]==2.6.0
 # ── detection / core CV ──────────────────────────────────────────────────────
 supervision==0.30.0
 inference==0.62.0
+easyocr==1.7.2
 opencv-python==4.10.0.84
-numpy==2.3.5
+numpy==2.3.4
 scipy==1.16.3
 
 # ── team classification / re-ID (SigLIP + UMAP + KMeans) ─────────────────────
-transformers==5.9.0
+transformers==4.57.6
 umap-learn==0.5.9.post2
 scikit-learn==1.7.2
 
@@ -45,10 +46,11 @@ yacs==0.1.8  # official SoccerNet PRTReID checkpoint config
 git+https://github.com/valentinweyer/roboflow-sports-handball.git@feat/handball
 
 # ── optional archived SAM2 baseline dependency ─────────────────────────────────────────────────────
-# Only e2e.py (the SAM2 baseline) needs these. e2e_mcbyte.py does not.
+# Only experiments/sam2_baseline/run_pipeline.py needs these.
+# experiments/team_gated_tracking/run_pipeline.py does not.
 #   pip install "git+https://github.com/facebookresearch/sam2.git"  # archived baseline
 # Note three .pth files compete for the name `sam2`; see the header comment in
-# notebooks/e2e.py before touching import order there.
+# experiments/sam2_baseline/run_pipeline.py before touching import order there.
 iopath==0.1.10  # sam2's own image_encoder backbone imports this directly; not
                 # pulled in by the sam2 checkout itself
 
