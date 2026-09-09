@@ -60,12 +60,82 @@ def ensure_frame_cache(video: Path, frame_cache_dir: Path) -> list[Path]:
     return sorted(frame_cache_dir.glob("*.jpg"), key=lambda p: int(p.stem))
 
 
+def filter_edge_fragments(
+    mask: np.ndarray, relative_distance: float, connectivity: int = 8
+) -> np.ndarray:
+    """Byte-identical, ~9x faster `sv.filter_segments_by_distance(mode="edge")`.
+
+    Keeps the largest connected component, plus every component whose nearest
+    edge lies within `relative_distance * image_diagonal` of it.
+
+    Supervision spends ~31ms per 1080p mask inside its `_chamfer_distances`, a
+    pure-Python row loop (2*H iterations of full-width int64 numpy ops) that
+    reimplements `cv2.distanceTransform(..., cv2.DIST_L2, 3)`: its fixed-point
+    weights 62587/65536 and 89738/65536 are exactly OpenCV's DIST_L2 maskSize=3
+    constants, and the two agree bit-for-bit. That loop is O(H*W) per object
+    regardless of what the mask contains, so at 14 players it costs ~434ms per
+    frame against a ~1s/frame propagation budget -- a cost no faster
+    segmentation model can touch, since it runs after the model.
+
+    Three changes, none of them semantic:
+
+      * `cv2.distanceTransform` in place of the Python chamfer loop;
+      * one `np.unique` pass instead of a full-image comparison per component;
+      * work inside the mask's bounding box -- every component is made of mask
+        pixels so none is lost, and a chamfer path between two points inside a
+        rectangle stays inside it -- while the threshold still comes from the
+        *full* image diagonal, not the crop's.
+
+    Equivalence with supervision is pinned by
+    `tests/unit/test_filter_edge_fragments.py`; keep it that way, so this stays
+    a speed change and never a silent change to the boxes the identity layer
+    consumes.
+    """
+    if mask.dtype != bool:
+        raise TypeError("mask must be boolean")
+    if not mask.any():
+        return mask.copy()
+
+    height, width = mask.shape
+    rows = np.flatnonzero(mask.any(axis=1))
+    cols = np.flatnonzero(mask.any(axis=0))
+    y0, y1 = int(rows[0]), int(rows[-1]) + 1
+    x0, x1 = int(cols[0]), int(cols[-1]) + 1
+
+    num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(
+        mask[y0:y1, x0:x1].astype(np.uint8), connectivity=connectivity
+    )
+    if num_labels <= 1:
+        return mask.copy()
+
+    # Largest component, ties broken by position then label -- the crop shifts
+    # every component's coordinates equally, so this picks what supervision picks.
+    areas = stats[1:, cv2.CC_STAT_AREA]
+    candidates = 1 + np.flatnonzero(areas == int(areas.max()))
+    main_label = min(
+        (int(label) for label in candidates),
+        key=lambda label: (int(stats[label, 0]), int(stats[label, 1]), label),
+    )
+
+    threshold = float(relative_distance) * float(np.hypot(height, width))
+    main_mask = labels == main_label
+    distances = cv2.distanceTransform((~main_mask).astype(np.uint8), cv2.DIST_L2, 3)
+
+    keep = np.zeros(num_labels, dtype=bool)
+    keep[np.unique(labels[distances <= threshold])] = True
+    keep[main_label] = True
+    keep[0] = False  # background touches the threshold band; it is not a component
+
+    out = np.zeros_like(mask)
+    out[y0:y1, x0:x1] = keep[labels]
+    return out
+
+
 def masks_from_logits(mask_logits: torch.Tensor) -> np.ndarray:
     """(N, 1, H, W) logits -> (N, H, W) bool, edge-fragment filtered."""
     masks = (mask_logits > 0.0).squeeze(1).cpu().numpy().astype(bool)
     return np.array([
-        sv.filter_segments_by_distance(m, relative_distance=0.03, mode="edge")
-        for m in masks
+        filter_edge_fragments(m, relative_distance=0.03) for m in masks
     ])
 
 

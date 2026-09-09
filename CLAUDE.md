@@ -70,7 +70,7 @@ first:
 ## Commands
 
 ```bash
-conda run -n NewEnv pytest -q tests
+uv run pytest -q tests
 ```
 
 Do not run bare `pytest` from the repository root — vendored `onnxruntime` and
