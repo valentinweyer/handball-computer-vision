@@ -70,8 +70,13 @@ first:
 ## Commands
 
 ```bash
-uv run pytest -q tests
+uv run --no-sync pytest -q tests
 ```
+
+`--no-sync` is required, not cosmetic: there is no `uv.lock`, and `torch` is not
+in `[project].dependencies` — it comes from the aarch64/GB10 CUDA install
+recorded in `requirements.txt`. A default `uv run` would resolve from
+`pyproject.toml` alone and can uninstall it.
 
 Do not run bare `pytest` from the repository root — vendored `onnxruntime` and
 other upstream trees contain unrelated test entry points that break global
