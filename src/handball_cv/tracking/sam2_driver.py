@@ -157,6 +157,62 @@ class Sam2FrameResult:
     read_frame: Callable[[], np.ndarray]  # -> RGB frame, decoded once and cached
 
 
+def _apply_reset_reseed(predictor, state, frame_idx, actions, masks_by_id) -> None:
+    """Apply a checkpoint by discarding SAM2's memory bank and re-seeding.
+
+    McByte++'s `mask_manager__edgetam.reseed_at_frame` does this because
+    EdgeTAM's predictor raises "Cannot add new object id ... after tracking
+    starts"; `reset_state` clears `tracking_has_started`, so re-adding everyone
+    is the way around it. This reproduces that pattern on SAM2 so its cost can
+    be measured before anyone ports anything.
+
+    `TrackManager`'s decisions are honoured exactly as the default policy
+    honours them, so the only variable is memory:
+
+    - removed objects are dropped, as they would be by `remove_object`;
+    - an object the manager wants corrected (`reprompt` or `reset`) is
+      re-seeded from that action's detector box, the same correction it would
+      have received -- never from its current mask, which for a `reset` is on
+      the wrong player entirely;
+    - every other survivor is re-seeded from its own mask at this frame, which
+      preserves its shape where a box would not;
+    - new objects enter from their detector box.
+    """
+    corrections = {
+        int(a["obj_id"]): a["box"]
+        for a in actions if a["type"] in ("reprompt", "reset")
+    }
+    removed = {int(a["obj_id"]) for a in actions if a["type"] == "remove"}
+    additions = {int(a["obj_id"]): a["box"] for a in actions if a["type"] == "add"}
+
+    survivors = [
+        (int(oid), mask) for oid, mask in masks_by_id.items()
+        if int(oid) not in removed
+    ]
+
+    predictor.reset_state(state)
+
+    for obj_id, mask in survivors:
+        if obj_id in corrections:
+            predictor.add_new_points_or_box(
+                state, frame_idx=frame_idx, obj_id=obj_id,
+                box=np.asarray(corrections[obj_id], dtype=np.float32),
+            )
+        elif mask.any():
+            predictor.add_new_mask(
+                state, frame_idx=frame_idx, obj_id=obj_id, mask=mask
+            )
+        # A survivor whose mask has collapsed to nothing and that the manager
+        # did not flag has no usable seed; it is dropped rather than re-added
+        # from an empty mask, which SAM2 would treat as an empty object.
+
+    for obj_id, box in additions.items():
+        predictor.add_new_points_or_box(
+            state, frame_idx=frame_idx, obj_id=obj_id,
+            box=np.asarray(box, dtype=np.float32),
+        )
+
+
 def drive_sam2(
     video: Path,
     frame_detections_fn: Callable[[int], "sv.Detections"],
@@ -168,6 +224,7 @@ def drive_sam2(
     goalkeeper_class_id: int = 1,
     desc: str = "SAM2 reprompt",
     reid_encoder=None,
+    checkpoint_policy: str = "reprompt",
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -193,8 +250,33 @@ def drive_sam2(
     `court_test_fn` is left permissive (accepts any new detection), matching
     the box trackers in `evaluate_tracker_identity`, which also add every
     unmatched detection without a court-membership check.
+
+    `checkpoint_policy` selects how `TrackManager`'s decisions reach the
+    predictor. It does not change what those decisions are.
+
+    - `"reprompt"` (default): today's behaviour. Corrections are applied to
+      individual objects and SAM2's memory bank survives the checkpoint.
+    - `"reset_reseed"`: `reset_state` first, then every surviving object is
+      re-added at this frame. The memory bank is discarded wholesale.
+
+    The second exists to price one specific cost. EdgeTAM's predictor refuses
+    to add an object once tracking has started, so McByte++ reaches around it
+    by tearing the session down and re-seeding everyone each time it needs a
+    new target -- meaning any EdgeTAM port here would have to pay that too. Run
+    both policies through `evaluate_tracker_identity` and the difference is
+    what discarding mask memory costs, measured on this project's own tracker
+    and references rather than inferred from another paper's benchmark. It is
+    an experiment seam, not a supported configuration: §8.3 of
+    `docs/tracking-evaluation.md` traces this tracker's recall advantage to
+    propagating on accumulated memory, which is exactly what the second policy
+    throws away.
     """
     from sam2.build_sam import build_sam2_video_predictor
+
+    if checkpoint_policy not in ("reprompt", "reset_reseed"):
+        raise ValueError(
+            f"checkpoint_policy must be 'reprompt' or 'reset_reseed', got {checkpoint_policy!r}"
+        )
 
     frame_cache_dir = frame_cache_dir or (
         video.resolve().parent / "_sam2_frame_cache" / video.stem
@@ -283,6 +365,11 @@ def drive_sam2(
             )
 
             with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
+                if checkpoint_policy == "reset_reseed":
+                    _apply_reset_reseed(
+                        predictor, state, chunk_end, actions, last_masks_by_id
+                    )
+                    continue
                 for action in actions:
                     if action["type"] == "remove":
                         predictor.remove_object(state, obj_id=action["obj_id"])

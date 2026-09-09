@@ -32,8 +32,9 @@ python -m scripts.render_mcbyte_team_correction --help
 - Use the local RF-DETR/Roboflow detector.
 - SAM2 with periodic detector reprompting is the tracker default as of
   2026-09-08, on the strength of three clips scored against ground truth
-  (`docs/tracking-evaluation.md` §8: 93.8/89.2/98.9% correct against
-  81.5/86.7/95.9% for the best box tracker on each). MCByte remains supported
+  (`docs/tracking-evaluation.md` §8: 95.0/89.2/98.9% correct against
+  81.5/86.7/95.9% for the best box tracker on each; FelixClaar was 93.8% when
+  §8.2 was written and measured 95.0% after the lifecycle work, see §8.10). MCByte remains supported
   and is roughly 10x faster (~0.1s/frame against ~1s); pick it explicitly when
   cost matters. Do not switch to ByteTrack.
 - The jersey reader default is `parseq` (the original baudm/parseq checkpoint),

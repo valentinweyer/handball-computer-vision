@@ -336,7 +336,12 @@ court-membership check.
 
 ### 8.2 Results
 
-**FelixClaar** (249 frames) — `sam2_reprompt` added to the §1 table:
+**FelixClaar** (249 frames) — `sam2_reprompt` added to the §1 table. **The
+93.8% below is the 2026-08-26 measurement and is now stale**: on current code
+the same configuration and reference score 95.0%, improved by the lifecycle
+work in `a989e9f`/`a083a19`/`c79db06`. See §8.10. Han-Ber4 and BHC-FAG still
+reproduce exactly.
+
 
 | tracker | recall | wrong-identity | **correct** |
 |---|---|---|---|
@@ -622,3 +627,62 @@ is trustworthy") no longer holds — SAM2's clean tracklets (0-5 mixed per
 clip, versus MCByte's 3-8) make per-identity number-vote histograms
 meaningful for the first time, so this is now measurable whenever the
 dependency and ground-truth work happens.
+
+---
+
+## 8.10 Checkpoint policy: reprompt-in-place vs reset-and-reseed (2026-09-09)
+
+**Question.** EdgeTAM's video predictor refuses to add an object once tracking
+has started (`"Cannot add new object id ... after tracking starts"`, still
+unpatched in McByte++'s vendored copy). McByte++ reaches around it in
+`mask_manager__edgetam.reseed_at_frame` by calling `reset_state` and re-adding
+every object from its mask at that frame. Any EdgeTAM port here would have to
+pay the same, so the cost was measured on SAM2 first, where it can be isolated.
+
+**Method.** `drive_sam2` gained a `checkpoint_policy` seam. `TrackManager` still
+decides who is removed, corrected, or new; only how those decisions reach the
+predictor changes. Corrections are honoured identically under both policies —
+an object the manager flags for `reset` is re-seeded from its detector box, never
+from the mask the manager just called wrong — so the single variable is whether
+SAM2's memory bank survives the checkpoint. `IdentityManager` is untouched.
+Scored with `evaluate_tracker_identity` against the same three references.
+
+| Clip | Policy | Recall | Wrong-identity | **Correct** | Mixed | Switches | Frags/id |
+|---|---|---:|---:|---:|---:|---:|---:|
+| Han-Ber4 | reprompt | 89.2% | 0.0% | **89.2%** | 0 | 0 | 1.00 |
+| | reset_reseed | 89.0% | 0.0% | **89.0%** | 0 | 0 | 1.00 |
+| FelixClaar | reprompt | 95.8% | 0.8% | **95.0%** | 5 | 8 | 1.38 |
+| | reset_reseed | 96.8% | 0.4% | **96.4%** | 4 | 7 | 1.31 |
+| BHC-FAG | reprompt | 99.0% | 0.1% | **98.9%** | 3 | 6 | 1.42 |
+| | reset_reseed | 98.7% | 0.9% | **97.8%** | 3 | 7 | 1.50 |
+
+**Result: −0.15, +1.5, −1.1 points.** No consistent direction, and the average
+is a wash — which is why the per-clip gate matters. BHC-FAG fails it outright:
+the wrong-identity rate goes up 9x (0.1% to 0.9%), with an extra tracklet, an
+extra switch and worse fragmentation.
+
+Teardown helped on FelixClaar and hurt on BHC-FAG. A tempting explanation is
+that periodic resets flush mask contamination accumulated during scrums, which
+would fit §8.9's note that rule 3 can only reprompt *from* a possibly
+contaminated mask. **That explanation does not survive BHC-FAG**, where the same
+policy makes identity worse. No mechanism here explains all three clips; the
+honest summary is that the effect is clip-dependent and not reliably positive.
+
+**Consequence for EdgeTAM.** Teardown is mandatory there, and it costs up to 1.1
+points with a 9x wrong-identity increase on one of three clips before EdgeTAM's
+own weaker segmentation (SA-V J&F 71.7 against SAM2.1-B+'s 77.0) and before any
+port is written. Against that, inference is 87.9% of the frame after the
+post-processing fixes, so EdgeTAM's published ratio buys about 1.78x at best.
+Paying an identity regression plus an integration for 1.78x is not a good trade,
+and the line is closed. See `docs/sam2-speed-research.md`.
+
+**Baseline refresh, incidental but more useful.** Regenerating the baselines on
+current code reproduced Han-Ber4 (89.2%) and BHC-FAG (98.9%) exactly, and moved
+FelixClaar from §8.2's 93.8% to **95.0%** — the automatic-lifecycle work of
+`a989e9f`, `a083a19` and `c79db06`, which landed after §8.2 was written. §8.2 is
+annotated accordingly. The three-clip headline in `CLAUDE.md` should read
+95.0/89.2/98.9.
+
+`reset_reseed` is retained as a non-default experiment seam, not a supported
+configuration.
+

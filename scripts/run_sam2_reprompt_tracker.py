@@ -106,6 +106,12 @@ def main() -> None:
     parser.add_argument("--frame-cache-dir", type=Path, default=None)
     parser.add_argument("--max-frames", type=int, default=None,
                          help="truncate to the first N frames, for a quick smoke test")
+    parser.add_argument("--checkpoint-policy", default="reprompt",
+                         choices=["reprompt", "reset_reseed"],
+                         help="how checkpoint decisions reach the predictor; "
+                              "reset_reseed discards SAM2's memory bank each time, "
+                              "reproducing the pattern EdgeTAM would force. See "
+                              "handball_cv.tracking.sam2_driver.drive_sam2.")
     args = parser.parse_args()
 
     cache = load_detection_cache(args.detections)
@@ -120,7 +126,9 @@ def main() -> None:
         args.video, lambda idx: frame_detections(cache, idx), team_model,
         checkpoint=args.checkpoint, check_every=args.check_every,
         frame_cache_dir=frame_cache_dir, max_frames=args.max_frames,
-        goalkeeper_class_id=GOALKEEPER_CLASS_ID, desc="SAM2 reprompt",
+        goalkeeper_class_id=GOALKEEPER_CLASS_ID,
+        checkpoint_policy=args.checkpoint_policy,
+        desc=f"SAM2 {args.checkpoint_policy}",
     )
 
     per_frame_boxes: dict[int, dict[int, np.ndarray]] = {0: seed_boxes}

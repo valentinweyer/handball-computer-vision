@@ -128,7 +128,7 @@ Priority reflects usefulness for this repository, including integration and evid
 | 4 | SAM3.1 multiplex | Shared processing across object buckets; assets already present | New predictor and prompt adapter; local speed unknown[^7][^8] |
 | 5 | DeepStream MaskTracker | Full temporal SAM2 TensorRT path and target lifecycle | Larger integration; developer preview; no matched FPS proof[^10] |
 | 6 | SAM-MT | Strongest directly relevant published dense-target scaling | Released target grouping conflicts with per-player lifecycle[^13][^15] |
-| 7 | EdgeTAM | Compact encoder and compressed memory | Reference predictor prohibits new objects after tracking starts[^5][^6] |
+| ~~7~~ | ~~EdgeTAM~~ | **Closed 2026-09-09** | Its mandatory reset-and-reseed pattern was priced on SAM2 first and costs up to 1.1 points with a 9x wrong-identity increase on one of three clips -- see [tracking-evaluation.md §8.10](tracking-evaluation.md) |
 | 8 | Lean-SAM2 / Efficient-SAM2 | Research into memory and encoder sparsity | Headline timings use FP32, unlike this baseline[^18][^19] |
 
 For a short implementation cycle, stop after the first three priorities and compare the speed/quality frontier. For a larger architecture experiment, favor SAM3.1 or SAM-MT according to whether integration readiness or published object-count scaling matters more. DeepStream is the strongest deployment-oriented branch when accepting a separate runtime and association implementation.
@@ -209,7 +209,11 @@ EdgeTAM combines a small encoder with compressed memory. Its paper reports A100 
 
 The reference PyTorch predictor retains the old restriction against adding a new object once tracking begins; it also warns about later box refinements. That conflicts with this project's entry and reset behavior.[^6] Code and checkpoints are Apache-2.0.[^24]
 
-EdgeTAM remains useful for a fixed-target speed/quality test. For a complete replacement, budget a lifecycle port or independently verify another maintained implementation. Reinitializing the entire video state every checkpoint would discard history and contaminate the intended comparison.
+EdgeTAM remains useful for a fixed-target speed/quality test. For a complete replacement, budget a lifecycle port or independently verify another maintained implementation.
+
+**Closed 2026-09-09.** The concern above -- that reinitializing the video state every checkpoint discards history -- turned out to be measurable rather than hypothetical, and it was measured without writing any EdgeTAM integration. McByte++ does not patch the restriction: its vendored predictor still raises `"Cannot add new object id ... after tracking starts"`, and `mask_manager__edgetam.reseed_at_frame` works around it with `reset_state` plus a full re-seed. Reproducing that pattern on SAM2 through a `checkpoint_policy` seam in `drive_sam2`, with `TrackManager`'s decisions and `IdentityManager` held fixed, gives -0.15, +1.5 and -1.1 points across the three clips. BHC-FAG fails the per-clip gate: wrong-identity rises 9x, with an extra tracklet, an extra switch and worse fragmentation.
+
+So a port would start from an identity regression on at least one clip, before EdgeTAM's own SA-V J&F of 71.7 against 77.0, and buy at most about 1.78x given inference is now 87.9% of the frame. That is a worse trade than the 2.15x the post-processing fixes returned byte-identically. Full numbers in [tracking-evaluation.md §8.10](tracking-evaluation.md).
 
 ## Other implementations and misleading comparisons
 
@@ -286,7 +290,7 @@ Record exact repository revisions, checkpoints and hashes, input dimensions, pre
 | B | Compiled B+, Small; EfficientTAM-S and an efficient-memory Small variant | Select best quality/speed tradeoff under the current manager |
 | C | SAM3.1 multiplex adapter; DeepStream full temporal mode | Lifecycle tests pass and comparison retains RF-DETR inputs |
 | D | SAM-MT target/lifecycle adapter | Individual correction/reset proven before quoting benchmark FPS |
-| E | EdgeTAM lifecycle port; sparse or quantized experiments | Pursue only if earlier stages miss the required throughput |
+| ~~E~~ | ~~EdgeTAM lifecycle port~~; sparse or quantized experiments | **EdgeTAM closed 2026-09-09** on measured identity cost of its mandatory reseed pattern; the remaining entries still apply |
 
 The smallest useful implementation would add a predictor factory/configuration seam to `drive_sam2`, explicit compile/model options, and timing around its existing operations. It should preserve `Sam2FrameResult` and delegate lifecycle to the existing manager. That makes official model variants and EfficientTAM comparable without rebuilding the application.
 

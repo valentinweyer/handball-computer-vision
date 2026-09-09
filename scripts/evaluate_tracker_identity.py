@@ -152,6 +152,17 @@ def build_trackers(fps: float, device: str, video: Path | None = None) -> dict:
         dump = ROOT / "runs" / "sam2_reprompt" / f"{video.stem}.npz"
         if dump.exists():
             trackers["sam2_reprompt"] = lambda: Sam2ReplayTracker(dump)
+        # Checkpoint-policy comparison. Each policy writes its own artifact
+        # rather than overwriting the one above, so a policy run never
+        # silently redefines the baseline a previous result was scored on.
+        for policy in ("reprompt", "reset_reseed"):
+            candidate = (
+                ROOT / "runs" / "sam2_reprompt" / f"{video.stem}_policy_{policy}.npz"
+            )
+            if candidate.exists():
+                trackers[f"sam2_policy_{policy}"] = (
+                    lambda path=candidate: Sam2ReplayTracker(path)
+                )
     return trackers
 
 
