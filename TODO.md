@@ -136,25 +136,34 @@ deferred until the court test exists.
 
 ---
 
-## 5. Team separation fails on Kiel-Lemgo
+## 5. Goalkeepers are a third kit forced into a two-cluster model
 
-Kiel-Lemgo separates 81/36 with a correctly fitted model -- the worst of the
-three matches, and visibly so: many players sit contested or unlabelled in the
-overlay. Melsungen (83/85) and Eisenach (70/92) are fine, so this is the model
-meeting kits it cannot split, not a bug.
+Found while disproving the Kiel-Lemgo entry (now under Done). The fit correctly
+excludes goalkeepers (`exclude_class_ids=(1,)`), but the pipeline's
+`person_detections` returns classes 1 and 2, so at predict time keepers *are*
+scored and *do* cast team votes -- against two clusters neither of which is their
+kit.
 
-What is known: teams are discovered per video by 2-means over torso colour with a
-guarded visual fallback, and the split is anonymous by design (CLAUDE.md forbids
-a global supervised team catalogue). What is *not* known is why Kiel fails --
-similar kit luminance, a keeper colour capturing a cluster, referees leaking in,
-or crops too contaminated at that camera distance.
+Measured over the three 10-minute windows, ~35 keeper crops each:
 
-First step is diagnosis, not redesign: dump the torso crops per assigned cluster
-for Kiel and for Melsungen side by side and look at them.
-`scripts.team_grid_examples` and `scripts.render_raw_team_classification` already
-exist for exactly this. Only then decide whether the answer is crop geometry, a
-different feature, a confidence floor that abstains instead of guessing, or a
-different approach altogether.
+```
+                     split     mean conf   below gate (0.30)
+Eisenach-Hamburg     5 / 28       0.273        21/33   64%
+Melsungen-Berlin    17 / 21       0.442         8/38   21%
+Kiel-Lemgo          28 /  7       0.555         4/35   11%
+```
+
+Eisenach's keeper wears **yellow** -- visible in `runs/team_grid/
+Eisenach_Hamburg/goalkeepers.png`, and neither maroon nor navy. The gate is
+doing its job on the majority of those crops, which is the designed behaviour
+(abstaining beats injecting a confident wrong observation). The open question is
+the **36% that clear 0.30 anyway** and vote with an essentially arbitrary label.
+
+Cheap options, in order: exclude class 1 from team voting entirely (keepers do
+not need a team label for any current consumer); or raise the gate for class 1
+only; or fit a third cluster and treat it as "neither". Do not reach for the
+third without measuring the first -- two keepers per match is a small
+denominator, and the fit deliberately never saw them.
 
 Note the constraint any replacement inherits: raw team classification stays
 frame-local, and a tracker must never supply or freeze a team label.
@@ -251,6 +260,43 @@ carry absolute paths in their provenance fields.
 ---
 
 # Done
+
+## Team separation on Kiel-Lemgo was a measurement error (2026-09-09)
+
+The entry claimed Kiel-Lemgo was "the worst of the three matches" at 81/36 with a
+correctly fitted model. It is the **best**. Measured with the model the pipeline
+actually holds, sampled across the whole 10-minute window rather than the fit's
+front-loaded one:
+
+```
+                     split       mean conf   below gate   visual/colour agreement
+Kiel-Lemgo         209 / 160       0.676       1%              0.990
+Melsungen-Berlin   213 / 159       0.587       3%              0.957
+Eisenach-Hamburg   181 / 192       0.582       9%              0.894
+```
+
+The crops confirm it (`runs/team_grid/*/team_{0,1}.png`): Kiel white against
+Lemgo dark blue at 0.86-0.97, Melsungen red against Berlin green, Eisenach maroon
+against Hamburg navy. Kiel's five sub-gate crops are dark, occluded or a
+close-up of the ball -- not kit confusion.
+
+**The 81/36 figure was never a measure of separation.** It counted cluster
+assignments over ~117 crops from a handful of sampled frames, so it measures who
+happened to be on screen. Holding the same model fixed and changing only the
+sample window moves it from 60/59 to 85/28 -- reproducing the "failing" number --
+while mean confidence stays 0.61-0.70 and sub-gate stays under 14%. A balanced
+split is not evidence of a good fit and an unbalanced one is not evidence of a
+bad one; **confidence and the sub-gate fraction are the metrics, and the crops
+are the check.**
+
+What the user actually saw on Kiel ("many contested/unsure players") came from
+the misaligned-crop fit below: every overnight render, Kiel included, sits in
+`runs/overnight/_broken_team_fit/`. No clip has yet been rendered with a
+corrected team model, so the visible fix is still unverified end to end.
+
+`scripts.team_grid_examples` now takes `--video/--detections/--team-model`, so
+any fitted model can be inspected against the boxes the pipeline used, with
+crops ordered and annotated by confidence.
 
 ## Number-anchored linking had never fired on real data (2026-09-09)
 
