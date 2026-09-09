@@ -161,6 +161,29 @@ class LinkingTests(unittest.TestCase):
         self.assertEqual(registry.canonical(2), 1)
         self.assertEqual(registry.canonical(3), 3)
 
+    def test_reads_after_a_fold_reach_the_surviving_identity(self):
+        """Measured on the overnight batch: 7% of all number evidence, and 39%
+        on one clip, landed on identities that had already been folded away.
+
+        The tracker keeps emitting the folded id -- an alias is an
+        interpretation layer, not a renumbering -- so a caller filing votes
+        under the raw id strands every read taken after the link, and
+        contradicting evidence can never correct the surviving verdict.
+        """
+        registry, voter, resolver = self._resolver({1: 0, 2: 0})
+        resolver.begin_frame([1])
+        resolver.begin_frame([2])
+        vote(voter, 1, "15", 9)
+        vote(voter, 2, "15", 6)
+        resolver.resolve(100)
+        self.assertEqual(registry.canonical(2), 1)
+
+        # What the render does with every subsequent read for the folded id.
+        for _ in range(4):
+            voter.observe(registry.canonical(2), "15")
+        self.assertEqual(voter.best(1)[1], 19)      # 9 + 6 folded + 4 after
+        self.assertIsNone(voter.best(2)[0])
+
     def test_linking_is_recorded_as_an_event(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 0})
         resolver.begin_frame([1])

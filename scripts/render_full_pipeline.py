@@ -706,7 +706,13 @@ def render(args: argparse.Namespace) -> dict:
                             raw = text_by_row.get(number_row, "")
                             if raw:
                                 ocr_reads += 1
-                                _pid = int(player_ids[masked_rows[local_row]])
+                                # Against the canonical identity: once two ids
+                                # are folded, the tracker keeps emitting the
+                                # folded one, and votes filed under it would
+                                # never reach the identity that speaks.
+                                _pid = identity.registry.canonical(
+                                    int(player_ids[masked_rows[local_row]])
+                                )
                                 voter.observe(_pid, raw)
                                 # Timestamped so a read can be placed before or
                                 # after an identity switch; aggregate vote counts
@@ -891,10 +897,13 @@ def render_sam2(args: argparse.Namespace) -> dict:
                         raw = text_by_row.get(number_row, "")
                         if raw:
                             ocr_reads += 1
-                            voter.observe(int(player_ids[local_row]), raw)
+                            # See the McByte path: votes belong to the canonical
+                            # identity, not the id the tracker happens to use.
+                            pid = registry.canonical(int(player_ids[local_row]))
+                            voter.observe(pid, raw)
                             number_reads.append({
                                 "frame": result.frame_idx,
-                                "player_id": int(player_ids[local_row]), "value": raw,
+                                "player_id": pid, "value": raw,
                                 "number_row": int(number_row),
                                 "box": number_xyxy[number_row].tolist(),
                             })
