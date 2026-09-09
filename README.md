@@ -87,7 +87,7 @@ prtreid`) and `parseq-upstream/` (`--reader parseq`). Each is overridable by
 from the first migration pass; see `docs/legacy-layout.md`. Source clips have
 since moved to `data/raw/`, and the 29 legacy `notebooks/*.py` module copies were
 deleted on 2026-09-09 once they had drifted from the modules that replaced them
-(`TODO.md` item 11). `git log` is the fallback for those.
+(`TODO.md`, Done section). `git log` is the fallback for those.
 
 ## Setup
 
