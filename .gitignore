@@ -161,3 +161,8 @@ notebooks/handball_ai_how_to_detect_track_and_identify_handball_players_sam3_1.i
 # Generated caches in otherwise tracked trees
 **/__pycache__/
 **/.pytest_cache/
+
+# Migration inventory: a local planning artifact. The re-audited copy is
+# 135.9 MB because directory_level_references repeats a folder's reference
+# list on every file in it, so it is kept out of the repository.
+docs/outputs-migration-manifest.csv
