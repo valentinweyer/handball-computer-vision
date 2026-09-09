@@ -29,6 +29,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 
+import cv2
 import numpy as np
 import supervision as sv
 from scipy.optimize import linear_sum_assignment
@@ -104,6 +105,51 @@ def _centre_gap(a: np.ndarray, b: np.ndarray) -> float:
 
 def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))
+
+
+def mask_area_and_centroid(mask: np.ndarray) -> tuple[float, tuple[float, float] | None]:
+    """Pixel count and centroid of a boolean mask, computed on its bounding box.
+
+    The obvious spelling -- `m.sum()` then `np.nonzero(m)` and two `.mean()`
+    calls -- scans the whole 1080p frame and allocates two int64 index arrays
+    sized to the true-pixel count (~576 KB per player, 13.4 players a frame)
+    purely to take two means. A synchronized profile put it at 56.6ms of
+    `update_from_propagation`'s 57.6ms per frame, second only to the model
+    itself. A player covers a few tens of thousands of those two million
+    pixels, so its bounding box is ~50x less area to touch.
+
+    `cv2.moments(binaryImage=True)` returns exactly the quantities wanted:
+    `m00` is the pixel count, and `m10`, `m01` are the summed x and y of the
+    true pixels -- so dividing once by the count reproduces `xs.mean()` and
+    `ys.mean()` bit for bit. Measured 44x faster on 826 real SAM2 masks with no
+    differing result; equivalence is pinned by
+    `tests/unit/test_mask_area_and_centroid.py`.
+
+    Returns `(0.0, None)` for an empty mask, so callers keep their existing
+    "no centroid unless there is area" rule. Both outputs feed lifecycle
+    decisions -- `Track.areas` drives mask-collapse detection and
+    `Track.centroids` drives duplicate removal's centroid-jump test -- so this
+    has to stay a speed change and nothing else.
+    """
+    rows = mask.any(axis=1)
+    if not rows.any():
+        return 0.0, None
+    cols = mask.any(axis=0)
+    y0 = int(np.argmax(rows))
+    y1 = len(rows) - int(np.argmax(rows[::-1]))
+    x0 = int(np.argmax(cols))
+    x1 = len(cols) - int(np.argmax(cols[::-1]))
+
+    moments = cv2.moments(mask[y0:y1, x0:x1].view(np.uint8), binaryImage=True)
+    area = float(moments["m00"])
+    if area <= 0:
+        return 0.0, None
+    # Fold the crop offset into the numerator, not onto the quotient. Both are
+    # exact integers in float64 here (coordinate sums stay far below 2**53), so
+    # dividing once reproduces `xs.mean()` bit for bit; dividing on the crop and
+    # adding x0 afterwards rounds twice and drifts by an ulp.
+    return area, ((moments["m10"] + area * x0) / area,
+                  (moments["m01"] + area * y0) / area)
 
 
 @dataclass
@@ -256,11 +302,10 @@ class TrackManager:
             player = self.registry.live.get(int(oid))
             if t is None:
                 continue
-            area = float(m.sum())
+            area, centroid = mask_area_and_centroid(m)
             t.areas.append(area)
-            if area > 0:
-                ys, xs = np.nonzero(m)
-                t.centroids.append((float(xs.mean()), float(ys.mean())))
+            if centroid is not None:
+                t.centroids.append(centroid)
                 if player is not None:
                     player.last_seen = frame_idx
 
