@@ -26,6 +26,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 FFMPEG = ROOT / (".venv/lib/python3.11/site-packages/imageio_ffmpeg/binaries/"
                  "ffmpeg-linux-aarch64-v7.0.2")
+FIT_STRIDE = 10          # must match fit_from_video's stride argument
 RFDETR_PYTHON = Path("/home/valentinweyer/projects/rfdetr-handball-finetune/.venv/bin/python3")
 FPS = 25
 
@@ -64,17 +65,23 @@ def fit_team_model(window: Path, detections: Path, out: Path, device: str) -> No
         print(f"    team model exists: {out.name}")
         return
     out.parent.mkdir(parents=True, exist_ok=True)
+    # `fit_from_video` calls detect_fn only on every `stride`-th frame but hands
+    # it the frame, not the index, so the caller must step its own counter by the
+    # same stride. Counting calls instead put boxes from frame n on video frame
+    # 10n: the crops were background, 2-means had only noise, and five of seven
+    # overnight clips came back with every player on one team.
     code = (
-        "import numpy as np;"
         "from handball_cv.teams.model import TeamModel;"
         "from scripts.render_raw_team_classification import person_detections;"
         "import scripts.render_full_pipeline as R;"
         f"cache=R.load_detection_cache(__import__('pathlib').Path(r'{detections}'));"
-        "state={'i':-1};\n"
+        f"stride={FIT_STRIDE};"
+        "state={'i': -stride};\n"
         "def detect_fn(frame_rgb):\n"
-        "    state['i']+=1\n"
+        "    state['i'] += stride\n"
         "    return person_detections(cache, state['i'])\n"
-        f"m=TeamModel.fit_from_video(r'{window}', detect_fn, device=r'{device}');"
+        f"m=TeamModel.fit_from_video(r'{window}', detect_fn, stride=stride, "
+        f"device=r'{device}');"
         f"m.save(r'{out}')"
     )
     run([sys.executable, "-c", code], cwd=ROOT)

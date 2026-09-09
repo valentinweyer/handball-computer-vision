@@ -40,6 +40,21 @@ HISTORY_LEN = 30
 MIN_CONFIRM_CHECKPOINTS = 2          # consecutive checkpoints before acting
 DUPLICATE_IOU_MIN = 0.6              # mask intersection-over-min-area
 DROPOUT_AREA_FRAC = 0.2              # of the track's own running median
+# Checkpoints a track may go unmatched by the detector before it is retired,
+# however healthy its mask looks. Rule 2 only catches a *collapsing* mask, so a
+# player who walks off and sits on the bench keeps a perfect mask and is tracked
+# for the rest of the clip. Measured on Melsungen_Berlin_2min_1: 17.8 live tracks
+# against 14.0 detections per frame, live > detections on 97% of frames, and 34%
+# of frames pinned at MAX_LIVE_OBJECTS -- so stale tracks were not merely clutter,
+# they were consuming the budget a genuinely new player needed.
+#
+# The threshold is the cost of being wrong in the other direction. Linking raw
+# detections across the three 10-minute windows (n=14232 dropouts of a person who
+# returns) gives p90 = 65 frames and p95 = 124: a real on-court player does vanish
+# from the detector, for seconds at a time. At CHECK_EVERY=10 this is 8 seconds of
+# footage, past which 1.6% of genuine dropouts would be retired early -- and those
+# recover through re-ID, while a bench-sitter never leaves on its own.
+UNMATCHED_CHECKPOINTS_MAX = 20
 DRIFT_IOU_LOW, DRIFT_IOU_HIGH = 0.1, 0.5
 MATCH_IOU_MIN = 0.1                  # below this, a detection counts as unmatched
 # A candidate new player is followed between checkpoints by proximity, not by a
@@ -396,6 +411,21 @@ class TrackManager:
                     acted_ids.add(oid)
                     self.registry.retire(oid, frame_idx)
                     self.events.append({"frame": frame_idx, "type": "remove_gone", "obj_id": oid})
+                continue
+            if not has_match:
+                # The mask is healthy and SAM2 is happily tracking *something*
+                # the detector no longer calls a player -- a substitute on the
+                # bench, or a track that has drifted onto furniture. Nothing else
+                # ends these, so they accumulate until the object budget is full.
+                key = "undetected"
+                active_keys_per_track[oid].add(key)
+                if t.confirm(key, threshold=UNMATCHED_CHECKPOINTS_MAX):
+                    actions.append({"type": "remove", "obj_id": oid})
+                    acted_ids.add(oid)
+                    self.registry.retire(oid, frame_idx)
+                    self.events.append({
+                        "frame": frame_idx, "type": "remove_undetected", "obj_id": oid,
+                    })
 
         # ---- rule 3: drift (matched but poor IoU, or collapsed with a good detection) ----
         for oid in live_obj_ids:
