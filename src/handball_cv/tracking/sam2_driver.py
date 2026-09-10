@@ -225,6 +225,7 @@ def drive_sam2(
     desc: str = "SAM2 reprompt",
     reid_encoder=None,
     checkpoint_policy: str = "reprompt",
+    predictor_factory: Callable[[str], object] | None = None,
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -235,6 +236,11 @@ def drive_sam2(
     and every checkpoint's reprompt boxes come from it, so SAM2 is not given a
     stronger detection input than a caller comparing it against other trackers
     would give them.
+
+    `predictor_factory(checkpoint)` optionally constructs an API-compatible video
+    predictor. The default still builds the current SAM2 model. Construction is
+    the only backend seam; all lifecycle decisions and output processing remain
+    shared. Callers must provide compatible, explicitly configured weights.
 
     Returns `(track_manager, seed_boxes, frames)`:
 
@@ -271,8 +277,6 @@ def drive_sam2(
     propagating on accumulated memory, which is exactly what the second policy
     throws away.
     """
-    from sam2.build_sam import build_sam2_video_predictor
-
     if checkpoint_policy not in ("reprompt", "reset_reseed"):
         raise ValueError(
             f"checkpoint_policy must be 'reprompt' or 'reset_reseed', got {checkpoint_policy!r}"
@@ -289,7 +293,12 @@ def drive_sam2(
     def read_frame(idx: int) -> np.ndarray:
         return cv2.cvtColor(cv2.imread(str(frame_files[idx])), cv2.COLOR_BGR2RGB)
 
-    predictor = build_sam2_video_predictor(SAM2_CONFIG, checkpoint)
+    if predictor_factory is None:
+        from sam2.build_sam import build_sam2_video_predictor
+
+        predictor = build_sam2_video_predictor(SAM2_CONFIG, checkpoint)
+    else:
+        predictor = predictor_factory(checkpoint)
 
     frame0 = read_frame(0)
     det0 = frame_detections_fn(0)
