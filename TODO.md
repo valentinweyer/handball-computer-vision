@@ -291,8 +291,17 @@ are the check.**
 
 What the user actually saw on Kiel ("many contested/unsure players") came from
 the misaligned-crop fit below: every overnight render, Kiel included, sits in
-`runs/overnight/_broken_team_fit/`. No clip has yet been rendered with a
-corrected team model, so the visible fix is still unverified end to end.
+`runs/overnight/_broken_team_fit/`. Re-rendered on 2026-09-10 with the corrected
+model, `Eisenach_Hamburg_2min_1` goes from **41 identities all on team 1** to
+25/15, confirmed on the video. Its two duplicate numbers (#11, #21) sit on
+*opposite* teams, so part of the same-team duplicate complaint was the team
+model and not the voter.
+
+The retirement rule that shipped in the same commit is **not** verified by that
+clip: it never approached the track cap (mean 12.7 live, max 16 of 20, identical
+before and after), because its bench is out of frame. `Melsungen_Berlin_2min_1`
+is where 17.8-live-against-14-detections and 34%-at-cap were measured, so that
+is the clip that settles it.
 
 `scripts.team_grid_examples` now takes `--video/--detections/--team-model`, so
 any fitted model can be inspected against the boxes the pipeline used, with
