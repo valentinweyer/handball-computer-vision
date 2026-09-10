@@ -18,7 +18,7 @@ import json
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +31,19 @@ PERSON_CLASS_IDS = (1, 2)
 
 def log(message: str) -> None:
     print(f"[{datetime.now():%H:%M:%S}] {message}", flush=True)
+
+
+def next_occurrence(now: datetime, hhmm: str) -> datetime:
+    """The next time the clock reads `hhmm`.
+
+    The deadline used to be compared as a string against `now.strftime("%H:%M")`,
+    which reads correctly only when the queue starts before it in the same day.
+    Launched at 22:55 with the 07:30 default, `"22:55" >= "07:30"` is true and
+    the queue exits having rendered nothing -- the exact case it exists for.
+    """
+    hour, minute = (int(part) for part in hhmm.split(":"))
+    target = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    return target if target > now else target + timedelta(days=1)
 
 
 def wait_for(pid: int) -> None:
@@ -150,8 +163,10 @@ def main() -> None:
                         help="stop starting new renders after this local time")
     args = parser.parse_args()
 
+    deadline = next_occurrence(datetime.now(), args.deadline)
     wait_for(args.wait_pid)
     args.out.mkdir(parents=True, exist_ok=True)
+    log(f"will not start renders after {deadline:%a %H:%M}")
     length = args.minutes * 60 * args.fps
 
     # Round 1 takes each match's best window, so if the night is cut short there
@@ -169,8 +184,8 @@ def main() -> None:
 
     starts: dict[str, list[int]] = {}
     for stem, rank, video, detections, team in queue:
-        if datetime.now().strftime("%H:%M") >= args.deadline:
-            log(f"deadline {args.deadline} reached; not starting more")
+        if datetime.now() >= deadline:
+            log(f"deadline {deadline:%a %H:%M} reached; not starting more")
             break
         if stem not in starts:
             counts = person_counts(detections)
