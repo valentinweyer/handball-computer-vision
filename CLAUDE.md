@@ -33,8 +33,13 @@ python -m scripts.render_mcbyte_team_correction --help
 - SAM2 with periodic detector reprompting is the tracker default as of
   2026-09-08, on the strength of three clips scored against ground truth
   (`docs/tracking-evaluation.md` §8: 95.0/89.2/98.9% correct against
-  81.5/86.7/95.9% for the best box tracker on each; FelixClaar was 93.8% when
-  §8.2 was written and measured 95.0% after the lifecycle work, see §8.10). MCByte remains supported
+  81.5/86.7/95.9% for the best box tracker on each). Two caveats on those
+  figures. FelixClaar was 93.8% when §8.2 was written and measured 95.0% after
+  the lifecycle work (§8.10). Han-Ber4's 89.2% divides by an all-reference
+  denominator that includes bench and referee ids the numerator cannot draw
+  from; on the same players it is 99.91% (§8.11). Every tracker in that
+  comparison shares the denominator, so 89.2-against-86.7 is like-for-like --
+  but do not quote 89.2 as this tracker's accuracy. MCByte remains supported
   and is roughly 10x faster (~0.1s/frame against ~1s); pick it explicitly when
   cost matters. Do not switch to ByteTrack.
 - The jersey reader default is `parseq` (the original baudm/parseq checkpoint),
