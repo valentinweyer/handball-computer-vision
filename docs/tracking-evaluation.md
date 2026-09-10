@@ -686,3 +686,34 @@ annotated accordingly. The three-clip headline in `CLAUDE.md` should read
 `reset_reseed` is retained as a non-default experiment seam, not a supported
 configuration.
 
+
+
+## 8.11 Trained EfficientTAM-S comparison (2026-09-10)
+
+The [paired-results report](efficienttam-paired-results.md) records the executed
+1024, BF16, eager comparison with the existing predictor/manager checkpoint loop.
+Throughput improves 17–26% in first paired runs; identity/coverage/fragmentation
+results are mixed. SAM2 remains the default. All three fresh SAM2 replays and
+lifecycle event logs match the existing policy-reprompt baselines exactly.
+
+The comparison also found a denominator inconsistency in the historical Han-Ber4
+headline: 2305 matched player detections were divided by 2585 references including
+bench/referee IDs 12 and 14, producing 89.17%. Restricting the denominator to the
+same players gives 2305/2307 = 99.91%. EfficientTAM scores 99.26% on that same
+player denominator (88.59% under the historical convention). No old matches or
+artifacts were changed. Both denominator conventions are retained in the new
+report for comparability.
+
+Actual mask review also refuted a scored one-frame Han-Ber4 ID exchange: candidate
+masks stayed on the correct players while their box extents changed the greedy
+IoU assignment. Keep box-based metrics, but do not call every scored switch a
+verified visual identity switch. The new scorer exports raw matches and per-player
+gap/ID timelines to support that review.
+
+Paired actual-mask review additionally confirms a real same-team regression on
+FelixClaar: EfficientTAM ID 8 collapses onto ID 10 at frame 107 and stays there
+through 120, when the manager removes the duplicate. SAM2 keeps the two players
+separate through that window. The reference-8 trusted span ends at 90, so the
+aggregate score does not capture the full failure. See the paired report and
+`runs/efficienttam_pair/review/felix_same_team_paired_masks.jpg`; trusted labels
+and spans remain unchanged. This fails the continuity gate for replacing SAM2.

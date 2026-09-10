@@ -1,8 +1,8 @@
 # Faster SAM2 multi-object tracking for handball
 
-The best first experiment is the official compiled SAM2.1 predictor with the existing Hiera-L checkpoint and detector-reprompt policy. The strongest candidates beyond that are EfficientTAM for a relatively small integration, SAM3.1 multiplex for shared multi-object processing, and NVIDIA DeepStream MaskTracker for a TensorRT implementation. SAM-MT has particularly relevant published scaling results, but its released interaction API needs substantial work before it can replace this project's tracker.
+The trained eager EfficientTAM-S 1024 comparison is now complete: first paired runs measured 17–26% more complete-loop throughput, with mixed quality results and no default replacement. See [paired results](efficienttam-paired-results.md) for counts, continuity diagnostics, visual review and limitations. Same-weight SAM2.1 compilation and EdgeTAM reset/reseed remain rejected below. The [lifecycle investigation](efficienttam-lifecycle-investigation.md) explains the compatible API and the encoder-compilation default that must be disabled. EfficientTAM efficient-memory variants, SAM3.1 multiplex, DeepStream MaskTracker and SAM-MT remain separate unmeasured candidates.
 
-Evidence is current to September 9, 2026. Local inspection covered the working tree based on commit `fc7c259`, the active Python environment, and relevant upstream checkouts. Published performance below is author-reported. **No candidate was benchmarked on the handball footage during this research, so none is yet proven faster at equivalent tracking quality on this machine.**
+Evidence is current to September 9, 2026. Local inspection covered the working tree based on commit `fc7c259`, the active Python environment, and relevant upstream checkouts. Published performance below is author-reported. **The initial research pass did not benchmark candidates. Subsequent measurements are recorded below and in the [trained EfficientTAM comparison](efficienttam-paired-results.md); none has established faster equivalent-quality tracking on this machine.**
 
 The recommendation prioritizes preserving the measured identity advantage of the current tracker. It includes alternatives with quality tradeoffs, but distinguishes a faster implementation of the same computation from a new model or a change in how often segmentation runs.
 
@@ -30,7 +30,7 @@ The repository's historical measurements report approximately **1.0–1.2 frames
 
 | Evaluation clip | Current SAM2 correctly identified reference detections | Best measured box-tracker configuration | Interpretation |
 |---|---:|---:|---|
-| FelixClaar, 249 frames | 93.8% | 81.5%, SORT | Largest measured benefit from the current design |
+| FelixClaar, 249 frames | 95.0% | 81.5%, SORT | Largest measured benefit from the current design |
 | Han-Ber4, 198 frames | 89.2% | 86.7%, BoT-SORT | Reference uses SAM2; correlated errors can inflate agreement |
 | BHC-FAG, 500-frame derived window | 98.9% | 95.9%, MCByte with masks | Different match; SAM+Cutie reference with manual verification |
 
