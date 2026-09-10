@@ -17,11 +17,13 @@ mask-derived colour is an overlap-only fallback that cannot override a valid
 clean-crop observation.
 
 **Tracking.** SAM2 with periodic detector reprompting is the default. Scored
-against ground truth on three clips it wins each one -- 93.8 / 89.2 / 98.9%
+against ground truth on three clips it wins each one -- 95.0 / 89.2 / 98.9%
 correct, against 81.5 / 86.7 / 95.9% for the best box tracker on each
-(`docs/tracking-evaluation.md` §8). It costs about 1 s/frame against MCByte's
-0.1 s, so `--tracker mcbyte` stays supported and is the right pick when that
-matters.
+(`docs/tracking-evaluation.md` §8). Han-Ber4's pair shares an all-reference
+denominator that includes bench and referee ids, so it ranks fairly but
+understates both; on players alone SAM2 is 99.91% (§8.11). It costs about
+0.46 s/frame against MCByte's 0.1 s, so `--tracker mcbyte` stays supported and
+is the right pick when that matters.
 
 **Jersey numbers.** Number boxes come from the detector, are matched to players
 by mask intersection-over-smaller, read by a scene-text recogniser, and voted per

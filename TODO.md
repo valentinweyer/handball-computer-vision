@@ -76,9 +76,11 @@ same pool. A second term grows on top: `output_dict_per_obj[obj]
 per object, and `clear_non_cond_mem_around_input` defaults to False, so nothing
 is pruned as propagation advances.
 
-Compute, by contrast, is flat: ~1.07 s/frame at any length, because the
+Compute, by contrast, is flat: ~0.46 s/frame at any length, because the
 attention memory bank is bounded (`num_maskmem=7`). Frame 15,000 costs what
-frame 100 costs.
+frame 100 costs. It was ~1.07 s/frame until the CPU mask work halved it (see
+`docs/sam2-speed-research.md`), which only widens the gap: compute fell by half
+and the memory cap did not move at all.
 
 ### What "seamless" has to mean
 
@@ -214,28 +216,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 10. Do not commit `docs/outputs-migration-manifest.csv` as it stands
-
-```
-committed in git    2.16 MB
-working tree      135.70 MB    same 3,314 rows
-```
-
-The regenerated audit reclassified 3,294 files as `directory_level_reference`
-(up from 72) and puts a reference list of up to 713 entries on nearly every row,
-so rows went from short to ~41 KB each. Committing it adds **135 MB to history
-permanently** -- git history cannot be trimmed afterwards without a rewrite that
-invalidates every clone.
-
-Either regenerate the manifest without per-row reference lists (a count plus the
-report's summary table carries the same information), or keep the CSV out of git
-and track only `outputs-migration-reference-report.md`.
-
-The tracked 2.16 MB version is fine and unaffected.
-
----
-
-## 11. Hardcoded absolute paths in tracked files
+## 10. Hardcoded absolute paths in tracked files
 
 `/home/valentinweyer/...` remains in three scripts: `build_jersey_audit_set.py`,
 `cache_number_detections.py`, `evaluate_checkpoint_against_labels.py`. Those
@@ -249,17 +230,30 @@ carry absolute paths in their provenance fields.
 
 ---
 
-## 12. Housekeeping
+## 11. Housekeeping
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
   `a0a5a9e` by deleting the superseded root copies. The documented command now
-  collects and passes 226 tests in one run.
+  collects and passes 269 tests in one run.
 - `runs/reid_analysis/` is gitignored, so the re-ID discriminability reports live
   on disk only. Regenerate with `scripts/measure_reid_discriminability.py`.
 
 ---
 
 # Done
+
+## The migration manifest is out of the repository (2026-09-09, `ab26419`)
+
+The regenerated audit reclassified 3,294 files as `directory_level_reference`
+(up from 72) and put a reference list of up to 713 entries on nearly every row,
+taking the CSV from 2.16 MB to 135 MB across the same 3,314 rows. Committing it
+would have added that to history permanently -- git history cannot be trimmed
+afterwards without a rewrite that invalidates every clone.
+
+`docs/outputs-migration-manifest.csv` is now gitignored (`.gitignore:168`) and
+untracked; `outputs-migration-reference-report.md` is what stays in git. The
+142 MB file still sits in the working tree, which is the intended outcome, not a
+leftover.
 
 ## Team separation on Kiel-Lemgo was a measurement error (2026-09-09)
 

@@ -40,8 +40,9 @@ python -m scripts.render_mcbyte_team_correction --help
   from; on the same players it is 99.91% (§8.11). Every tracker in that
   comparison shares the denominator, so 89.2-against-86.7 is like-for-like --
   but do not quote 89.2 as this tracker's accuracy. MCByte remains supported
-  and is roughly 10x faster (~0.1s/frame against ~1s); pick it explicitly when
-  cost matters. Do not switch to ByteTrack.
+  and is roughly 5x faster (~0.1s/frame against ~0.46s; SAM2 was ~1s until the
+  CPU mask work in `docs/sam2-speed-research.md`, and MCByte does not share that
+  code path); pick it explicitly when cost matters. Do not switch to ByteTrack.
 - The jersey reader default is `parseq` (the original baudm/parseq checkpoint),
   measured at 0.858 accuracy on the 323 labelled 1080p crops against docTR
   parseq's 0.622, Qwen's 0.628 and EasyOCR's 0.365. It needs an external
