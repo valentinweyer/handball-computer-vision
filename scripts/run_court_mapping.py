@@ -18,6 +18,8 @@ from inference import get_model
 from sports import MeasurementUnit, ViewTransformer, TeamClassifier
 from sports.handball import CourtConfiguration, League, draw_court, draw_points_on_court
 
+from handball_cv.court.keypoints import court_points
+
 # ── Config ────────────────────────────────────────────────────────────────────
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -33,7 +35,13 @@ GOALKEEPER_CLASS_ID = 1
 FIELD_PLAYER_CLASS_ID = 2
 PLAYER_CLASS_IDS = [GOALKEEPER_CLASS_ID, FIELD_PLAYER_CLASS_ID]
 
-KEYPOINT_DETECTION_MODEL_ID = "keypointv333-uwois-xprdi/4"
+# Version 3, not 4. Version 4 is served as `rfdetr-keypoint-preview`, a type the
+# pinned `inference` 0.62.0 has no implementation class for, so `get_model`
+# raises KeyError before any inference happens. Version 3 loads and runs locally
+# on the same 892 images, and Roboflow reports it as the better model besides:
+# mAP 99.5 / precision 99.96 / recall 100.0, against 97.0 / 98.6 / 97.9 for
+# version 4 (which was trained from scratch rather than fine-tuned).
+KEYPOINT_DETECTION_MODEL_ID = "keypointv333-uwois-xprdi/3"
 KEYPOINT_DETECTION_MODEL_CONFIDENCE = 0.5
 KEYPOINT_ANCHOR_CONFIDENCE = 0.5
 
@@ -72,6 +80,23 @@ team_classifier.fit(crops)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def keypoint_slot(kp):
+    """The model's 0-based keypoint slot for a prediction.
+
+    Read `class_id`, not `class_name`. They are different numberings: `class_id`
+    is the slot, while `class_name` is the label the annotator typed, and the
+    two agree on only 6 of 31 landmarks (measured against the labelled export).
+    This script used `int(kp.class_name) - 1` and indexed `config.vertices` with
+    it, which got both halves wrong -- the wrong field, then no translation from
+    slot order to the template's vertex order. On one Melsungen frame that
+    produced 4 RANSAC inliers of 11 keypoints, against 8 once corrected.
+
+    Still not a court vertex index: `handball_cv.court.keypoints` holds that
+    translation.
+    """
+    return kp.class_id
+
+
 def get_confident_keypoints(result):
     raw = result.predictions[0].keypoints if result.predictions else []
     kps = [kp for kp in raw if kp.confidence > KEYPOINT_ANCHOR_CONFIDENCE]
@@ -79,8 +104,7 @@ def get_confident_keypoints(result):
     seen = set()
     deduped = []
     for kp in kps:
-        idx = int(kp.class_name) - 1
-        pt = tuple(config.vertices[idx])
+        pt = tuple(court_points([keypoint_slot(kp)], config.vertices)[0])
         if pt not in seen:
             seen.add(pt)
             deduped.append(kp)
@@ -88,8 +112,7 @@ def get_confident_keypoints(result):
 
 
 def build_transformer(kps):
-    indices = np.array([int(kp.class_name) - 1 for kp in kps])
-    court_pts = np.array(config.vertices)[indices]
+    court_pts = court_points([keypoint_slot(kp) for kp in kps], config.vertices)
     frame_pts = np.array([[kp.x, kp.y] for kp in kps], dtype=np.float32)
     return ViewTransformer(source=frame_pts, target=court_pts)
 

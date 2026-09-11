@@ -812,6 +812,17 @@ height. IoU was tried first and is wrong here: a player box is ~40px wide, so a
   bench). The workable route is the homography in `scripts/run_court_mapping.py` --
   map the foot point to court coordinates and test the 40x20m rectangle.
 
+  **That homography was fitted to a scrambled landmark correspondence until
+  2026-09-11.** The keypoint model's slot order and the `sports` court
+  template's vertex order are different orderings of the same 37 landmarks, and
+  nothing translated between them, so every court coordinate this repository has
+  produced is void. `handball_cv.court.keypoints.KEYPOINT_TO_VERTEX` is the
+  missing translation; it takes the homography fit residual over the 892
+  labelled images from 922 cm to 33 cm. See the TODO entry for the measurement
+  and for the two blockers that remain (the keypoint model does not load under
+  the pinned `inference`, and `ViewTransformer` has no RANSAC, no residual check
+  and no way to abstain).
+
 ## Agreed next implementation step (superseded in priority, not correctness)
 
 Wire the mask fallback into the tracked observation path without changing clean behavior.

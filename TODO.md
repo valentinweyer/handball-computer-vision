@@ -91,6 +91,149 @@ stands. Both are exactly what a court test excludes, both consume one of the 20
 number. The 8% figure counts detections; what matters here is that a single
 persistent off-court track costs a slot and a whole identity.
 
+**The homography it depends on was fitted to a scrambled correspondence, and
+that is now fixed** (see Done, 2026-09-11). Two blockers remain before the court
+test itself can be built, and they are the reason this item is still open:
+
+- ~~**The keypoint model does not run locally.**~~ **It does** -- `get_model`
+  downloads the weights and runs them locally through onnxruntime; the API key
+  is for that download and Roboflow's usage tracking, not for inference. What
+  actually failed was version-specific: **version 4** is served as
+  `rfdetr-keypoint-preview`, a type the pinned `inference` 0.62.0 has no
+  implementation class for, so `get_model` raises `KeyError` after the metadata
+  fetch succeeds. **Version 3 loads and runs locally**, and Roboflow reports it
+  as the better model besides -- mAP 99.5 / precision 99.96 / recall 100.0
+  against 97.0 / 98.6 / 97.9 for version 4, which was trained from scratch
+  rather than fine-tuned. `run_court_mapping.py` now pins version 3. No
+  retraining and no `inference` upgrade is needed, so the pinned aarch64/GB10
+  torch install does not have to be touched.
+- **The estimator cannot tell a good fit from a bad one.** `ViewTransformer`
+  calls `cv2.findHomography(source, target)` with no method argument, so it is
+  plain least squares over every point -- no RANSAC, and the inlier mask is
+  discarded. There is no residual check, no degeneracy guard, and the minimum of
+  4 points leaves zero redundancy to measure. A court test is an *exclusion*
+  test, so a silently-wrong transform removes real players; it needs a reported
+  residual and the ability to abstain, per the constraint that abstaining beats
+  a confident wrong observation. Note also that `make_court_test` in
+  `experiments/sam2_baseline/run_pipeline.py` fails *closed* when the homography
+  is unavailable (rejects every new detection) -- the opposite of abstaining,
+  and already flagged in `experiments/team_gated_tracking/run_pipeline.py:199`.
+
+Camera motion is settled and matters for the design: the broadcast camera pans
+across the court (compare frames 0 and 700 of the Melsungen clip -- the goal
+moves from the right edge to the left), so a single per-clip homography is not
+an option and per-frame estimates need temporal coherence.
+
+### Measured over the whole Melsungen clip (2026-09-11)
+
+With the corrected mapping and version 3, solved per frame, no smoothing
+(`runs/court_mapping/`, keypoints cached in `Melsungen_keypoints.json` so
+re-scoring needs no second inference pass):
+
+```
+frames                 1500      solved 1486    abstained 14 (no homography)
+keypoints / frame      median 12   min 0   max 18      under 6: 20 frames
+RANSAC inliers         median  8   min 4   p10  8      at the 4-point minimum: 9
+reprojection           median 5.07 px   p90 6.67 px    max 10.54 px
+player-frames          17626 inside the rectangle, 1084 outside (5.8%)
+```
+
+**A court test built on this today would be unsafe, and the residual will not
+tell you when.** Group the solved frames by how many players they exclude:
+
+```
+                 n     median inliers   median reprojection
+0 excluded      902          9.0              5.42 px
+1-2 excluded    488          8.0              4.50 px
+3+ excluded      96          7.0              3.61 px
+```
+
+Residual moves the *wrong way*: the frames doing the most damage score best on
+it. Fewer inliers means fewer constraints, so the fit hugs the surviving points
+more tightly while the transform degrades -- overfitting, read as quality. Frame
+1337 is the worst case and looks unremarkable by every scalar: 12 keypoints,
+6 inliers, 6.8 px. It reports **on court 0/12** -- every player rejected, with
+the whole court collapsed into the right edge of the image -- while the footage
+plainly shows twelve players around the centre circle.
+
+So the gate cannot be reprojection error. But chasing a better gate turns out to
+be the wrong response, because the frames that fail are not a separate
+population -- they are the same estimator, run where extrapolation stops being
+benign.
+
+### The estimator is under-constrained on essentially every frame
+
+Measured on the inliers, in court centimetres:
+
+```
+inlier coverage of the 4000 x 2000 cm court
+  x-span   median  900 cm    p90  900    max 2180
+  y-span   median 1150 cm    p90 1150    max 2000
+  frames whose inliers span under 1/4 of the court length:  91%
+```
+
+**No frame in the clip has inliers spanning more than 55% of the court**, and
+nine in ten span under a quarter of it. Every homography here is extrapolated
+roughly fourfold beyond its evidence. Frames that look right are not
+well-conditioned; they are benignly extrapolated. Note the medians are identical
+for frames that exclude nobody and frames that exclude more than half their
+players (900 cm x-span either way) -- coverage alone does not separate them,
+which is why a spread threshold cannot be the gate either.
+
+The same shortage shows up as the jitter, measuring how far the projected court
+moves between consecutive solved frames:
+
+```
+  p50   32 px      p90  361 px      p99 1374 px      max 4845 px
+  moves more than 50 px between adjacent frames: 40.7% of frame pairs
+```
+
+A broadcast camera does not move like that. Almost all of it is estimation
+noise from re-solving 8 degrees of freedom, from scratch, every frame, against
+evidence covering a fifth of the court.
+
+**Both symptoms are one cause.** With the goals in view the extrapolation is
+benign, so the overlay looks right and merely jitters. With only the centre
+circle and centre line in view the evidence collapses toward the centre line --
+five of those landmarks are exactly collinear at x=2000, and the two circle
+extremes sit 180 cm off it -- so the fit goes rank-deficient and the projected
+court collapses to a line. Frame 1310 is that case: 7 keypoints, 5 inliers, the
+whole court rendered as a single green stroke, 1 of 12 players "on court", at a
+reprojection error of **1.0 px** -- among the best in the clip, because five
+near-collinear points are trivial to fit perfectly.
+
+### What follows
+
+Temporal propagation is not polish for the jitter; it is the only way a
+centre-only frame can be solved at all. The court is planar and the camera pans,
+tilts and zooms about a fixed centre, so consecutive frames are themselves
+related by a homography -- chaining is principled rather than a smoothing hack,
+and it lets a frame that sees only the centre circle inherit scale and
+orientation from frames that saw a goal. Refine the carried estimate with the
+current keypoints instead of re-solving from them.
+
+Abstention stays as a backstop, but it cannot be the primary mechanism and must
+not key on residual. Gates scored over the 1486 solved frames, against the 36
+that reject more than half their players:
+
+```
+                             keeps (player-frames)   bad frames admitted
+no gate                            100.0%                 36/36
+reproj < 5px                        48.6%                 30/36   <- harmful
+inliers >= 8                        93.4%                 19/36   <- best simple
+inliers>=8 and aniso>=0.20          93.4%                 19/36
+x-span >= 2000cm                     3.0%                  0/36   <- rejects all
+```
+
+`reproj < 5px` throws away half the clip and still admits five in six bad
+frames. The only gate that catches them all keeps 3% of the data, because
+almost no frame is well-conditioned on its own -- which is the finding above,
+restated.
+
+Artifacts: `runs/court_mapping/Melsungen_court_overlay_h264.mp4` (the overlay
+render), `Melsungen_keypoints.json` (per-frame keypoints, so re-scoring needs no
+inference pass) and `Melsungen_court_perframe.json`.
+
 ---
 
 ## 3. Bench occupancy as an identity constraint (blocked on the court test)
@@ -237,6 +380,101 @@ carry absolute paths in their provenance fields.
 ---
 
 # Done
+
+## The court homography was fitted to a scrambled correspondence (2026-09-11)
+
+Every homography this repository has ever built paired each detected court
+landmark with an unrelated court position. `run_court_mapping.py` indexed
+`config.vertices` with the keypoint model's own slot number:
+
+```python
+landmark_indices = np.array([int(kp.class_name) - 1 for kp in confident_kps])
+court_landmarks  = np.array(config.vertices)[landmark_indices]
+```
+
+The model numbers its 37 landmarks in the order its Roboflow export happened to
+use; the `sports` template numbers its 37 vertices in a different one. Nobody
+had written down the translation, so the code assumed there wasn't one.
+
+**A homography still comes back.** `cv2.findHomography` cannot detect a
+contradictory correspondence -- it returns the least-bad solution to a set of
+false claims, with no error and no warning. That is why this survived: the
+output looks like a transform and behaves like one, and only a measurement shows
+it is meaningless.
+
+Measured over the 892 labelled images of the export, before and after:
+
+```
+                                   BEFORE      AFTER
+  homography fit residual          922.1 cm     32.9 cm
+  leave-one-out error             1701.5 cm     47.8 cm
+  images under 50 cm                 0.0 %      88.2 %
+  flip_idx agreement (of 37)           4          35
+```
+
+A handball court is planar and a broadcast camera is near enough a pinhole, so a
+correct correspondence has to fit to within annotation noise -- and ~33 cm on a
+40 m court is that noise (the export is 640x640, so one click pixel is already
+~6 cm near the centre line). 9.2 m is not a tuning problem; it is only possible
+if the pairs are wrong.
+
+**The `flip_idx` column is the independent check.** That is the export's own
+left/right mirror table, which the recovery never consults. Applying the
+recovered permutation takes it from agreeing on 4 slots to 35. The two
+exceptions are slots 19 and 20, which sit on the centre line at the goalpost
+offsets: mirroring the court left to right maps each to itself, and the export
+swaps them instead -- a vertical flip, and a quirk of the annotation rather than
+evidence against the mapping. Recorded as `SELF_MIRRORING_SLOTS` so the next
+person meets it as a documented exception.
+
+**How it was recovered.** Seeded only from the centre circle -- the five-point
+cross whose centre, left/right and near/far arms are identifiable by eye -- with
+all eight orientations of that seed tried so a wrong guess could not bias the
+result. From each seed, alternate projecting the labelled points onto the court
+and re-solving a one-to-one (Hungarian) assignment until it stops moving. All
+eight seeds converged on the same answer, so the basin is global. Slots absent
+from the anchor image were recovered by repeating the fit across the export and
+pooling votes; the result is a full 37/37 bijection.
+
+**What was built.** `KEYPOINT_TO_VERTEX` in
+`src/handball_cv/court/keypoints.py` (a package that existed but was empty),
+`scripts/recover_court_keypoint_mapping.py` to re-derive and re-score it from
+scratch (`--compare` diffs against the shipped constant), and
+`tests/unit/test_court_keypoints.py`. The tests layer three guards: structure
+(bijection), the `flip_idx` table (needs nothing on disk, since the export is
+gitignored), and the homography residual when the export is present. Each has a
+companion asserting the naive identity mapping *fails* it, so a guard that
+passes for any mapping cannot go unnoticed.
+
+**The defect had a second half, found by running the model.** A prediction
+carries both `class_id` and `class_name`, and they are different numberings:
+`class_id` is the slot, `class_name` is the label the annotator typed. Matched
+against the labelled export, `class_id` is the slot on 28 of 31 landmarks (the
+exceptions are single-observation nearest-neighbour confusions between adjacent
+centre-circle points); `int(class_name) - 1` is the slot on 6 of 31. So
+`run_court_mapping.py` read the wrong field *and* skipped the translation, and
+fixing either alone still leaves a wrong homography. It now reads `class_id`.
+
+**Confirmed end to end on real footage.** Projecting the court template back
+onto Melsungen frame 700 with version 3: the old path found **4 RANSAC inliers
+of 11** confident keypoints -- exactly the minimum a homography needs, so
+nothing agreed -- and drew sidelines crossing diagonally through the middle of
+the court. The corrected path finds **8**, and the reprojected 6 m and 9 m lines
+land on the painted arcs, with the far sideline and goal line on theirs.
+
+Residual error is concentrated where the keypoints are not: with 11 confident
+landmarks all in the left half of that frame, the near sideline and the far
+right are extrapolation. That is the conditioning problem the estimator work in
+item 2 has to answer, and the reason it needs a residual and an abstain path
+rather than better tuning.
+
+**Not fixed:** `experiments/sam2_baseline/run_pipeline.py:167` and
+`experiments/team_gated_tracking/run_pipeline.py:180` carry the same wrong
+indexing. Both are recorded baselines, so they were left as they ran rather than
+retroactively corrected -- but any number either produced from court
+coordinates is void.
+
+---
 
 ## The fold rule's premise holds, but only at the confidence gate (2026-09-11)
 
