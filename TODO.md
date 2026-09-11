@@ -128,24 +128,7 @@ frame-local, and a tracker must never supply or freeze a team label.
 
 ---
 
-## 5. Crop padding is untested between its two extremes
-
-`NUMBER_CROP_PAD = 0`. The eval set only carries tight (`crop_path`) and 0.8x
-padded (`context_path`) crops; the reader scored **0.62 tight vs 0.04 padded**.
-Nobody has tried 10-20%. Cheap: re-crop the 323 labelled boxes at several pads
-and rescore.
-
-**That 0.62 is docTR's parseq, not the reader that ships.** Two recognisers are
-both called "parseq" -- docTR's reimplementation at 0.622 and the original
-baudm weights at 0.858, which is what `--reader parseq` selects. The padding
-comparison therefore measured a reader the pipeline no longer uses, and the
-verdict "padding is catastrophic" is only known for that one. Re-run it against
-baudm before treating the 0 pad as settled. The reader itself is not in
-question -- see Reader accuracy under Done.
-
----
-
-## 6. The fold rule is one-sided
+## 5. The fold rule is one-sided
 
 Tuned on the weak reader's failures, so the evidence behind it predates the
 0.858 checkpoint. The rule itself is untouched; what is stale is the measurement
@@ -165,7 +148,7 @@ manufactured the number.
 
 ---
 
-## 7. Detector threshold 0.3 -> 0.5
+## 6. Detector threshold 0.3 -> 0.5
 
 Detector precision measured monotonic with confidence (50% -> 100%) on the 1080p
 set, recommending the raise. Documented, **never verified end to end** -- it
@@ -173,7 +156,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 8. Missing ground truth
+## 7. Missing ground truth
 
 - **The 60s Melsungen clip has none.** Every number claim on it is unverified;
   today's before/after comparisons are self-consistent but not scored.
@@ -184,7 +167,7 @@ would change what the tracker and the reader see on every clip.
   number before, 60.8% after. The guard only catches segments that *changed*
   their mind (p20, 284 frames withheld); a segment that is steadily wrong looks
   exactly like one that is steadily right. Nothing in the pipeline can tell
-  them apart without labels. p20's own case is the live example: item 6's open
+  them apart without labels. p20's own case is the live example: item 5's open
   question about whether folding manufactured its `15` is unanswerable on this
   clip. This is an argument for scoring the clip, not against backfill.
 - **Real Bundesliga rosters.** Two roster simulations were run on invented squad
@@ -194,7 +177,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 9. Hardcoded absolute paths in tracked files
+## 8. Hardcoded absolute paths in tracked files
 
 `/home/valentinweyer/...` remains in three scripts: `build_jersey_audit_set.py`,
 `cache_number_detections.py`, `evaluate_checkpoint_against_labels.py`. Those
@@ -208,7 +191,7 @@ carry absolute paths in their provenance fields.
 
 ---
 
-## 10. Housekeeping
+## 9. Housekeeping
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
   `a0a5a9e` by deleting the superseded root copies. The documented command now
@@ -219,6 +202,43 @@ carry absolute paths in their provenance fields.
 ---
 
 # Done
+
+## Crop padding: the shipped value is right, and the old sweep measured the wrong reader (2026-09-11)
+
+`NUMBER_CROP_PAD = 0` stays. Padding degrades the reader the pipeline actually
+ships, monotonically, with no useful region between the two extremes:
+
+```
+pad (h,v)     docTR 0.622     baudm 0.858 (ships)
+(0.00, 0.00)      0.625            0.870   <- best
+(0.10, 0.00)      0.635            0.854
+(0.10, 0.10)      0.647   <- best  0.839
+(0.20, 0.20)      0.619            0.817
+(0.50, 0.00)      0.511            0.697
+```
+
+**The optimum did not transfer.** On docTR's parseq a 10% symmetric pad was
+worth +2.2 points, which is what made this entry look promising. On baudm's
+parseq every pad is worse than none, and 0.10/0.10 costs 3.1 points. The
+stronger reader already handles a tight crop; padding only adds distractors it
+has to ignore. Measured on the same 323 readable crops, 0.870 accuracy / 0.969
+selective at pad 0 -- marginally above the 0.858/0.958 in the handoff because
+the sweep re-extracts crops from the video rather than reading the stored crop
+files.
+
+The digit-loss hypothesis that motivated horizontal-only pads is **not settled
+by this**, and cannot be from these numbers: padding changes a crop's aspect
+ratio, so crops move between the aspect bands and the per-band populations are
+not the same crops at different pads (the narrowest band goes n=27 at pad 0 to
+n=10 at 0.10 horizontal). The bands cannot be compared across pads. Testing it
+properly would mean holding the band assignment fixed at pad 0.
+
+`scripts/sweep_number_crop_padding.py` gained `--reader {parseq,doctr}`; it
+previously hardcoded docTR's `recognition_predictor`, which is why the first
+sweep could only measure the wrong one. Results in
+`runs/number_eval_1080p/crop_padding_sweep_baudm.json`.
+
+---
 
 ## Retroactive number backfill (2026-09-11, `dfd616a`)
 
@@ -303,7 +323,7 @@ both have regression tests; together they cost 1178 player-frames.
   redraw is the more correct of the two.** Worth fixing in the render itself.
 - Redraw costs **82 seconds** against ~22 minutes for the tracking pass.
 
-**Still open:** the numbers themselves are unverified on this clip -- see item 8.
+**Still open:** the numbers themselves are unverified on this clip -- see item 7.
 Backfill widens how long each claim is displayed, so a wrong verdict is now
 wrong for longer. That is an argument for ground truth, not against backfill.
 

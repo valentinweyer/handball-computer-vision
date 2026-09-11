@@ -34,6 +34,8 @@ import numpy as np
 
 from scripts.label_jersey_numbers import score_model, write_json_atomic
 
+ROOT = Path(__file__).resolve().parents[1]
+
 
 # (horizontal, vertical) pad as a fraction of box width / height.
 DEFAULT_PADS = (
@@ -81,17 +83,54 @@ def collect(samples, video_path: Path, pads) -> dict:
     return crops
 
 
+def build_reader(args):
+    """`[rgb crop] -> [(text, confidence)]` for the selected reader.
+
+    Both return the same pair, so the sweep scores them identically -- which is
+    the point: the pad optimum is a property of the reader, and the first sweep
+    measured one the pipeline does not use.
+    """
+    if args.reader == "parseq":
+        from handball_cv.jersey.parseq_backend import load_jersey_parseq, read_crops
+
+        model, transform = load_jersey_parseq(args.parseq_checkpoint, args.device)
+        return lambda images: read_crops(model, transform, images)
+
+    import torch
+    from doctr.models import recognition_predictor
+
+    predictor = recognition_predictor(args.arch, pretrained=True).eval()
+    if args.device != "cpu" and torch.cuda.is_available():
+        predictor = predictor.cuda()
+
+    def read(images):
+        with torch.inference_mode():
+            return predictor(images)
+    return read
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--labels", type=Path, required=True)
-    parser.add_argument("--arch", default="parseq")
+    parser.add_argument(
+        "--reader", choices=("parseq", "doctr"), default="parseq",
+        help="`parseq` is the original baudm checkpoint the pipeline ships "
+             "(0.858 on the labelled crops); `doctr` is docTR's "
+             "reimplementation (0.622). The first sweep ran on docTR, so its "
+             "optimum is only known for a reader no longer in use",
+    )
+    parser.add_argument(
+        "--parseq-checkpoint", type=Path,
+        default=ROOT / "models/jersey_parseq/parseq_original.ckpt",
+        help="--reader parseq only",
+    )
+    parser.add_argument("--arch", default="parseq", help="--reader doctr only")
     parser.add_argument("--device", default="cuda")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
     import torch
-    from doctr.models import recognition_predictor
 
     dataset = json.loads(args.dataset.read_text())
     labels = json.loads(args.labels.read_text())["labels"]
@@ -118,12 +157,12 @@ def main() -> None:
             by_pad[pad].update(crops)
         print(f"  cropped {clip}", flush=True)
 
-    predictor = recognition_predictor(args.arch, pretrained=True).eval()
-    if args.device != "cpu" and torch.cuda.is_available():
-        predictor = predictor.cuda()
+    read = build_reader(args)
 
     report = {
-        "schema_version": 1, "arch": args.arch,
+        "schema_version": 2,
+        "reader": args.reader,
+        "arch": args.arch if args.reader == "doctr" else str(args.parseq_checkpoint),
         "dataset": str(args.dataset), "labels": str(args.labels),
         "pads": [], "note": "pads are fractions of the box's own width/height",
     }
@@ -132,8 +171,7 @@ def main() -> None:
     for pad in pads:
         indices = sorted(by_pad[pad])
         images = [by_pad[pad][i] for i in indices]
-        with torch.inference_mode():
-            results = predictor(images)
+        results = read(images)
         raw = {i: (r[0], float(r[1])) for i, r in zip(indices, results)}
         predictions = {
             i: (to_number(t) if c >= 0.5 else "") for i, (t, c) in raw.items()
