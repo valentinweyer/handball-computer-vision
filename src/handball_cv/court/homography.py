@@ -180,6 +180,9 @@ class CourtTracker:
             landmarks leave free without dragging on the ones they fix.
         prior_grid: how many court points to carry, as (along length, across
             width). They only need to span the court, not be dense.
+        identity_gate_px: reject a landmark sitting further than this from where
+            the carried estimate places it, before it can vote. Loose on
+            purpose, and None disables it -- see `_agreeing_slots`.
         max_age: after this many consecutive frames with no usable landmarks,
             stop propagating and abstain rather than keep projecting a stale
             camera.
@@ -195,11 +198,13 @@ class CourtTracker:
         prior_weight: float = 0.08,
         prior_grid: tuple[int, int] = (7, 4),
         prior_margin: float = 1.0,
+        identity_gate_px: float | None = 400.0,
         max_age: int = 50,
     ) -> None:
         self._vertices = np.asarray(vertices, dtype=np.float64)
         self._image_size = (float(image_size[0]), float(image_size[1]))
         self._prior_margin = prior_margin
+        self._identity_gate_px = identity_gate_px
         self._min_confidence = min_confidence
         self._ransac_px = ransac_px
         self._prior_weight = prior_weight
@@ -267,6 +272,40 @@ class CourtTracker:
         )
         return self._grid[keep], projected[keep]
 
+    def _agreeing_slots(
+        self,
+        slots: list[int],
+        observed: dict[int, tuple[float, float]],
+        prediction: np.ndarray,
+    ) -> list[int]:
+        """Drop landmarks whose claimed identity the carried estimate contradicts.
+
+        A frame with no goal in view cannot say which end of the court it is
+        looking at -- the court is symmetric, so one goal area's arc is the
+        other's. The detector answers per frame and so has to guess, and on the
+        measured clip half its detections in such a view contradict the other
+        half. RANSAC alone cannot settle it, because a consistent majority of
+        wrong identities outvotes a correct minority.
+
+        The previous frame does know which end it was looking at. So a landmark
+        claiming a position far from where the carried estimate puts it is
+        rejected before it can vote. The gate is deliberately loose: it is there
+        to catch a landmark on the wrong half of a 40 m court, not to second-
+        guess localisation.
+
+        Falls back to the ungated set when it would leave too little to fit, so
+        a stale or wrong prediction cannot starve the solve entirely.
+        """
+        placed = cv2.perspectiveTransform(
+            court_points(slots, self._vertices).reshape(-1, 1, 2).astype(np.float32),
+            prediction.astype(np.float32),
+        ).reshape(-1, 2)
+        seen = np.array([observed[s] for s in slots], dtype=np.float64)
+        with np.errstate(invalid="ignore"):
+            distance = np.linalg.norm(placed - seen, axis=1)
+        keep = np.isfinite(distance) & (distance <= self._identity_gate_px)
+        return [s for s, k in zip(slots, keep) if k] if keep.sum() >= 4 else slots
+
     def update(
         self,
         keypoints: Iterable[tuple[int, float, float, float]],
@@ -292,6 +331,8 @@ class CourtTracker:
         prediction = self._predict(observed, motion)
 
         slots = sorted(observed)
+        if prediction is not None and self._identity_gate_px is not None and slots:
+            slots = self._agreeing_slots(slots, observed, prediction)
         image_points = np.array([observed[s] for s in slots], dtype=np.float64) if slots else np.zeros((0, 2))
         court = court_points(slots, self._vertices) if slots else np.zeros((0, 2))
 

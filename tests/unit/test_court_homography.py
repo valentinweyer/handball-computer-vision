@@ -19,7 +19,11 @@ from handball_cv.court.homography import (
     fit_homography,
     robust_fit,
 )
-from handball_cv.court.keypoints import KEYPOINT_TO_VERTEX, court_points
+from handball_cv.court.keypoints import (
+    KEYPOINT_FLIP_INDEX,
+    KEYPOINT_TO_VERTEX,
+    court_points,
+)
 
 IMAGE_SIZE = (1920, 1080)
 
@@ -195,3 +199,73 @@ class CameraMotionTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class IdentityGateTests(unittest.TestCase):
+    """A view with no goal in it cannot say which end of the court it sees.
+
+    The court is symmetric, so one goal area's arc is the other's, and the
+    detector -- answering one frame at a time -- has to guess. What makes this
+    dangerous is that the wrong answer is *coherent*: mis-labelling landmarks by
+    the court's own mirror produces a set that agrees perfectly with itself, so
+    RANSAC has two self-consistent stories and no reason to prefer the true one.
+    Random label noise, by contrast, RANSAC removes without help -- which is why
+    the corruption below is a mirror relabelling and not a shuffle.
+
+    The previous frame is what knows which end was in view.
+    """
+
+    MISLABELLED = 25  # of 37: enough that the mirrored story wins the vote
+
+    def setUp(self):
+        self.vertices = court_vertices()
+        self.camera = a_camera()
+        self.all_slots = list(range(len(KEYPOINT_TO_VERTEX)))
+        self.corners = np.array(
+            [[0.0, 0.0], [4000.0, 0.0], [4000.0, 2000.0], [0.0, 2000.0]]
+        )
+        self.truth = project(self.camera, self.corners)
+
+    def keypoints(self, mislabelled=0):
+        """Landmarks as seen, with the first `mislabelled` given their mirror's name."""
+        mirrored = set(self.all_slots[:mislabelled])
+        labels = [
+            KEYPOINT_FLIP_INDEX[s] if s in mirrored else s for s in self.all_slots
+        ]
+        image = project(self.camera, court_points(self.all_slots, self.vertices))
+        return [(l, float(x), float(y), 0.9) for l, (x, y) in zip(labels, image)]
+
+    def settled_tracker(self, gate):
+        tracker = CourtTracker(self.vertices, IMAGE_SIZE, identity_gate_px=gate)
+        for _ in range(3):
+            tracker.update(self.keypoints())
+        return tracker
+
+    def corner_error(self, fit):
+        return float(np.abs(project(fit.homography, self.corners) - self.truth).max())
+
+    def test_without_the_gate_a_coherent_mislabelling_moves_the_court(self):
+        # Guards the guard: if RANSAC alone coped, the gate would prove nothing.
+        fit = self.settled_tracker(None).update(
+            self.keypoints(self.MISLABELLED), motion=np.eye(3)
+        )
+        self.assertGreater(self.corner_error(fit), 500.0)
+
+    def test_the_gate_holds_the_court_where_history_says_it_is(self):
+        fit = self.settled_tracker(400.0).update(
+            self.keypoints(self.MISLABELLED), motion=np.eye(3)
+        )
+        self.assertLess(self.corner_error(fit), 25.0)
+
+    def test_a_clean_frame_is_unaffected_by_the_gate(self):
+        fit = self.settled_tracker(400.0).update(self.keypoints(), motion=np.eye(3))
+        self.assertLess(self.corner_error(fit), 1.0)
+
+    def test_the_gate_never_starves_the_solve(self):
+        # A wrong or stale prediction must not be able to reject everything:
+        # below four survivors the tracker falls back to the ungated set.
+        tracker = CourtTracker(self.vertices, IMAGE_SIZE, identity_gate_px=1.0)
+        tracker.update(self.keypoints())
+        fit = tracker.update(self.keypoints(), motion=np.eye(3))
+        self.assertTrue(fit.usable)
+        self.assertGreaterEqual(fit.inliers, 4)

@@ -232,7 +232,62 @@ forward and inverse homographies independently -- they are not inverses of each
 other, so it was projecting the court onto the image with one transform and
 players onto the court with another. Everything above inverts a single fit.
 
-**Not yet good enough to switch the court test on.** The degeneracy is gone --
+### The middle of the court fails by mis-labelling, not by missing landmarks
+
+The stretches that still fell apart (frames ~460-560 and ~1300-1360) are the
+views holding the centre circle with no goal. The obvious reading is that the
+keypoint model needs more training there. It is the wrong one, in an instructive
+way:
+
+```
+                         detections / frame   mutually consistent
+whole clip                       12                 8   (67%)
+frames 1300-1360                 13                 7   (50%)
+frames  460-560                  15                 8   (50%)
+```
+
+Those frames carry **more** detections than average, and half of them contradict
+the other half. Lowering the confidence threshold makes it worse, not better --
+at 0.25 the frames rejecting over half their players go from 6 to 25 -- so the
+sub-gate detections are noise rather than recall waiting to be recovered. Read
+one out and the problem is plain: in frame 1330 the model reports landmarks at
+`(4000,850)` and `(4000,1150)` *left* of the centre circle while `(3400,*)` and
+`(3100,*)` fall to its right. The ordering is inverted; they cannot all be true.
+
+The cause is that a handball court is symmetric, and with no goal in frame one
+goal area's arc is the other's. A single frame genuinely cannot say which end it
+is looking at, so a per-frame detector has to guess. Retraining can sharpen the
+guess; it cannot remove the ambiguity, because the information is not in the
+frame.
+
+What is dangerous about it is that the wrong answer is *coherent*: mis-labelling
+by the court's own mirror yields a set that agrees perfectly with itself, so
+RANSAC has two self-consistent stories and no reason to prefer the true one.
+Once the mirrored reading holds the majority it simply wins. (Random label noise
+RANSAC removes unaided -- verified, and the unit test corrupts by mirror rather
+than by shuffle for exactly this reason.)
+
+The previous frame does know which end was in view, so `identity_gate_px`
+rejects a landmark sitting further than 400 px from where the carried estimate
+places it, before it can vote. Loose on purpose: it is there to catch a landmark
+on the wrong half of a 40 m court, not to second-guess localisation.
+
+```
+identity gate   jitter p90   off court   frames rejecting >50%   460-560   1300-1360
+off                 25.4        4.4%              6                 0          4
+400px               25.0        3.6%              0                 0          0
+```
+
+**Zero frames now reject more than half their players**, against 17 for the
+per-frame estimator, and off-court player-frames are the lowest measured. The
+loosest gate tested is also the best, which is the reassuring direction: it
+earns its keep by refusing only egregious identity errors.
+
+Known limit: a *fully* mirrored frame defeats it, since with nothing left to
+keep, the gate falls back to the ungated set rather than starve the solve.
+Abstaining would be the answer there, and that path is still unexercised.
+
+**Still not good enough to switch the court test on.** The degeneracy is gone --
 frame 1310 no longer collapses to a line, and its far sideline now lands on the
 real one -- but the overlay still carries visible error there, and nothing in
 this has been checked against ground truth. Off-court count is a proxy, not a
