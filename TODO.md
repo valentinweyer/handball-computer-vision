@@ -287,6 +287,58 @@ Known limit: a *fully* mirrored frame defeats it, since with nothing left to
 keep, the gate falls back to the ungated set rather than starve the solve.
 Abstaining would be the answer there, and that path is still unexercised.
 
+### The middle-court view is 1% of the training set, and that is the gap
+
+Hand-scored 16 frames spread across the clip by looking at whether the projected
+court sits on the paint: 11 aligned, 5 not (f520, f620, f1310, f1330, f1350).
+**Every misaligned frame is one with no goal in view**, which is exactly the
+symptom reported from watching the render.
+
+No computed signal separates those 5 from the other 11. Inliers: misaligned
+8/9/5/4/7 against aligned 8-10. Projected court area: misaligned
+0.80/0.71/1.55/0.07/2.96x the frame, aligned 1.01-4.38x -- overlapping, though
+area alone does isolate the worst (f1330 at 0.07x, below the clip's p1 of 0.30x).
+Goal-area landmarks among the inliers: misaligned 8/9/0/7/7, aligned 8-10 -- no
+separation, because the model *claims* goal landmarks when no goal is visible and
+they agree with each other. That is the trap in a sentence: **every signal
+available is derived from the model's own labels, and in these views those labels
+are coherently wrong.** Self-consistent and false looks exactly like
+self-consistent and true.
+
+Two candidate explanations, one of them wrong:
+
+- **Hallucinating unannotated landmarks -- disproved.** The export labels ~14 of
+  37 landmarks visible and gives the rest placeholder coordinates at visibility
+  0, which looked like a recipe for learning to invent them. It is not what
+  happened. On the export's own test images the model gives visible landmarks a
+  median confidence of 0.928 (84% above 0.5) and v=0 landmarks 0.035 (2% above
+  0.5). Visibility was learned correctly.
+- **The view is missing from training -- confirmed.** Goal-area landmarks
+  labelled visible per training image: median 13, and only **9 of 892 images
+  (1.0%) have no goal in view**. The camera framing where the pipeline fails is
+  1% of what the model was taught.
+
+So retraining is the right call after all, but not as "more data" -- as **data of
+one specific framing**: the camera centred on the middle of the court with
+neither goal in frame. A couple of hundred such images, croppable from clips
+already on disk, targets the entire observed failure. Compare that with the
+model's overall numbers (mAP 99.5, correct visibility handling), which say
+nothing general is wrong with it.
+
+Worth keeping in view: even with perfect labels a centre-only frame is weak
+geometry, since the centre line is collinear and says nothing about the court's
+length. But that is what the temporal prior already handles. What the prior
+cannot survive is confidently *wrong* labels, and that is the part training
+fixes.
+
+Also recorded as a dead end: fitting fewer degrees of freedom when the evidence
+is thin (full homography when the inliers are well spread, a similarity
+correction to the carried prediction otherwise) was implemented and **reverted**.
+It is much worse -- jitter p90 3868 px against 25 px, off-court 12.9% against
+4.4% -- because almost no frame qualifies for a full solve (median inlier span is
+900 cm of 4000), so the estimate never re-anchors and simply drifts under
+similarity nudges.
+
 **Still not good enough to switch the court test on.** The degeneracy is gone --
 frame 1310 no longer collapses to a line, and its far sideline now lands on the
 real one -- but the overlay still carries visible error there, and nothing in
