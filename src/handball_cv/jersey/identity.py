@@ -233,11 +233,25 @@ class _Votes:
         """Counts with single-digit reads folded into the number they partially show.
 
         A crop that catches only the trailing digit of a two-digit number reads as that
-        digit, so "7" is exactly what a partial view of "17" looks like; the reverse
-        cannot happen. Those are corroborating observations of one number, not rival
-        candidates, and leaving them to compete splits a player's evidence across both
-        -- measured on FelixClaar, where a player wearing 17 accumulated {17: 4, 7: 4}
-        and the tie suppressed any verdict.
+        digit, so "7" is exactly what a partial view of "17" looks like. Those are
+        corroborating observations of one number, not rival candidates, and leaving them
+        to compete splits a player's evidence across both -- measured on FelixClaar,
+        where a player wearing 17 accumulated {17: 4, 7: 4} and the tie suppressed any
+        verdict.
+
+        The asymmetry is measured, and it holds *at the confidence gate*, not
+        absolutely. On the 323 labelled 1080p crops with the shipping reader, a
+        two-digit jersey read as a single digit 3 times out of 237, and all 3 were the
+        trailing digit -- but ungated there are 6 such reads, one of which is a leading
+        digit. Every leading-digit case falls below `PARSEQ_MIN_CONFIDENCE`, so the gate
+        is what makes one-sided folding safe, and lowering it would start admitting the
+        case this rule assumes away. (An earlier note claimed 5 leading-digit reads in
+        the labelled set; that was docTR's reader, not this one.)
+
+        Note also how little this now does. Digit loss was severe on docTR, which is
+        what the FelixClaar tie above shows; on the current reader it is 1.3% of
+        two-digit reads. The rule is kept because it is conservative and its premise
+        holds, not because it is still load-bearing.
 
         Folding is deliberately conservative:
           - only a 1-digit read folds, and only into a 2-digit read (never the reverse),

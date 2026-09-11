@@ -128,27 +128,7 @@ frame-local, and a tracker must never supply or freeze a team label.
 
 ---
 
-## 5. The fold rule is one-sided
-
-Tuned on the weak reader's failures, so the evidence behind it predates the
-0.858 checkpoint. The rule itself is untouched; what is stale is the measurement
-that justified it.
-
-`_Votes.resolved_counts` folds a single digit into a 2-digit value that *ends*
-with it, arguing a partial view catches the trailing digit and "the reverse
-cannot happen". The labelled set contains **5 leading-digit-only reads**, and
-player 20 produced a `1` for jersey 15. Re-check against labels before changing
-anything -- the rule was tuned on real failures, and folding both ways would let
-`1` capture `15`, `13`, `18`... which is exactly the ambiguity the current rule
-avoids.
-
-Related risk, unresolved: player 20's claim to `15` rests on 11 bare `5` reads
-folded in against only 6 raw `15`. If that player is actually #5, folding
-manufactured the number.
-
----
-
-## 6. Detector threshold 0.3 -> 0.5
+## 5. Detector threshold 0.3 -> 0.5
 
 Detector precision measured monotonic with confidence (50% -> 100%) on the 1080p
 set, recommending the raise. Documented, **never verified end to end** -- it
@@ -156,7 +136,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 7. Missing ground truth
+## 6. Missing ground truth
 
 - **The 60s Melsungen clip has none.** Every number claim on it is unverified;
   today's before/after comparisons are self-consistent but not scored.
@@ -167,9 +147,11 @@ would change what the tracker and the reader see on every clip.
   number before, 60.8% after. The guard only catches segments that *changed*
   their mind (p20, 284 frames withheld); a segment that is steadily wrong looks
   exactly like one that is steadily right. Nothing in the pipeline can tell
-  them apart without labels. p20's own case is the live example: item 5's open
-  question about whether folding manufactured its `15` is unanswerable on this
-  clip. This is an argument for scoring the clip, not against backfill.
+  them apart without labels. p20's own case is the live example: the fold-rule
+  entry under Done measured digit loss at 1.3% of two-digit reads, nothing like
+  p20's 11-bare-`5`-against-6-raw-`15` split, so whether folding manufactured
+  that number is still unanswerable on this clip. This is an argument for
+  scoring the clip, not against backfill.
 - **Real Bundesliga rosters.** Two roster simulations were run on invented squad
   lists and both were retracted as worthless. The roster question -- constrain
   reads to numbers that exist in the squad -- cannot be answered honestly without
@@ -177,7 +159,7 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 8. Hardcoded absolute paths in tracked files
+## 7. Hardcoded absolute paths in tracked files
 
 `/home/valentinweyer/...` remains in three scripts: `build_jersey_audit_set.py`,
 `cache_number_detections.py`, `evaluate_checkpoint_against_labels.py`. Those
@@ -191,7 +173,7 @@ carry absolute paths in their provenance fields.
 
 ---
 
-## 9. Housekeeping
+## 8. Housekeeping
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
   `a0a5a9e` by deleting the superseded root copies. The documented command now
@@ -202,6 +184,53 @@ carry absolute paths in their provenance fields.
 ---
 
 # Done
+
+## The fold rule's premise holds, but only at the confidence gate (2026-09-11)
+
+Kept unchanged. Measured on the 323 labelled 1080p crops with the shipping
+reader, via `scripts/audit_fold_rule.py`:
+
+```
+2-digit jersey read as a single digit      3 of 237
+  trailing digit                           3     <- what folding assumes
+  leading digit                            0
+1-digit jersey read as two digits          1 of 53
+  ending in the true digit                 1     <- folding would capture it ('2' -> '32')
+```
+
+**The entry's own premise was a weak-reader artefact.** It said the labelled set
+holds 5 leading-digit-only reads; with baudm there are none above the gate. So
+one-sided folding is not the arbitrary choice it looked like.
+
+**But "the reverse cannot happen" is false as stated, and the gate is what makes
+it true.** Ungated there are 6 partial reads, one of them a leading digit; every
+leading-digit case sits below `PARSEQ_MIN_CONFIDENCE = 0.5`:
+
+```
+gate   reads   2d->1d   trailing   leading
+0.00     301        6          4         1
+0.25     298        5          4         1
+0.50     290        3          3         0     <- what ships
+0.90     251        1          1         0
+```
+
+That is a coupling nothing recorded: **lowering the reader's confidence gate
+would begin admitting the case the fold rule assumes away.** Written into
+`_Votes.resolved_counts` so the next person to touch either sees it.
+
+Worth knowing how little the rule now does. Digit loss was severe on docTR --
+the FelixClaar `{17: 4, 7: 4}` tie in the docstring is that reader -- and is 1.3%
+of two-digit reads on this one. It is kept for being conservative and correct,
+not for being load-bearing.
+
+**p20 is not resolved by this.** Its 11 bare `5` against 6 raw `15` is nothing
+like a 1.3% partial-read rate in either direction, so digit loss does not
+explain it; it looks like genuine ambiguity. The eval crops are a readability-
+gated 1080p population and in-game crops are harder, so the rate cannot be
+transferred to that clip anyway. Still needs ground truth -- see Missing ground
+truth.
+
+---
 
 ## Crop padding: the shipped value is right, and the old sweep measured the wrong reader (2026-09-11)
 
@@ -323,7 +352,7 @@ both have regression tests; together they cost 1178 player-frames.
   redraw is the more correct of the two.** Worth fixing in the render itself.
 - Redraw costs **82 seconds** against ~22 minutes for the tracking pass.
 
-**Still open:** the numbers themselves are unverified on this clip -- see item 7.
+**Still open:** the numbers themselves are unverified on this clip -- see item 6.
 Backfill widens how long each claim is displayed, so a wrong verdict is now
 wrong for longer. That is an argument for ground truth, not against backfill.
 
