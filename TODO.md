@@ -83,6 +83,14 @@ Lower value than it first appeared: most of what looked like crowd-tracking was
 number boxes being tracked as people (fixed in `6dc4ff1`), and only ~8% of
 person detections have feet off the floor.
 
+**Revised upward 2026-09-11 by the recall pass** (item 6). Of 23 identities on
+the Melsungen clip, p7 is a goalkeeper-plus-staff track that never holds a
+numbered shirt, and p10 starts on a player and ends on a spectator in the
+stands. Both are exactly what a court test excludes, both consume one of the 20
+`MAX_LIVE_OBJECTS` slots for the whole clip, and neither can ever produce a
+number. The 8% figure counts detections; what matters here is that a single
+persistent off-court track costs a slot and a whole identity.
+
 ---
 
 ## 3. Bench occupancy as an identity constraint (blocked on the court test)
@@ -151,10 +159,34 @@ would change what the tracker and the reader see on every clip.
   are on opposite teams, legal in handball, so arbitration was right to leave
   both alone.
 
-  **Recall is still unmeasured, and is the open half.** 13 of 23 identities
-  resolved no number at all. Precision says the claims made are right; it says
-  nothing about how many were missed, or whether some of those 13 are legible.
-  Sheeting them is `--all-identities`, and it is the natural next pass.
+  **Recall was measured next, and the reader is not the bottleneck.** 13 of 23
+  identities resolved no number. Only **3 of those 13 had any number read at
+  all**, so ten never reached the voter -- the gates are not what is losing them.
+  Four were examined frame by frame (`--all-identities --span`):
+
+  - **p7 is not a player.** A goalkeeper in a tracksuit early, sideline staff in
+    dark tracksuits later. There is no jersey number to read.
+  - **p10 starts as a player** (`11` legible at f243) **and drifts into the
+    crowd** around f848 -- later frames are a spectator in a red jacket with a
+    high-vis steward beside them.
+  - **p2 is the real 18** (f318) **until its re-ID at frame 860 moves the track
+    onto 11** (f1023, f1182). `suspend` withheld the inherited 18 and no read
+    ever re-vouched it, so the pipeline correctly said nothing. Not a reader
+    miss -- an identity error that the number layer handled correctly.
+  - **p8 is a genuine player tracked cleanly for all 1499 frames with zero
+    reads**, apparently because its back is rarely to the camera. This is the
+    only one of the four that is a true visibility limit.
+
+  Of the three with reads, p5 (5 reads) and p6 (20, split `29`/`2`) are thin or
+  contested and abstaining is right. So the recall losses divide into tracks on
+  people who *have* no number (court test, item 2), tracks that changed person
+  (re-ID), and genuine invisibility -- not reader accuracy and not the voter's
+  gates. **That raises item 2 above its recorded "lower value than it first
+  appeared".**
+
+  Caveat: 4 of 13 were examined individually; the rest are characterised only by
+  read counts and lifetimes. Note also that `11` shows up on both p2-late and
+  p10-early, which is consistent with one fragmented player rather than two.
 
   **The pass was careful, not blind.** The sheets print no verdict, but whoever
   reads them in one sitting has usually seen `numbers_resolved` already. That

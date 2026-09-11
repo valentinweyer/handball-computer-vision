@@ -68,6 +68,14 @@ def parse_args() -> argparse.Namespace:
              "needs both -- a number read off the wrong body is still wrong",
     )
     parser.add_argument(
+        "--span", action="store_true",
+        help="sample evenly across each identity's whole life instead of only "
+             "frames where the number detector fired. What answers 'is this one "
+             "person throughout' and 'was there ever a legible number', neither "
+             "of which the read frames can address -- an identity with no reads "
+             "has none to show",
+    )
+    parser.add_argument(
         "--all-identities", action="store_true",
         help="also sheet identities the run resolved no number for, which is "
              "what recall needs -- precision only needs the resolved ones",
@@ -130,6 +138,11 @@ def main() -> None:
         reads.setdefault(identity, []).append(int(row["frame"]))
         boxes_by_read[(identity, int(row["frame"]))] = row["box"]
 
+    live_frames: dict = {}
+    for frame_idx, ids in run["frame_players"].items():
+        for identity in ids:
+            live_frames.setdefault(int(identity), []).append(int(frame_idx))
+
     wanted = sorted(resolved) if not args.all_identities else sorted(teams)
     frame_files = ensure_frame_cache(
         args.video.resolve(),
@@ -141,6 +154,15 @@ def main() -> None:
     picks: dict = {}
     for identity in wanted:
         candidates = sorted(set(reads.get(identity, [])))
+        # An identity the detector never fired on has no read frames at all, and
+        # those are the ones recall is about -- fall back to its life so the
+        # question "was the number ever legible" can be asked of it.
+        if args.span or not candidates:
+            live = sorted(live_frames.get(identity, []))
+            if live:
+                step = np.linspace(0, len(live) - 1, args.samples).round().astype(int)
+                picks[identity] = [live[i] for i in dict.fromkeys(step.tolist())]
+                continue
         sized = []
         for frame_idx in candidates:
             geo = cache.frame(frame_idx)
