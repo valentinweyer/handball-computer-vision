@@ -91,7 +91,26 @@ collection.
 
 ## Repository-state warning
 
-The working tree contains many pre-existing modified and untracked experiment
-files. They belong to the ongoing project. Do not run destructive cleanup,
-reset, or checkout commands. Work only on the requested files and preserve
-unrelated changes.
+**~20 GB of untracked, gitignored artifacts sit in the working tree, and most
+of them cost GPU hours to rebuild.** They are ignored precisely so they survive;
+ignored does not mean disposable here:
+
+- `data/cache/frames/` (9.6 GB, 15 clips) -- JPEG frames the SAM2 path reads
+  instead of decoding the video. Both the tracking pass and `--redraw` read
+  these, and a redraw that read the mp4 instead would not reproduce the render.
+- `runs/` (7.6 GB) -- renders, run summaries, and the `*_reads.json` and
+  `*_geometry.npz` caches. The reads cache saves a full reader pass; the
+  geometry cache saves a full tracking pass (~22 min for a 1499-frame clip
+  against ~80 s to redraw from it).
+- `outputs/` (2.5 GB) -- detection and team-model caches, plus the migration
+  fallbacks.
+
+So: do not run `git clean`, and do not run destructive cleanup, reset, or
+checkout commands. Work only on the requested files and preserve unrelated
+changes. If a cache looks stale, regenerate it deliberately rather than
+deleting the tree it lives in.
+
+Earlier versions of this file warned that the tree was full of modified and
+untracked *experiment* files. That is no longer true -- the tree has been clean
+since the 2026-09-11 merge -- but the artifact directories above are the real
+hazard and always were.

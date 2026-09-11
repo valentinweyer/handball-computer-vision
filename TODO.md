@@ -220,13 +220,25 @@ frame-local, and a tracker must never supply or freeze a team label.
 ## 6. Crop padding is untested between its two extremes
 
 `NUMBER_CROP_PAD = 0`. The eval set only carries tight (`crop_path`) and 0.8x
-padded (`context_path`) crops; PARSeq scores **0.62 tight vs 0.04 padded**.
-Nobody has tried 10-20%. Would only address the partial-digit band above, not the
-6% floor. Cheap: re-crop the 323 labelled boxes at several pads and rescore.
+padded (`context_path`) crops; the reader scored **0.62 tight vs 0.04 padded**.
+Nobody has tried 10-20%. Cheap: re-crop the 323 labelled boxes at several pads
+and rescore.
+
+**That 0.62 is docTR's parseq, not the reader that ships.** Two recognisers are
+both called "parseq" -- docTR's reimplementation at 0.622 and the original
+baudm weights at 0.858, which is what `--reader parseq` selects. The padding
+comparison therefore measured a reader the pipeline no longer uses, and the
+verdict "padding is catastrophic" is only known for that one. Re-run it against
+baudm before treating the 0 pad as settled. The reader itself is not in
+question -- see Reader accuracy under Done.
 
 ---
 
 ## 7. The fold rule is one-sided
+
+Tuned on the weak reader's failures, so the evidence behind it predates the
+0.858 checkpoint. The rule itself is untouched; what is stale is the measurement
+that justified it.
 
 `_Votes.resolved_counts` folds a single digit into a 2-digit value that *ends*
 with it, arguing a partial view catches the trailing digit and "the reverse
