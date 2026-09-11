@@ -1,0 +1,34 @@
+# Jersey numbers for Melsungen_window_cached.mp4, read off the sheets.
+# One line per identity: `p<id> <number>`, or
+#   X  -- cannot read it; the claim is unverifiable from these crops
+#   ?  -- a guess, do not score it
+# Bias to X. A smaller trustworthy reference beats a larger uncertain one.
+#
+# Read 2026-09-11 from digits_p*.jpg (number boxes magnified) with
+# number_p*.jpg (whole player, mask-dimmed) consulted where the digit crop
+# was ambiguous. Notes record the frames each call rests on.
+#
+# CAVEAT ON BLINDNESS: the sheets carry no verdict, but the reader of these
+# sheets had already seen the run's numbers_resolved earlier in the session.
+# This is a careful check, not a blind one, and it can confirm a claim more
+# easily than it can discover an unexpected number.
+
+p1 25      # f1385,f1395,f1425,f1430,f1460,f1465,f1480 all unambiguous. Dark shirt.
+p3 19      # ~10 tiles, red shirt, among the clearest in the set.
+p11 24     # f360,f365 unambiguous; the third tile is motion-blurred.
+p12 93     # f65,f85,f90,f1035 unambiguous.
+p14 10     # f655,f755,f770,f775 clear. f1240/f1245 are blurred and were ignored.
+p16 25     # f1090,f1145,f1150 unambiguous. Red shirt -- opposite team to p1's 25.
+p18 53     # f545,f850,f1390 readable; white-on-red is the lowest-contrast kit here.
+p20 15     # f885,f1075 show two digits, "1" then "5". See note below.
+p22 18     # f1375,f1455,f1460. Second digit has two stacked loops, so 8 not 3.
+p23 6      # Single digit. digits_p23 f1365 looked like two shapes; number_p23
+           # shows that is the player's raised arm beside the digit, not a digit.
+
+# p20 is the case TODO flagged: its verdict rested on 11 bare "5" reads folded
+# into 6 raw "15", raising the worry that folding manufactured the number. The
+# two legible crops show "15" on the shirt, so it did not. The many single-digit
+# reads are partial views of a real 15, which is exactly what the fold rule
+# assumes.
+#
+# Duplicate 25 (p1 and p16) is not an error: opposite teams, legal in handball.

@@ -138,8 +138,29 @@ would change what the tracker and the reader see on every clip.
 
 ## 6. Missing ground truth
 
-- **The 60s Melsungen clip has none.** Every number claim on it is unverified;
-  today's before/after comparisons are self-consistent but not scored.
+- ~~**The 60s Melsungen clip has none.**~~ **Precision is now measured: 10/10**
+  (2026-09-11). Every number the run resolves was read off the footage and all
+  ten are right -- p1 25, p3 19, p11 24, p12 93, p14 10, p16 25, p18 53, p20 15,
+  p22 18, p23 6. Sheets, readings and per-call notes in
+  `runs/number_truth/Melsungen/`, regenerate with
+  `scripts.render_number_verification_sheets`.
+
+  Two things it settles. **p20 is really 15**, so folding did not manufacture
+  that number -- its 11 bare `5` reads are partial views of a real 15, which is
+  what the fold rule assumes. And the **duplicate 25 is legitimate**: p1 and p16
+  are on opposite teams, legal in handball, so arbitration was right to leave
+  both alone.
+
+  **Recall is still unmeasured, and is the open half.** 13 of 23 identities
+  resolved no number at all. Precision says the claims made are right; it says
+  nothing about how many were missed, or whether some of those 13 are legible.
+  Sheeting them is `--all-identities`, and it is the natural next pass.
+
+  **The pass was careful, not blind.** The sheets print no verdict, but whoever
+  reads them in one sitting has usually seen `numbers_resolved` already. That
+  makes confirming an existing claim easier than discovering an unexpected
+  number, and it is why 10/10 should be read as "no claim is visibly wrong"
+  rather than as an independent replication.
 - **Backfill raised the cost of being wrong, which raises the value of this.**
   A verdict is now displayed over its whole segment rather than from the frame
   it committed, so a confidently-wrong verdict that never revises is wrong for
@@ -223,12 +244,12 @@ the FelixClaar `{17: 4, 7: 4}` tie in the docstring is that reader -- and is 1.3
 of two-digit reads on this one. It is kept for being conservative and correct,
 not for being load-bearing.
 
-**p20 is not resolved by this.** Its 11 bare `5` against 6 raw `15` is nothing
-like a 1.3% partial-read rate in either direction, so digit loss does not
-explain it; it looks like genuine ambiguity. The eval crops are a readability-
-gated 1080p population and in-game crops are harder, so the rate cannot be
-transferred to that clip anyway. Still needs ground truth -- see Missing ground
-truth.
+**p20 was not resolved by this, and has since been resolved by footage.** The
+1.3% partial-read rate could not explain an 11-against-6 split in either
+direction, and the eval crops are a readability-gated 1080p population that does
+not transfer to in-game crops anyway. Reading the shirt settled it on
+2026-09-11: **p20 really is 15**, so the bare `5` reads are partial views of a
+real number and folding manufactured nothing. See item 6.
 
 ---
 
@@ -352,9 +373,11 @@ both have regression tests; together they cost 1178 player-frames.
   redraw is the more correct of the two.** Worth fixing in the render itself.
 - Redraw costs **82 seconds** against ~22 minutes for the tracking pass.
 
-**Still open:** the numbers themselves are unverified on this clip -- see item 6.
-Backfill widens how long each claim is displayed, so a wrong verdict is now
-wrong for longer. That is an argument for ground truth, not against backfill.
+**Now scored.** The clip's numbers were unverified when this shipped; all ten
+were read off the footage on 2026-09-11 and all ten are right (item 6). Since
+every verdict is correct, the 3667 backfilled player-frames carry correct
+numbers, and the coverage gain is a real gain rather than more of an unknown.
+Recall remains unmeasured, so this scores what the run says, not what it missed.
 
 ---
 
