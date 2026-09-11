@@ -42,6 +42,7 @@ from trackers import McByteMaskConfig, McByteTracker
 
 from handball_cv.jersey.identity import (
     read_numbers_doctr,
+    segment_verdicts,
     read_numbers_parseq,
     NUMBER_CLASS_ID,
     OCR_EVERY_N_FRAMES,
@@ -50,6 +51,8 @@ from handball_cv.jersey.identity import (
     read_numbers,
 )
 from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE, TeamModel, crop_quality
+from handball_cv.tracking.geometry_cache import GeometryCache
+from handball_cv.tracking.sam2_driver import ensure_frame_cache
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
 from scripts.render_raw_team_classification import (
     number_detections,
@@ -113,6 +116,28 @@ def parse_args() -> argparse.Namespace:
         "--number-detections", type=Path, default=None,
         help="cached number-detector npz; required by --tracker sam2, which "
              "does not call the hosted class-4 detector",
+    )
+    parser.add_argument(
+        "--geometry-cache", type=Path, default=None,
+        help="sam2 only; npz of per-frame boxes/ids/masks. Written on every run "
+             "and replayed by --redraw. Defaults to <output stem>_geometry.npz",
+    )
+    parser.add_argument(
+        "--redraw", action="store_true",
+        help="skip tracking and OCR entirely: redraw <output stem>.json's run "
+             "from its geometry cache, backfilling each number to the start of "
+             "the segment that earned it. Seconds, not minutes",
+    )
+    parser.add_argument(
+        "--redraw-from", type=Path, default=None,
+        help="with --redraw, the tracking pass's run JSON to redraw. Defaults to "
+             "<output stem>.json, which redraws a run in place -- point this at "
+             "the original run to write the redraw somewhere else and keep both",
+    )
+    parser.add_argument(
+        "--redraw-causal", action="store_true",
+        help="with --redraw, label exactly as the original pass did instead of "
+             "backfilling -- the check that the redraw reproduces the render",
     )
     parser.add_argument("--checkpoint", default=str(
         ROOT / "segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt"
@@ -350,44 +375,54 @@ def draw_legend(frame: np.ndarray, palette: sv.ColorPalette) -> None:
         y -= chip + round(10 * scale)
 
 
-def annotate_frame(
-    frame_bgr: np.ndarray,
-    boxes_xyxy: np.ndarray,
-    player_ids,
-    players: list,
-    masks: list,
-    voter,
-    roster: dict,
-    mask_annotator,
-    label_annotator,
-    canonical=None,
-) -> np.ndarray:
-    """Team-tinted mask fill plus a `#number` label per player.
-
-    Shared by both tracker paths: everything here works off one frame's
-    (boxes, player_ids, PlayerRecords, masks), regardless of whether McByte or
-    SAM2 produced them. `masks` entries may be None (McByte's mask manager has
-    no mask for that tracklet this frame); SAM2 never leaves one None.
-    """
-    annotated = frame_bgr.copy()
-    if not len(boxes_xyxy):
-        return annotated
-
-    lookup = np.array([color_index(player) for player in players], dtype=int)
-    labels = []
+def voted_labels(player_ids, color_lookup, voter, roster: dict, canonical=None) -> list:
+    """`#number name` per player from a live voter, or `P<id>` where it abstains."""
     resolve = canonical or int
-    for player, player_id in zip(players, player_ids):
+    labels = []
+    for color, player_id in zip(color_lookup, player_ids):
         # Number evidence can fold two allocated ids into one player after the
         # fact (`NumberIdentityResolver`); the label follows the fold so the
         # overlay shows one person, not two boxes disagreeing about a number.
         player_id = resolve(int(player_id))
         number, _votes, _margin = voter.best(player_id)
-        if number is None:
-            labels.append(f"P{player_id}")
-            continue
-        name = roster_name(roster, color_index(player), number)
-        labels.append(f"#{number} {name}" if name else f"#{number}")
+        labels.append(number_label(number, int(color), roster, player_id))
+    return labels
 
+
+def number_label(number, color: int, roster: dict, player_id: int) -> str:
+    """The one place a drawn label is spelled, shared by both drawing passes."""
+    if number is None:
+        return f"P{player_id}"
+    name = roster_name(roster, color, number)
+    return f"#{number} {name}" if name else f"#{number}"
+
+
+def annotate_frame(
+    frame_bgr: np.ndarray,
+    boxes_xyxy: np.ndarray,
+    player_ids,
+    color_lookup,
+    masks: list,
+    labels: list,
+    mask_annotator,
+    label_annotator,
+) -> np.ndarray:
+    """Team-tinted mask fill plus one already-decided label per player.
+
+    Shared by all three drawing paths -- McByte, SAM2, and the redraw -- so it
+    takes the palette index directly rather than a PlayerRecord, and the label
+    text rather than a voter. Deciding what to draw is the caller's job; this
+    only draws it, which is what lets the redraw pass reuse it with verdicts
+    replayed from a cache and no live tracker state at all.
+
+    `masks` entries may be None (McByte's mask manager has no mask for that
+    tracklet this frame); SAM2 never leaves one None.
+    """
+    annotated = frame_bgr.copy()
+    if not len(boxes_xyxy):
+        return annotated
+
+    lookup = np.asarray(color_lookup, dtype=int)
     drawn = sv.Detections(
         xyxy=np.asarray(boxes_xyxy, dtype=float).copy(),
         class_id=lookup.copy(),
@@ -726,10 +761,12 @@ def render(args: argparse.Namespace) -> dict:
         presence[str(frame_index)] = sorted(int(p) for p in player_ids)
         if numbers_enabled and frame_index % args.ocr_every == 0:
             resolver.resolve(frame_index)
+        color_lookup = [color_index(player) for player in players]
         annotated = annotate_frame(
-            frame_bgr, tracked.xyxy, player_ids, players, masks,
-            voter, roster, mask_annotator, label_annotator,
-            canonical=identity.registry.canonical,
+            frame_bgr, tracked.xyxy, player_ids, color_lookup, masks,
+            voted_labels(player_ids, color_lookup, voter, roster,
+                         canonical=identity.registry.canonical),
+            mask_annotator, label_annotator,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -853,6 +890,11 @@ def render_sam2(args: argparse.Namespace) -> dict:
         print(f"[reads] replaying cached reads from {reads_cache_path}")
     reads_log: dict[str, dict[str, str]] = {}
 
+    geometry_path = args.geometry_cache or args.output.with_name(
+        args.output.stem + "_geometry.npz"
+    )
+    geometry = GeometryCache(info.width, info.height, info.total_frames)
+
     preview = None
     frames_written = ocr_frames = ocr_reads = rejected_crops = 0
     number_reads: list[dict] = []
@@ -911,10 +953,16 @@ def render_sam2(args: argparse.Namespace) -> dict:
         presence[str(result.frame_idx)] = sorted(int(p) for p in player_ids)
         if result.frame_idx % args.ocr_every == 0:
             resolver.resolve(result.frame_idx)
+        color_lookup = [color_index(player) for player in players]
+        geometry.add(
+            result.frame_idx, player_ids, result.boxes, masks, color_lookup,
+            [player.voted_team_id for player in players],
+        )
         annotated = annotate_frame(
-            frame_bgr, result.boxes, player_ids, players, masks,
-            voter, roster, mask_annotator, label_annotator,
-            canonical=registry.canonical,
+            frame_bgr, result.boxes, player_ids, color_lookup, masks,
+            voted_labels(player_ids, color_lookup, voter, roster,
+                         canonical=registry.canonical),
+            mask_annotator, label_annotator,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -936,11 +984,16 @@ def render_sam2(args: argparse.Namespace) -> dict:
         reads_cache_path.write_text(json.dumps(reads_log))
         print(f"[reads] wrote {sum(len(v) for v in reads_log.values())} reads -> {reads_cache_path}")
 
+    geometry.save(geometry_path)
+    print(f"[geometry] wrote {geometry_path} "
+          f"({geometry_path.stat().st_size / 1e6:.1f} MB) -- redraw with --redraw")
+
     everyone = list(registry.live.values()) + registry.retired
     result_dict = {
         "source": str(source),
         "output": str(args.output),
         "preview": str(preview_path),
+        "geometry_cache": str(geometry_path),
         "tracker": "sam2",
         "reid_embedding": args.reid_embedding,
         # Two different recognisers are both called "parseq" -- docTR's
@@ -965,9 +1018,179 @@ def render_sam2(args: argparse.Namespace) -> dict:
     return result_dict
 
 
+def backfilled_labels(by_player: dict, frame_idx: int, player_ids, color_lookup,
+                      roster: dict, canonical, causal: bool) -> list:
+    """Labels for one frame, looked up from segment verdicts.
+
+    Deliberately thin. Everything that decides *what* a label says -- the
+    voting, `suspend` across a re-ID, and one-number-per-team arbitration --
+    already happened in `causal_labels`, which replays the run's own loop. The
+    only thing left is how far back a settled number may reach, which is the
+    segment's business. Re-deciding any of the rest here is what made an earlier
+    version drop 485 frames of labels the render had shown.
+    """
+    resolve = canonical or int
+    labels = []
+    for color, player_id in zip(color_lookup, player_ids):
+        pid = resolve(int(player_id))
+        segment = next(
+            (s for s in by_player.get(pid, ()) if s.start <= frame_idx <= s.end),
+            None,
+        )
+        value = None
+        if segment is not None:
+            value = segment.value_at(frame_idx)
+            if causal and segment.resolved_at is not None and frame_idx < segment.resolved_at:
+                value = None
+        labels.append(number_label(value, int(color), roster, pid))
+    return labels
+
+
+def redraw(args: argparse.Namespace) -> dict:
+    """Pass 2: draw a finished run again, with no tracker and no reader.
+
+    The expensive pass already computed every box, mask and identity, and a
+    label change does not move any of them -- so the only thing that has to
+    happen again is drawing. Backfill is the reason this exists, but not the
+    only beneficiary: any later change to how a label is decided (arbitration,
+    a roster, a voting threshold) is now a seconds-long redraw rather than a
+    ~12-minute tracking pass.
+    """
+    run_path = args.redraw_from or args.output.with_suffix(".json")
+    if not run_path.is_file():
+        raise FileNotFoundError(
+            f"--redraw needs the run summary {run_path} from the tracking pass; "
+            "pass --redraw-from to redraw one run into a different output path"
+        )
+    run = json.loads(run_path.read_text())
+    geometry_path = args.geometry_cache or Path(
+        run.get("geometry_cache")
+        or args.output.with_name(args.output.stem + "_geometry.npz")
+    )
+    if not geometry_path.is_file():
+        raise FileNotFoundError(
+            f"no geometry cache at {geometry_path}. It is written by the tracking "
+            "pass, so a run rendered before --redraw existed has to be re-run once."
+        )
+    cache = GeometryCache.load(geometry_path)
+
+    live_frames: dict = {}
+    for frame_idx, ids in run["frame_players"].items():
+        for player_id in ids:
+            live_frames.setdefault(int(player_id), []).append(int(frame_idx))
+    segments = segment_verdicts(
+        run["number_reads"], run["identity_events"], live_frames,
+        teams={int(k): v for k, v in run["player_teams"].items()},
+        ocr_every=args.ocr_every,
+    )
+    by_player: dict = {}
+    for segment in segments:
+        by_player.setdefault(segment.player_id, []).append(segment)
+    aliases = {int(k): int(v) for k, v in run.get("player_aliases", {}).items()}
+
+    def canonical(player_id: int) -> int:
+        seen = set()
+        while player_id in aliases and player_id not in seen:
+            seen.add(player_id)
+            player_id = aliases[player_id]
+        return player_id
+
+    source = args.video.resolve()
+    info = sv.VideoInfo.from_video_path(str(source))
+    roster = load_roster(args.roster)
+    if not args.font.is_file():
+        raise FileNotFoundError(f"font not found: {args.font}")
+    palette = sv.ColorPalette.from_hex(PALETTE_HEX)
+    mask_annotator = sv.MaskAnnotator(
+        color=palette, opacity=0.5, color_lookup=sv.ColorLookup.INDEX
+    )
+    label_annotator = sv.RichLabelAnnotator(
+        font_path=str(args.font),
+        font_size=round(34 * max(info.width / 1920.0, 1.0)),
+        color=palette,
+        text_color=sv.Color.WHITE,
+        text_position=sv.Position.BOTTOM_CENTER,
+        text_offset=(0, 10),
+        color_lookup=sv.ColorLookup.INDEX,
+    )
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    writer = cv2.VideoWriter(
+        str(args.output), cv2.VideoWriter_fourcc(*"mp4v"), info.fps,
+        (info.width, info.height),
+    )
+    if not writer.isOpened():
+        raise RuntimeError(f"could not open video writer: {args.output}")
+
+    preview_path = args.output.with_name(f"{args.output.stem}_preview.jpg")
+    # Read frames from the same JPEG cache the tracking pass read, not from the
+    # video. Decoding the mp4 directly is a different pixel source -- measured at
+    # ~47k pixels per 1080p frame differing by more than 12 levels -- so a redraw
+    # off the video would differ from the render everywhere, and the difference
+    # would swamp the label change it is supposed to isolate. `ensure_frame_cache`
+    # is the tracker's own accessor and needs no SAM2 checkout to call.
+    frame_files = ensure_frame_cache(
+        source, args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem)
+    )
+    # Only the frames the tracking pass recorded: it consumes frame 0 to seed
+    # SAM2 and never renders it, so redrawing every frame would emit one extra
+    # and shift everything after it.
+    wanted = cache.frame_indices
+    preview = None
+    frames_written = labelled = 0
+    for frame_idx in tqdm(wanted, desc=f"redraw {source.stem}"):
+        frame_bgr = cv2.imread(str(frame_files[frame_idx]))
+        geo = cache.frame(frame_idx)
+        labels = backfilled_labels(
+            by_player, frame_idx, geo.player_ids, geo.color_index,
+            roster, canonical, causal=args.redraw_causal,
+        )
+        labelled += sum(1 for label in labels if label.startswith("#"))
+        annotated = annotate_frame(
+            frame_bgr, geo.boxes, geo.player_ids, geo.color_index,
+            list(geo.masks), labels, mask_annotator, label_annotator,
+        )
+        draw_legend(annotated, palette)
+        writer.write(annotated)
+        frames_written += 1
+        if preview is None and frame_idx >= info.total_frames // 2:
+            preview = annotated.copy()
+    writer.release()
+    if preview is not None:
+        # Same downscale the tracking pass applies, so the two previews are
+        # directly comparable rather than differing in size as well as labels.
+        if preview.shape[1] > 1600:
+            ratio = 1600 / preview.shape[1]
+            preview = cv2.resize(
+                preview, (1600, round(preview.shape[0] * ratio)),
+                interpolation=cv2.INTER_AREA,
+            )
+        cv2.imwrite(str(preview_path), preview)
+
+    live = sum(len(v) for v in live_frames.values())
+    return {
+        "source": str(source),
+        "output": str(args.output),
+        "preview": str(preview_path),
+        "mode": "redraw-causal" if args.redraw_causal else "redraw-backfilled",
+        "geometry_cache": str(geometry_path),
+        "from_run": str(run_path),
+        "frames": frames_written,
+        "player_frames_live": live,
+        "player_frames_labelled": labelled,
+        "coverage": round(labelled / live, 4) if live else 0.0,
+        "segments": len(segments),
+        "segments_resolved": sum(1 for s in segments if s.verdict is not None),
+        "segments_unstable": sum(1 for s in segments if not s.stable),
+        "backfilled_frames": sum(len(s.backfill) for s in segments),
+    }
+
+
 def main() -> None:
     args = parse_args()
-    runner = render_sam2 if args.tracker == "sam2" else render
+    if args.redraw:
+        runner = redraw
+    else:
+        runner = render_sam2 if args.tracker == "sam2" else render
     print(json.dumps(runner(args), indent=2))
 
 

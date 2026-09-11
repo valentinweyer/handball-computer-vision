@@ -7,47 +7,92 @@ detail lives in `docs/team-classification-handoff.md`.
 
 ---
 
-## 1. Retroactive number backfill (deferred 2026-09-08, measured, not started)
+## 1. Retroactive number backfill (built and verified 2026-09-11)
 
-A number is only displayed from the frame its third read lands. Everything
-before that is `P<id>`, even though the evidence explains those frames too.
+Shipped. A number is now displayed from the start of the segment that earned
+it, not from the frame its third read lands.
 
-**Measured on `runs/full_pipeline/Melsungen_sam2_vouched.json`:**
+**Measured on a fresh run of the 60s Melsungen clip
+(`runs/full_pipeline/Melsungen_geo.json`):**
 
 ```
-player-frames live                   19097
-  labelled today                      7045   37%
-  backfill, stable segments only      3273  +17%
+player-frames live                   18867
+  labelled by the render              7810   41.4%
+  backfill, stable segments only      3667  +19.4pp
   withheld, verdict changed later      284
-  -> coverage after backfill                 54%
+  -> coverage after backfill                 60.8%
 ```
 
-Half again as many labelled frames, no new reads, no new model.
+**The old entry's baseline was wrong and is corrected here.** It claimed 7045
+labelled (37%) and +3273 (+17%). That 7045 came from a replay that started a
+fresh `NumberVoter` at each identity break, which is *not* what the render
+does: `NumberVoter.suspend` keeps the accumulated votes across a re-ID and
+re-asserts on the first agreeing read, so a returning player is relabelled
+immediately rather than after another `min_votes` reads. The render actually
+labels 7810 (41.4%). Building the first version against the replay would have
+*removed* 485 frames of labels the render was already showing -- p1 and p12 for
+475 frames each, p16 for 10 -- a regression dressed as caution. The end state
+(54.6%) barely moved; the gain is smaller because the baseline was understated.
 
-**The correctness constraint is the whole design.** Backfill must never cross an
-identity, because re-ID moves an identity onto a different person -- p6 is 15
-until frame 560 and somebody else after. The unit is the **segment**: the span
-between identity breaks (a `reid` revival or a `suspected_id_switch`), which is
-the same boundary `NumberVoter.suspend` already uses. Within a segment it is one
-person, so a verdict earned late legitimately describes the start.
+**Correctness constraint, unchanged and still the whole design.** Backfill must
+never cross an identity break, because re-ID moves an identity onto a different
+person -- p6 is 15 until frame 560 and somebody else after. The unit is the
+segment: the span between a `reid` or `suspected_id_switch`. Segments bound how
+far back a label may reach; they no longer partition the evidence.
 
-**Guard, measured:** 1 of 14 segments changed its verdict mid-way (p20 went
-`6 -> 15`). Backfilling a changed verdict paints 15 over frames whose own
-evidence said 6. Backfill only segments whose verdict never changed; costs 284
-frames, leaves +17%.
+**Guard, measured:** 1 of 17 resolved segments changed its verdict mid-way (p20
+goes `6` at frame 885 to `15` at 1245). Those frames keep what they were shown.
+Costs 284 frames.
 
-**Why it needs two passes.** The render draws while it tracks, so labels can only
-ever be causal. Pass 1 caches per-frame geometry `(frame, player_id, box, packed
-mask)` -- a mask cropped to its box and `np.packbits`'d is ~500 bytes, so ~10 MB
-for this clip. Pass 2 re-reads the video and draws from that cache with final
-per-segment verdicts: no SAM2, no OCR, seconds instead of 28 minutes. That also
-makes every future label change free to re-render, the same reason the reads
-cache exists.
+**Two bugs found by watching the render, after the first version passed every
+test.** p1 backfilled nothing across its second segment. Both are fixed and
+both have regression tests; together they cost 1178 player-frames.
 
-**First step:** `segment_verdicts(reads, breaks, live_frames)` in
-`src/handball_cv/jersey/identity.py` (pure, testable), then the geometry cache,
-then `--redraw` on `scripts/render_full_pipeline.py`. Nothing in the tracking or
-voting path changes.
+- The carry-in that stops a `suspected_id_switch` losing a label the render was
+  still drawing was anchored on the *break* frame rather than the segment's
+  first *live* frame. p1 breaks at 540 and is off screen from 401, returning at
+  541 -- so the pre-break verdict was planted at 540, back-dating `resolved_at`
+  to the segment start and erasing the backfill. It also carried a verdict
+  across a re-ID, which is the one thing segmentation exists to prevent. p16
+  escaped only by being on screen at its own break frame.
+- `causal_labels` walked only frames where somebody was live, so a revival at
+  an unoccupied frame never applied its `suspend`. Invisible on a full clip,
+  where somebody always is.
+
+**What was built.**
+
+- `causal_labels` / `segment_verdicts` / `Segment` in
+  `src/handball_cv/jersey/identity.py`. `causal_labels` replays the run's own
+  loop -- suspend, observe, arbitrate every `--ocr-every` -- so the labelled
+  region is the render's by construction.
+- `src/handball_cv/tracking/geometry_cache.py`: per-frame boxes, ids, palette
+  index, team, and per-player masks cropped to their bounding box and
+  bit-packed. **7.1 MB** for this clip (~395 B/player-frame), against 2.07 MB
+  per player-frame unpacked. Not `MaskCache`, whose label map loses overlapping
+  players -- see that module's docstring.
+- `--redraw` on `scripts/render_full_pipeline.py`, plus `--redraw-from` (redraw
+  one run into a different output) and `--redraw-causal` (label as the original
+  pass did -- the reproduction check).
+
+**Verification.**
+
+- The tracking pass reproduces `Melsungen_sam2_vouched.json` exactly on every
+  summary field, `numbers_resolved`, `identity_events`, `number_reads` and
+  `player_teams`. `frame_players` differs by 230 frames of p10 only, because
+  that older run predates the retirement rule in `c79db06`.
+- `--redraw-causal` is **pixel-identical to the render on 1498 of 1499 frames**,
+  and agrees with a live-voter replay on 18867/18867 player-frames.
+- The single differing frame is 780, where p16 is revived. The redraw suspends
+  the number on the revival frame; the render draws it once more and suspends
+  on the next. `drive_sam2` records a checkpoint's re-ID event after the frame
+  is yielded, so `NumberIdentityResolver.begin_frame` sees it one frame late --
+  contradicting its own docstring ("stale from that instant"). **Left as-is: the
+  redraw is the more correct of the two.** Worth fixing in the render itself.
+- Redraw costs **82 seconds** against ~22 minutes for the tracking pass.
+
+**Still open:** the numbers themselves are unverified on this clip -- see item 9.
+Backfill widens how long each claim is displayed, so a wrong verdict is now
+wrong for longer. That is an argument for ground truth, not against backfill.
 
 ---
 
@@ -209,6 +254,16 @@ would change what the tracker and the reader see on every clip.
 
 - **The 60s Melsungen clip has none.** Every number claim on it is unverified;
   today's before/after comparisons are self-consistent but not scored.
+- **Backfill raised the cost of being wrong, which raises the value of this.**
+  A verdict is now displayed over its whole segment rather than from the frame
+  it committed, so a confidently-wrong verdict that never revises is wrong for
+  the whole span instead of part of it -- 41.4% of player-frames carried a
+  number before, 60.8% after. The guard only catches segments that *changed*
+  their mind (p20, 284 frames withheld); a segment that is steadily wrong looks
+  exactly like one that is steadily right. Nothing in the pipeline can tell
+  them apart without labels. p20's own case is the live example: item 7's open
+  question about whether folding manufactured its `15` is unanswerable on this
+  clip. This is an argument for scoring the clip, not against backfill.
 - **Real Bundesliga rosters.** Two roster simulations were run on invented squad
   lists and both were retracted as worthless. The roster question -- constrain
   reads to numbers that exist in the squad -- cannot be answered honestly without

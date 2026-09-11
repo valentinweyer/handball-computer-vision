@@ -3,7 +3,9 @@ import unittest
 import cv2
 import numpy as np
 
-from handball_cv.jersey.identity import NumberVoter, read_numbers
+from handball_cv.jersey.identity import (
+    NumberVoter, read_numbers, segment_breaks, segment_verdicts,
+)
 
 
 class _RecordingOCRModel:
@@ -203,6 +205,172 @@ class VerdictHysteresisTests(unittest.TestCase):
         voter.merge(1, 2)
         # 25 and 31 now tie at 5 apiece: neither clears the margin, so no verdict.
         self.assertIsNone(voter.best(2)[0])
+
+
+def reads(*rows):
+    return [{"frame": f, "player_id": p, "value": v} for f, p, v in rows]
+
+
+class SegmentBreakTests(unittest.TestCase):
+    """Which run events cut an identity into separate people."""
+
+    def test_reid_and_suspected_switch_break_but_label_events_do_not(self):
+        events = [
+            {"frame": 130, "type": "reid", "player_id": 5},
+            {"frame": 530, "type": "suspected_id_switch", "player_id": 5},
+            {"frame": 660, "type": "team_switch", "player_id": 5},
+            {"frame": 700, "type": "link", "player_id": 5},
+        ]
+        self.assertEqual(segment_breaks(events), {5: [130, 530]})
+
+    def test_repeated_events_on_one_frame_cut_once(self):
+        events = [
+            {"frame": 130, "type": "reid", "player_id": 5},
+            {"frame": 130, "type": "suspected_id_switch", "player_id": 5},
+        ]
+        self.assertEqual(segment_breaks(events), {5: [130]})
+
+
+class SegmentVerdictTests(unittest.TestCase):
+    """A verdict earned late describes the start of the span that earned it.
+
+    The measurement these stand for is on the 60s Melsungen clip: 7045 of 19097
+    player-frames carry a number causally, and segment-local backfill adds 3273
+    without a new read or a new model.
+    """
+
+    def test_a_late_verdict_backfills_its_own_earlier_frames(self):
+        segments = segment_verdicts(
+            reads((10, 1, "7"), (20, 1, "7"), (30, 1, "7")),
+            events=[],
+            live_frames={1: range(1, 51)},
+        )
+        self.assertEqual(len(segments), 1)
+        segment = segments[0]
+        self.assertEqual(segment.verdict, "7")
+        self.assertEqual(segment.resolved_at, 30)
+        self.assertEqual(segment.backfill, tuple(range(1, 30)))
+        self.assertEqual(segment.labelled, tuple(range(30, 51)))
+
+    def test_backfill_never_crosses_a_break(self):
+        """p6 is 15 until frame 560 and somebody else after.
+
+        Re-ID moves an identity onto whoever it believes has reappeared, so a
+        whole-identity backfill would paint the second person's number over the
+        first person's frames. Each side is replayed on its own reads alone.
+        """
+        segments = segment_verdicts(
+            reads(
+                (10, 6, "15"), (20, 6, "15"), (30, 6, "15"),
+                (70, 6, "20"), (80, 6, "20"), (90, 6, "20"),
+            ),
+            events=[{"frame": 60, "type": "reid", "player_id": 6}],
+            live_frames={6: range(1, 101)},
+        )
+        self.assertEqual([s.verdict for s in segments], ["15", "20"])
+        first, second = segments
+        self.assertEqual(first.backfill, tuple(range(1, 30)))
+        self.assertNotIn(60, first.live)
+        # The later verdict reaches back only to the break, never past it.
+        self.assertEqual(min(second.backfill), 60)
+        self.assertEqual(second.backfill, tuple(range(60, 90)))
+
+    def test_a_verdict_that_changed_mid_segment_backfills_nothing(self):
+        """p20 went 6 -> 15, and its early frames' own evidence said 6.
+
+        Backfilling the final answer would overwrite what those frames showed.
+        One segment in 14 on the Melsungen clip does this; withholding it costs
+        284 frames and is the whole reason the guard exists.
+        """
+        segments = segment_verdicts(
+            reads(
+                (10, 20, "6"), (20, 20, "6"), (30, 20, "6"),
+                *[(f, 20, "15") for f in range(40, 130, 10)],
+            ),
+            events=[],
+            live_frames={20: range(1, 201)},
+        )
+        segment, = segments
+        self.assertEqual(segment.verdict, "15")
+        self.assertFalse(segment.stable)
+        self.assertEqual(segment.backfill, ())
+        # Coverage is unchanged, not reduced: what was drawn is still drawn.
+        self.assertEqual(segment.labelled, tuple(range(30, 201)))
+
+    def test_an_unresolved_segment_offers_nothing_but_is_still_reported(self):
+        """A caller measuring coverage needs the denominator, not just the wins."""
+        segments = segment_verdicts(
+            reads((10, 4, "7"), (20, 4, "9")),
+            events=[],
+            live_frames={4: range(1, 51)},
+        )
+        segment, = segments
+        self.assertIsNone(segment.verdict)
+        self.assertIsNone(segment.resolved_at)
+        self.assertEqual(segment.backfill, ())
+        self.assertEqual(segment.labelled, ())
+        self.assertEqual(len(segment.live), 50)
+
+    def test_frames_the_identity_was_absent_are_never_backfilled(self):
+        """Backfill labels frames that were drawn, and an absent player has none."""
+        segments = segment_verdicts(
+            reads((40, 3, "8"), (45, 3, "8"), (50, 3, "8")),
+            events=[],
+            live_frames={3: [1, 2, 3, 30, 40, 45, 50]},
+        )
+        segment, = segments
+        self.assertEqual(segment.backfill, (1, 2, 3, 30, 40, 45))
+        self.assertEqual(segment.labelled, (50,))
+
+    def test_a_break_while_off_screen_does_not_plant_the_old_label(self):
+        """p1 breaks at frame 540 and is not on screen again until 541.
+
+        The carry-in that keeps a `suspected_id_switch` from losing a label it
+        was still drawing must anchor on the segment's first *live* frame. Keyed
+        to the break frame instead, it plants the previous person's verdict at
+        the boundary -- which back-dates `resolved_at` to the segment start and
+        erases the whole backfill. Cost 1178 frames on the 60s Melsungen clip.
+        """
+        segments = segment_verdicts(
+            reads(
+                (10, 1, "25"), (20, 1, "25"), (30, 1, "25"),
+                (400, 1, "25"), (410, 1, "25"), (420, 1, "25"),
+            ),
+            events=[{"frame": 200, "type": "reid", "player_id": 1}],
+            live_frames={1: [*range(1, 100), *range(201, 500)]},
+        )
+        first, second = segments
+        self.assertEqual(first.verdict, "25")
+        # The new segment re-earns the number on its own reads. `suspend` keeps
+        # the tally, so the first agreeing read vouches for it -- frame 400, not
+        # three reads later.
+        self.assertEqual(second.start, 201)
+        self.assertEqual(second.resolved_at, 400)
+        self.assertEqual(second.backfill, tuple(range(201, 400)))
+        self.assertEqual(second.value_at(250), "25")
+        # The two segments stop and start at the live frames, not at the break.
+        self.assertEqual((first.start, first.end), (1, 99))
+
+    def test_breaks_outside_the_live_span_do_not_open_empty_segments(self):
+        segments = segment_verdicts(
+            reads((10, 2, "5"), (12, 2, "5"), (14, 2, "5")),
+            events=[{"frame": 0, "type": "reid", "player_id": 2}, {"frame": 5, "type": "reid", "player_id": 2}, {"frame": 900, "type": "reid", "player_id": 2}],
+            live_frames={2: range(5, 21)},
+        )
+        self.assertEqual([(s.start, s.end) for s in segments], [(5, 20)])
+
+    def test_reads_land_in_the_segment_the_break_opens(self):
+        """A break frame is the first frame of the new segment, not the last of the old."""
+        segments = segment_verdicts(
+            reads((60, 7, "9"), (70, 7, "9"), (80, 7, "9")),
+            events=[{"frame": 60, "type": "reid", "player_id": 7}],
+            live_frames={7: range(1, 101)},
+        )
+        before, after = segments
+        self.assertIsNone(before.verdict)
+        self.assertEqual(before.end, 59)
+        self.assertEqual(after.start, 60)
+        self.assertEqual(after.verdict, "9")
 
 
 if __name__ == "__main__":

@@ -526,3 +526,257 @@ class NumberVoter:
         qualified, _c, _m = self._qualified(into_id)
         if qualified is not None:
             self._settled[into_id] = qualified
+
+
+# Event types that end a segment. A `reid` revival moves an identity onto
+# whoever the tracker believes has reappeared, and a `suspected_id_switch` says
+# it may already have moved -- either way the frames after are not guaranteed to
+# be the same person as the frames before. `team_switch` and `link` are not
+# breaks: a switch revises a label on one continuous track, and a link declares
+# two identities were the same person all along, which joins evidence rather
+# than cutting it.
+IDENTITY_BREAK_EVENTS = ("reid", "suspected_id_switch")
+
+
+def segment_breaks(events) -> dict:
+    """{player_id: sorted break frames} from a run's `identity_events`."""
+    breaks: dict = {}
+    for event in events:
+        if event.get("type") not in IDENTITY_BREAK_EVENTS:
+            continue
+        breaks.setdefault(event["player_id"], set()).add(event["frame"])
+    return {pid: sorted(frames) for pid, frames in breaks.items()}
+
+
+@dataclass(frozen=True)
+class Segment:
+    """One identity's span between identity breaks -- and so one person.
+
+    `timeline` is the causal record: `((frame, value), ...)`, one entry each
+    time the label the render drew for this player changed within this span. It
+    comes from replaying the run's real voting, so it is what the overlay
+    actually showed, not a reconstruction of what it could have shown.
+
+    A segment whose label never changed was right about that number for its
+    whole span, so the number may be stated over the whole span. One that
+    changed revised itself, and its early frames' own evidence said something
+    else -- those frames keep what they were shown.
+    """
+    player_id: int
+    start: int
+    end: int                      # inclusive
+    live: tuple                   # live frames within [start, end]
+    timeline: tuple               # ((frame, value), ...) causal label changes
+    votes: int                    # final tally, for reporting
+    margin: float
+
+    def _causal_at(self, frame: int) -> str | None:
+        """The label the render drew on `frame`, `None` where it drew none."""
+        value = None
+        for at, candidate in self.timeline:
+            if at > frame:
+                break
+            value = candidate
+        return value
+
+    @property
+    def _values(self) -> list:
+        return [value for _, value in self.timeline if value is not None]
+
+    @property
+    def verdict(self) -> str | None:
+        """The number this segment settles on by its end."""
+        values = self._values
+        return values[-1] if values else None
+
+    @property
+    def resolved_at(self) -> int | None:
+        """Frame the render first drew a number for this segment."""
+        return next((f for f, value in self.timeline if value is not None), None)
+
+    @property
+    def stable(self) -> bool:
+        """Whether one number, and only one, was ever stated in this span.
+
+        A `None` in the timeline is arbitration withholding a duplicate claim,
+        not a revision, so it does not count against stability -- the segment
+        never said anything else.
+        """
+        return len(set(self._values)) <= 1
+
+    @property
+    def labelled(self) -> tuple:
+        """Live frames the render already drew a number on."""
+        return tuple(f for f in self.live if self._causal_at(f) is not None)
+
+    @property
+    def backfill(self) -> tuple:
+        """Live frames this verdict describes but no label ever reached.
+
+        Empty when the label changed mid-segment. Painting the final answer over
+        frames whose own evidence said something else would overwrite what they
+        actually showed -- measured at 1 segment in 14 on the 60s Melsungen
+        clip, where p20 went 6 -> 15, and worth the 284 frames it costs.
+        """
+        if not self.stable or self.resolved_at is None:
+            return ()
+        return tuple(f for f in self.live if f < self.resolved_at)
+
+    def value_at(self, frame: int) -> str | None:
+        """What may be drawn on `frame`.
+
+        At or after `resolved_at` this is exactly what the render drew,
+        withheld duplicates included. Before it, a stable segment extends its
+        verdict backwards -- the backfill -- and a revised one draws nothing.
+        """
+        if self.resolved_at is None:
+            return None
+        if frame < self.resolved_at:
+            return self.verdict if self.stable else None
+        return self._causal_at(frame)
+
+
+def causal_labels(reads, events, live_frames, teams=None,
+                  ocr_every: int = OCR_EVERY_N_FRAMES) -> dict:
+    """{player_id: ((frame, label), ...)} as the causal render drew them.
+
+    Replays the render's own labelling loop rather than re-deriving one, because
+    the two are not the same and the difference is not small. Three behaviours
+    have to come along or a redraw silently drops labels the render showed:
+
+      - `suspend` on a re-ID revival keeps the accumulated votes and merely
+        withholds the claim, so a correct revival re-asserts on its first
+        agreeing read. Starting a fresh tally at each break instead costs
+        `min_votes` reads every time -- measured at 765 player-frames on the 60s
+        Melsungen clip (p1 and p12 for 475 frames each, p16 for 10), which is a
+        regression dressed up as caution.
+      - arbitration runs every `ocr_every` frames over every identity, live and
+        retired, so a withheld duplicate stays withheld between OCR frames.
+      - a `suspected_id_switch` breaks a *segment* but does not suspend, exactly
+        as `NumberIdentityResolver.begin_frame` has it.
+
+    Only entries where the label changes are recorded; read them with
+    `Segment.value_at`.
+    """
+    reads_by_frame: dict = {}
+    for row in reads:
+        reads_by_frame.setdefault(int(row["frame"]), []).append(
+            (int(row["player_id"]), row["value"])
+        )
+    revivals: dict = {}
+    for event in events:
+        if event.get("type") == "reid":
+            revivals.setdefault(int(event["frame"]), []).append(int(event["player_id"]))
+
+    voter = NumberVoter()
+    timelines: dict = {}
+    held: dict = {}
+    # Revival frames join the walk even if nobody is on screen then: a
+    # `suspend` that is never applied leaves the pre-break verdict asserting
+    # itself into the new segment. On a full clip somebody is always live so it
+    # never shows, which is exactly why it needs stating.
+    walk = {f for frames in live_frames.values() for f in frames} | set(revivals)
+    for frame in sorted(walk):
+        for player_id in revivals.get(frame, ()):
+            voter.suspend(player_id)
+        for player_id, value in reads_by_frame.get(frame, ()):
+            voter.observe(player_id, value)
+        if teams and frame % ocr_every == 0:
+            voter.arbitrate(teams)
+        for player_id, frames in live_frames.items():
+            if frame not in frames:
+                continue
+            label = voter.best(player_id)[0]
+            if label != held.get(player_id):
+                held[player_id] = label
+                timelines.setdefault(player_id, []).append((frame, label))
+    return {pid: tuple(entries) for pid, entries in timelines.items()}
+
+
+def segment_verdicts(reads, events, live_frames, teams=None,
+                     ocr_every: int = OCR_EVERY_N_FRAMES) -> list:
+    """Per-segment verdicts, and which frames each one may backfill.
+
+    A number is only displayed from the frame its third read lands, so the
+    frames before it carry `P<id>` even though the same evidence explains them.
+    A verdict earned late still describes the start of the span it was earned
+    in -- but only that span. Re-ID moves an identity onto a different person,
+    so a verdict must never reach across a break: on the 60s Melsungen clip p6
+    is 15 until frame 560 and somebody else after, and a whole-identity
+    backfill would paint 15 over the second person too.
+
+    Segments therefore bound how far back a label may reach; they do not
+    partition the evidence. The labels themselves come from `causal_labels`,
+    which replays the run's actual voting -- so at and after `resolved_at` a
+    redraw reproduces the render exactly, and only the frames before it change.
+
+    Args:
+        reads: rows of `{frame, player_id, value}`, a run's `number_reads`.
+        events: a run's `identity_events`.
+        live_frames: {player_id: frames the identity was on screen}.
+        teams: {player_id: team_id} for arbitration; omitted, none is applied.
+        ocr_every: arbitration cadence, matching the render's `--ocr-every`.
+
+    Returns segments in (player_id, start) order, including those that never
+    resolved -- a caller measuring coverage needs the denominator too.
+    """
+    breaks = segment_breaks(events)
+    timelines = causal_labels(reads, events, live_frames, teams, ocr_every)
+    counts: dict = {}
+    voter = NumberVoter()
+    for row in sorted(reads, key=lambda r: r["frame"]):
+        voter.observe(int(row["player_id"]), row["value"])
+    for player_id in live_frames:
+        counts[player_id] = voter.best(player_id)[1:]
+
+    segments = []
+    for player_id in sorted(live_frames):
+        live = sorted(set(live_frames[player_id]))
+        if not live:
+            continue
+        # A break is the first frame of the segment it opens. Breaks outside the
+        # live span would only open empty segments, so they are dropped here
+        # rather than filtered out again after.
+        cuts = sorted({
+            frame for frame in breaks.get(player_id, ())
+            if live[0] < frame <= live[-1]
+        })
+        bounds = [live[0], *cuts, live[-1] + 1]
+        timeline = timelines.get(player_id, ())
+        votes, margin = counts.get(player_id, (0, 0.0))
+        for start, stop in zip(bounds, bounds[1:]):
+            span = tuple(f for f in live if start <= f < stop)
+            if not span:
+                continue
+            within = tuple(
+                (frame, label) for frame, label in timeline if start <= frame < stop
+            )
+            # A `suspected_id_switch` breaks the segment without suspending the
+            # voter, so the label simply continues and records no new entry. The
+            # new segment has to be told what was already on screen, or it reads
+            # as unresolved and drops a label the render was drawing.
+            #
+            # Anchored on the first *live* frame, never on the break frame: an
+            # identity that is off screen when it breaks -- p1 breaks at 540 and
+            # returns at 541 -- otherwise gets the previous person's label
+            # planted at the boundary, which both back-dates `resolved_at` to the
+            # segment start (erasing its whole backfill) and carries a verdict
+            # across the break that segmentation exists to stop.
+            if not within or within[0][0] > span[0]:
+                carried = None
+                for frame, label in timeline:
+                    if frame >= span[0]:
+                        break
+                    carried = label
+                if carried is not None:
+                    within = ((span[0], carried), *within)
+            segments.append(Segment(
+                player_id=player_id,
+                start=span[0],
+                end=span[-1],
+                live=span,
+                timeline=within,
+                votes=votes,
+                margin=margin,
+            ))
+    return segments
