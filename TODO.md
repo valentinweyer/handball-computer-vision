@@ -202,7 +202,50 @@ whole court rendered as a single green stroke, 1 of 12 players "on court", at a
 reprojection error of **1.0 px** -- among the best in the clip, because five
 near-collinear points are trivial to fit perfectly.
 
-### What follows
+### Temporal propagation, built and measured (2026-09-11)
+
+`handball_cv.court.homography` carries each frame's estimate forward and
+regularises the next fit toward it, and `handball_cv.court.camera_motion`
+measures the motion it is carried through. Replayed over the cached keypoints:
+
+```
+motion source   prior   jitter p50   p90    >50px   off court   frames rejecting >50%
+none (today)     --        23.1     342.4   33.3%      5.0%            17
+keypoints       0.05        8.2      37.4    7.9%      8.2%            20
+keypoints       0.30        6.8      30.1    3.7%     15.4%            19
+optical flow    0.15        6.8      25.4    4.1%      4.4%             6
+optical flow    0.30        6.4      23.6    3.3%      5.8%             4
+```
+
+**Where the motion estimate comes from decides whether the prior helps or
+drags.** Read off the court landmarks, a stronger prior trades jitter for
+exclusions -- the classic lag signature -- because a similarity fitted to
+collinear centre-line points is a poor model of a panning perspective camera and
+the error accumulates. Measured from the pictures instead, a stronger prior
+improves every axis at once: at weight 0.15 the jitter p90 falls 13x while
+off-court player-frames drop *below* the per-frame baseline and catastrophic
+frames go 17 -> 6.
+
+Two earlier numbers need correcting. The per-frame baseline reads 5.0% off-court
+here against the 5.8% reported from the render, because the render fitted the
+forward and inverse homographies independently -- they are not inverses of each
+other, so it was projecting the court onto the image with one transform and
+players onto the court with another. Everything above inverts a single fit.
+
+**Not yet good enough to switch the court test on.** The degeneracy is gone --
+frame 1310 no longer collapses to a line, and its far sideline now lands on the
+real one -- but the overlay still carries visible error there, and nothing in
+this has been checked against ground truth. Off-court count is a proxy, not a
+label: an exclusion may be right (the bench, the crowd) or wrong, and these
+numbers cannot tell them apart. Scoring that needs frames where somebody has
+said which people were on the court.
+
+Also still open: the `prior_weight` was picked off this one 60-second clip, and
+the abstain path (`max_age`, the `CourtFit.source` states) is written but has
+only unit tests behind it, never a clip where the camera genuinely loses the
+court for a long stretch.
+
+### Why propagation rather than a better gate
 
 Temporal propagation is not polish for the jitter; it is the only way a
 centre-only frame can be solved at all. The court is planar and the camera pans,

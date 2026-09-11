@@ -32,6 +32,8 @@ another.
   calibration, dataset contracts, and evaluation.
 - `handball_cv.tracking`: tracker-independent identity management, mask caching,
   and the retained SAM2 lifecycle manager.
+- `handball_cv.court`: the keypoint-to-vertex mapping, homography estimation
+  with temporal continuity, and inter-frame camera motion.
 - `handball_cv.embeddings`: optional appearance-model adapters.
 - `handball_cv.jersey`: jersey-number evidence.
 - `scripts`: thin labeling, evaluation, rendering, and comparison tools.
