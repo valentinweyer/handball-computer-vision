@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -27,7 +28,11 @@ ROOT = Path(__file__).resolve().parents[1]
 FFMPEG = ROOT / (".venv/lib/python3.11/site-packages/imageio_ffmpeg/binaries/"
                  "ffmpeg-linux-aarch64-v7.0.2")
 FIT_STRIDE = 10          # must match fit_from_video's stride argument
-RFDETR_PYTHON = Path("/home/valentinweyer/projects/rfdetr-handball-finetune/.venv/bin/python3")
+# The sibling fine-tuning repo's venv is the only interpreter with `rfdetr`. It is
+# a separate checkout, so the default is "next to this one" and RFDETR_FINETUNE_DIR
+# overrides it (see .env.example).
+FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
+RFDETR_PYTHON = FINETUNE_ROOT / ".venv/bin/python3"
 FPS = 25
 
 

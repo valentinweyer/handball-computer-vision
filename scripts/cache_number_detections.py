@@ -8,7 +8,7 @@ detector pass reusable and keeps the measurement loop fast and deterministic.
 
 Run with the SIBLING repo's interpreter, which has rfdetr:
 
-    /home/valentinweyer/projects/rfdetr-handball-finetune/.venv/bin/python3 \
+    "$RFDETR_FINETUNE_DIR/.venv/bin/python3" \
         scripts/cache_number_detections.py data/raw/FelixClaar.mp4 \
         --output outputs/number_cache/.FelixClaar_numbers_v1.npz
 
@@ -25,6 +25,7 @@ than the checkpoint's own index, so consumers don't need to know which model pro
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
 
 import cv2
@@ -32,9 +33,11 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CHECKPOINT = Path(
-    "/home/valentinweyer/projects/rfdetr-handball-finetune/runs/"
-    "large-handball-v4-w-numbers-no-ball/checkpoint_best_ema.pth"
+# The sibling fine-tuning repo is a separate checkout, so the default is "next to
+# this one" and RFDETR_FINETUNE_DIR overrides it (see .env.example).
+FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
+DEFAULT_CHECKPOINT = (
+    FINETUNE_ROOT / "runs/large-handball-v4-w-numbers-no-ball/checkpoint_best_ema.pth"
 )
 # Index inside the fine-tuned checkpoint (exports/classes.json in the sibling repo),
 # NOT the hosted Roboflow model's class numbering.

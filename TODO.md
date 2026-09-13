@@ -505,31 +505,63 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 7. Hardcoded absolute paths in tracked files
-
-`/home/valentinweyer/...` remains in three scripts: `build_jersey_audit_set.py`,
-`cache_number_detections.py`, `evaluate_checkpoint_against_labels.py`. Those
-cannot run on another machine. `.env.example` already defines the override
-pattern (`HANDBALL_CV_VIDEO`, `SAM2_UPSTREAM_DIR`); these should use it.
-
-The five notebook copies that also carried absolute paths went with the deletion
-with the legacy notebook copies (see Done), and `data/annotations/team/Han-Ber4.json` was made repo-relative in
-`c616040`. The remaining tracked annotations under `data/annotations/` still
-carry absolute paths in their provenance fields.
-
----
-
-## 8. Housekeeping
+## 7. Housekeeping
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
   `a0a5a9e` by deleting the superseded root copies. The documented command now
-  collects and passes 292 tests in one run.
+  collects and passes 321 tests in one run (292 when that was written).
 - `runs/reid_analysis/` is gitignored, so the re-ID discriminability reports live
   on disk only. Regenerate with `scripts/measure_reid_discriminability.py`.
 
 ---
 
 # Done
+
+## The cross-repo paths were one path, and the annotation stamps are not a bug (2026-09-14)
+
+Every hardcoded `/home/valentinweyer/...` in tracked code was the same thing --
+the sibling fine-tuning checkout -- reached by four scripts, not the three this
+entry used to name. `run_overnight_batch.py` was the fourth, through
+`RFDETR_PYTHON`.
+
+It is now `RFDETR_FINETUNE_DIR`, following the `SAM2_UPSTREAM_DIR` convention
+already in the file, and defaulting to a sibling of the repository root:
+
+```python
+FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
+```
+
+**The default is where it already sits on this machine**, so every constant
+resolves to the byte-identical path it hardcoded before and nothing about a run
+here changes. Checked rather than assumed: each constant was compared against its
+old literal with the variable unset, and the override exercised against a
+different root. Nothing went into `handball_cv` -- a sibling repo's location is
+not the library's business, and `docs/architecture.md` puts cross-repo tooling in
+`scripts`.
+
+The two uncommitted split-detector scripts carried the same constant and were
+fixed in the same pass, so committing them will not re-open this.
+
+**The annotation provenance paths stay absolute, and that is correct.**
+`data/annotations/*/*.json` records `video`, `dataset` and `detection_cache` as
+`str(path.resolve())`, written deliberately by `label_jersey_numbers.py` and
+pinned by `tests/unit/test_label_jersey_numbers.py`. Nothing opens those strings;
+the only readers are resume checks (`evaluate_number_pipeline.py:334`,
+`benchmark_qwen_jersey_ocr.py:295`) that compare them for equality to decide
+whether a checkpoint still applies. On another machine the comparison fails and
+the run recomputes -- which is the right answer, because that cache genuinely
+does not apply. Rewriting them repo-relative would edit protected label files,
+break the test, and erase the provenance the field exists to record. What looked
+like the unfinished half of this item is a design decision nobody had written
+down.
+
+Still machine-specific, and a different hazard: `run_overnight_batch.py` pins
+`.venv/lib/python3.11/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-aarch64-v7.0.2`.
+That path is repo-relative, but it fixes a Python version and a CPU
+architecture, so it breaks on a rebuild of this machine's own venv rather than
+only on a different one.
+
+---
 
 ## The court homography was fitted to a scrambled correspondence (2026-09-11)
 

@@ -22,7 +22,7 @@ Not part of the reusable scripts.* package: this is a one-off cross-repo diagnos
 that only runs under the sibling repo's own venv (this repo's venv has no `rfdetr`
 package):
 
-    /home/valentinweyer/projects/rfdetr-handball-finetune/.venv/bin/python3 \
+    "$RFDETR_FINETUNE_DIR/.venv/bin/python3" \
         scripts/evaluate_checkpoint_against_labels.py [--limit N]
 
 Read-only against both repos: loads a checkpoint and images, writes one report file
@@ -33,20 +33,21 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 import json
+import os
 from pathlib import Path
 import statistics
 import time
 
 import cv2
 
-REPO_ROOT = Path("/home/valentinweyer/projects/handball-computer-vision")
-CHECKPOINT = Path(
-    "/home/valentinweyer/projects/rfdetr-handball-finetune/runs/"
-    "large-handball-v4-w-numbers-no-ball/checkpoint_best_ema.pth"
+REPO_ROOT = Path(__file__).resolve().parents[1]
+# The sibling fine-tuning repo is a separate checkout, so the default is "next to
+# this one" and RFDETR_FINETUNE_DIR overrides it (see .env.example).
+FINETUNE_ROOT = Path(
+    os.getenv("RFDETR_FINETUNE_DIR", REPO_ROOT.parent / "rfdetr-handball-finetune")
 )
-SOURCE_ROOT = Path(
-    "/home/valentinweyer/projects/rfdetr-handball-finetune/datasets/handball-v4-w-numbers"
-)
+CHECKPOINT = FINETUNE_ROOT / "runs/large-handball-v4-w-numbers-no-ball/checkpoint_best_ema.pth"
+SOURCE_ROOT = FINETUNE_ROOT / "datasets/handball-v4-w-numbers"
 AUDIT_DATASET = REPO_ROOT / "runs/jersey_audit/dataset.json"
 LABELS_PATH = REPO_ROOT / "data/annotations/jersey/jersey_audit_labels.json"
 OUTPUT_PATH = REPO_ROOT / "runs/jersey_audit/checkpoint_vs_labels.json"

@@ -19,6 +19,7 @@ import argparse
 from collections import Counter, defaultdict
 import json
 import math
+import os
 from pathlib import Path
 import random
 
@@ -28,9 +29,11 @@ from scripts.label_jersey_numbers import clipped_box, utc_now, write_json_atomic
 
 
 ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_SOURCE_ROOT = Path(
-    "/home/valentinweyer/projects/rfdetr-handball-finetune/datasets/handball-v4-w-numbers"
-)
+# The sibling fine-tuning repo, which holds the COCO export and the checkpoints.
+# It is a separate checkout, so the default is "next to this one" and
+# RFDETR_FINETUNE_DIR overrides it (see .env.example).
+FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
+DEFAULT_SOURCE_ROOT = FINETUNE_ROOT / "datasets/handball-v4-w-numbers"
 DEFAULT_OUTPUT_DIR = ROOT / "runs/jersey_audit"
 CATEGORY_NAME = "jersey number"
 SPLITS = ("train", "valid", "test")
