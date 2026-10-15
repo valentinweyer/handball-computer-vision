@@ -107,6 +107,36 @@ def _cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
     return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b) + 1e-8))
 
 
+def mask_area_and_bbox(mask: np.ndarray) -> tuple[int, tuple[int, int, int, int] | None]:
+    """Pixel count and half-open bounding box `(y0, y1, x0, x1)` of a boolean mask.
+
+    A checkpoint used to re-scan every full-frame mask for each use: `.any()`
+    and `.sum()` once per pair in the duplicate test, and the pairwise
+    `(ma & mb).sum()` over all ~90 pairs of 13-14 players. Computing count and
+    box once lets the duplicate test skip pairs whose boxes are disjoint -- their
+    intersection is exactly zero -- and intersect the rest on the overlap only.
+    Returns `(0, None)` for an empty mask.
+    """
+    rows = mask.any(axis=1)
+    if not rows.any():
+        return 0, None
+    cols = mask.any(axis=0)
+    y0 = int(np.argmax(rows))
+    y1 = len(rows) - int(np.argmax(rows[::-1]))
+    x0 = int(np.argmax(cols))
+    x1 = len(cols) - int(np.argmax(cols[::-1]))
+    return int(np.count_nonzero(mask[y0:y1, x0:x1])), (y0, y1, x0, x1)
+
+
+def mask_intersection(ma, box_a, mb, box_b) -> int:
+    """`(ma & mb).sum()`, touching only where the two bounding boxes overlap."""
+    y0, y1 = max(box_a[0], box_b[0]), min(box_a[1], box_b[1])
+    x0, x1 = max(box_a[2], box_b[2]), min(box_a[3], box_b[3])
+    if y0 >= y1 or x0 >= x1:
+        return 0
+    return int(np.count_nonzero(ma[y0:y1, x0:x1] & mb[y0:y1, x0:x1]))
+
+
 def mask_area_and_centroid(mask: np.ndarray) -> tuple[float, tuple[float, float] | None]:
     """Pixel count and centroid of a boolean mask, computed on its bounding box.
 
@@ -332,6 +362,8 @@ class TrackManager:
         actions = []
         live_obj_ids = list(live_obj_ids)
         masks_by_id = {int(oid): m for oid, m in zip(live_obj_ids, live_masks)}
+        # Count and box per mask, once; rules 1-3 all reuse them.
+        stats_by_id = {oid: mask_area_and_bbox(m) for oid, m in masks_by_id.items()}
 
         # ---- match detections to live tracks by mask IoU ----
         det_boxes_xyxy = np.asarray(det_boxes_xyxy).reshape(-1, 4)
@@ -340,10 +372,11 @@ class TrackManager:
             if det_is_goalkeeper is None else np.asarray(det_is_goalkeeper)
         )
         if len(live_obj_ids) and len(det_boxes_xyxy):
+            # Inclusive xyxy, as sv.mask_to_xyxy gives, from the cached box.
             track_boxes = np.array([
-                sv.mask_to_xyxy(masks_by_id[oid][None])[0]
-                if masks_by_id[oid].any() else np.array([0, 0, 0, 0])
-                for oid in live_obj_ids
+                np.array([box[2], box[0], box[3] - 1, box[1] - 1], dtype=np.int64)
+                if box is not None else np.array([0, 0, 0, 0])
+                for _area, box in (stats_by_id[oid] for oid in live_obj_ids)
             ])
             iou = sv.box_iou_batch(track_boxes, det_boxes_xyxy)  # (n_tracks, n_dets)
             cost = 1.0 - iou
@@ -405,13 +438,13 @@ class TrackManager:
         acted_ids = set()
         for i, oid_a in enumerate(live_obj_ids):
             for oid_b in live_obj_ids[i + 1:]:
-                ma, mb = masks_by_id[oid_a], masks_by_id[oid_b]
-                if not ma.any() or not mb.any():
+                (area_a, box_a), (area_b, box_b) = stats_by_id[oid_a], stats_by_id[oid_b]
+                if not area_a or not area_b:
                     continue
-                inter = float((ma & mb).sum())
-                min_area = min(ma.sum(), mb.sum())
-                if min_area == 0:
-                    continue
+                inter = float(mask_intersection(
+                    masks_by_id[oid_a], box_a, masks_by_id[oid_b], box_b
+                ))
+                min_area = min(area_a, area_b)
                 if inter / min_area > DUPLICATE_IOU_MIN:
                     key = "dup"
                     active_keys_per_track[oid_a].add(key)
@@ -443,8 +476,7 @@ class TrackManager:
             if oid in acted_ids:
                 continue
             t = self.tracks[oid]
-            m = masks_by_id[oid]
-            area = float(m.sum())
+            area = float(stats_by_id[oid][0])
             med = t.median_area()
             collapsed = (area == 0) or (med and med > 0 and area < DROPOUT_AREA_FRAC * med)
             has_match = oid in track_to_det
@@ -479,7 +511,7 @@ class TrackManager:
             t = self.tracks[oid]
             di = track_to_det[oid]
             track_iou = iou[live_obj_ids.index(oid), di]
-            area = float(masks_by_id[oid].sum())
+            area = float(stats_by_id[oid][0])
             med = t.median_area()
             collapsed = med and med > 0 and area < DROPOUT_AREA_FRAC * med
             if (DRIFT_IOU_LOW <= track_iou <= DRIFT_IOU_HIGH) or collapsed:

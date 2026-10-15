@@ -57,6 +57,37 @@ def extract_number_boxes(detections: sv.Detections) -> sv.Detections:
     return detections[detections.class_id == NUMBER_CLASS_ID]
 
 
+def _ios_box_local(player_masks: np.ndarray, number_xyxy: np.ndarray, w: int, h: int) -> np.ndarray:
+    """`sv.mask_iou_batch(..., IOS)` against `sv.xyxy_to_mask` boxes, on box-local slices.
+
+    The dense form builds a full-frame mask per number box and multiplies two
+    float32 (N, H*W) stacks; at 1080p that is tens of milliseconds per OCR frame
+    to count pixels inside a few small boxes. Counts are integers below 2**24,
+    so supervision's float32 sums are exact and these equal them; the division
+    below is supervision's own call on the same float32 operands. Box pixels
+    follow `xyxy_to_mask`'s inclusive convention: int() truncation, clipped to
+    the frame, empty when inverted. Pinned by
+    `tests/unit/test_number_match_equivalence.py`.
+    """
+    true_area = np.count_nonzero(player_masks.reshape(len(player_masks), -1), axis=1).astype(np.float32)
+    intersection = np.zeros((len(player_masks), len(number_xyxy)), dtype=np.float32)
+    box_area = np.zeros(len(number_xyxy), dtype=np.float32)
+    for j, (x_min, y_min, x_max, y_max) in enumerate(number_xyxy):
+        x_min, y_min = max(0, int(x_min)), max(0, int(y_min))
+        x_max, y_max = min(w - 1, int(x_max)), min(h - 1, int(y_max))
+        if x_max < x_min or y_max < y_min:
+            continue
+        box_area[j] = (x_max - x_min + 1) * (y_max - y_min + 1)
+        intersection[:, j] = np.count_nonzero(
+            player_masks[:, y_min:y_max + 1, x_min:x_max + 1], axis=(1, 2)
+        )
+    small_area = np.minimum(true_area[:, None], box_area)
+    return np.divide(
+        intersection, small_area,
+        out=np.zeros_like(intersection, dtype=float), where=small_area != 0,
+    )
+
+
 def match_numbers_to_players(
     player_masks: np.ndarray,
     number_xyxy: np.ndarray,
@@ -70,10 +101,15 @@ def match_numbers_to_players(
     if len(player_masks) == 0 or len(number_xyxy) == 0:
         return []
     h, w = frame_shape[:2]
-    number_masks = sv.xyxy_to_mask(boxes=np.asarray(number_xyxy).reshape(-1, 4), resolution_wh=(w, h))
-    iou = sv.mask_iou_batch(
-        masks_true=player_masks, masks_detection=number_masks, overlap_metric=sv.OverlapMetric.IOS
-    )
+    number_xyxy = np.asarray(number_xyxy).reshape(-1, 4)
+    player_masks = np.asarray(player_masks)
+    if player_masks.dtype != bool:
+        number_masks = sv.xyxy_to_mask(boxes=number_xyxy, resolution_wh=(w, h))
+        iou = sv.mask_iou_batch(
+            masks_true=player_masks, masks_detection=number_masks, overlap_metric=sv.OverlapMetric.IOS
+        )
+    else:
+        iou = _ios_box_local(player_masks, number_xyxy, w, h)
     rows, cols = np.where(iou > MATCH_IOS_MIN)
     pairs = list(zip(rows.tolist(), cols.tolist()))
     pairs.sort(key=lambda rc: iou[rc[0], rc[1]], reverse=True)

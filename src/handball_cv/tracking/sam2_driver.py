@@ -16,6 +16,7 @@ has to run in the entry-point script, before any import of this module).
 """
 from __future__ import annotations
 
+from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 import functools
 from pathlib import Path
@@ -226,6 +227,7 @@ def drive_sam2(
     reid_encoder=None,
     checkpoint_policy: str = "reprompt",
     predictor_factory: Callable[[str], object] | None = None,
+    prefetch_frames: int = 0,
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -256,6 +258,11 @@ def drive_sam2(
     `court_test_fn` is left permissive (accepts any new detection), matching
     the box trackers in `evaluate_tracker_identity`, which also add every
     unmatched detection without a court-membership check.
+
+    `prefetch_frames` > 0 decodes that many upcoming frames on a background
+    thread, for a consumer that calls `read_frame` on every frame (the render).
+    The default 0 decodes lazily, which suits tracking-only callers that read
+    pixels only at checkpoints. The decoded frames are identical either way.
 
     `checkpoint_policy` selects how `TrackManager`'s decisions reach the
     predictor. It does not change what those decisions are.
@@ -320,6 +327,19 @@ def drive_sam2(
 
     seed_boxes = dict(zip(obj_ids0, det0.xyxy))
 
+    # Frames the consumer will read, decoded ahead on one thread (cv2 releases
+    # the GIL) so the decode overlaps propagation instead of stalling it.
+    reader_pool = ThreadPoolExecutor(max_workers=1) if prefetch_frames else None
+    pending: dict[int, Future] = {}
+
+    def frame_reader(fid: int) -> Callable[[], np.ndarray]:
+        if reader_pool is None:
+            return functools.lru_cache(maxsize=1)(lambda: read_frame(fid))
+        for ahead in range(fid, min(fid + prefetch_frames, num_frames)):
+            if ahead not in pending:
+                pending[ahead] = reader_pool.submit(read_frame, ahead)
+        return pending.pop(fid).result
+
     def frames() -> Iterator[Sam2FrameResult]:
         next_new_fid = 1
         last_masks_by_id: dict[int, np.ndarray] = {}
@@ -331,6 +351,11 @@ def drive_sam2(
             chunk_len = min(check_every, num_frames - 1 - t)
             chunk_end = t
 
+            # Each chunk restarts on frame t, which the previous chunk already
+            # yielded. Skipping that recompute (starting at t + 1) looks free --
+            # same memory, same frame -- but it is not bit-identical: the stored
+            # and recomputed frame-t outputs differ, and on FelixClaar skipping
+            # it cost 2 wrong-identity frames (95.01% -> 94.92%). Keep it.
             with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
                 for fid, obj_ids, mask_logits in predictor.propagate_in_video(
                         state, start_frame_idx=t, max_frame_num_to_track=chunk_len):
@@ -341,18 +366,19 @@ def drive_sam2(
                     track_manager.update_from_propagation(fid, obj_ids, masks)
 
                     boxes_this = sv.mask_to_xyxy(masks=masks)
+                    reader = frame_reader(fid)
                     yield Sam2FrameResult(
                         frame_idx=fid,
                         player_ids=np.asarray(obj_ids, dtype=int),
                         masks=masks,
                         boxes=boxes_this,
-                        read_frame=functools.lru_cache(maxsize=1)(lambda idx=fid: read_frame(idx)),
+                        read_frame=reader,
                     )
 
                     chunk_end = fid
                     if fid == t + chunk_len:
                         last_masks_by_id = dict(zip(obj_ids, masks))
-                        last_frame = read_frame(fid)
+                        last_frame = reader()  # decoded once, shared with the consumer
                     pbar.update(1)
 
             next_new_fid = chunk_end + 1
@@ -415,5 +441,7 @@ def drive_sam2(
                                 clear_old_points=True,
                             )
         pbar.close()
+        if reader_pool is not None:
+            reader_pool.shutdown(cancel_futures=True)
 
     return track_manager, seed_boxes, frames()

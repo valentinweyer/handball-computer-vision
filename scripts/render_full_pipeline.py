@@ -27,6 +27,8 @@ players `P<id>` -- see --numbers.
 from __future__ import annotations
 
 import argparse
+from collections import deque
+from concurrent.futures import ThreadPoolExecutor
 import json
 import os
 from pathlib import Path
@@ -428,7 +430,12 @@ def annotate_frame(
         class_id=lookup.copy(),
         tracker_id=np.asarray(player_ids, dtype=int),
     )
-    if any(mask is not None for mask in masks):
+    if isinstance(masks, np.ndarray):
+        drawn.mask = masks  # SAM2's (N, H, W) stack; nothing to fill in or restack
+        annotated = mask_annotator.annotate(
+            scene=annotated, detections=drawn, custom_color_lookup=lookup
+        )
+    elif any(mask is not None for mask in masks):
         blank = np.zeros(frame_bgr.shape[:2], dtype=bool)
         drawn.mask = np.stack([blank if mask is None else mask for mask in masks])
         annotated = mask_annotator.annotate(
@@ -872,6 +879,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
         desc=f"full pipeline sam2 {source.stem}",
         reid_encoder=build_reid_encoder(args),
+        prefetch_frames=4,
     )
     registry = track_manager.registry
 
@@ -900,11 +908,31 @@ def render_sam2(args: argparse.Namespace) -> dict:
     number_reads: list[dict] = []
     presence: dict[str, list[int]] = {}
     resolver = NumberIdentityResolver(registry, voter)
+
+    # Geometry packing, drawing and encoding run on one worker, in frame order,
+    # so SAM2 propagates the next frame meanwhile: the generator only advances
+    # when this loop asks for the next frame. Everything handed over is final
+    # for its frame -- labels are computed here because they read vote state
+    # the next frame changes.
+    def draw(frame_idx, frame_bgr, player_ids, boxes, masks, color_lookup, team_ids, labels):
+        nonlocal preview
+        geometry.add(frame_idx, player_ids, boxes, masks, color_lookup, team_ids)
+        annotated = annotate_frame(
+            frame_bgr, boxes, player_ids, color_lookup, masks, labels,
+            mask_annotator, label_annotator,
+        )
+        draw_legend(annotated, palette)
+        writer.write(annotated)
+        if preview is None and frame_idx >= info.total_frames // 2:
+            preview = annotated.copy()
+
+    drawer = ThreadPoolExecutor(max_workers=1)
+    in_flight: deque = deque()
     for result in frames:
         frame_rgb = result.read_frame()
         frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
         player_ids = result.player_ids
-        masks = list(result.masks)
+        masks = result.masks
         players = [
             registry.live.get(int(pid))
             or next(p for p in reversed(registry.retired) if p.player_id == int(pid))
@@ -917,7 +945,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             if len(number_xyxy):
                 ocr_frames += 1
                 pairs = unique_pairs(match_numbers_to_players(
-                    np.stack(masks), number_xyxy, frame_bgr.shape
+                    masks, number_xyxy, frame_bgr.shape
                 ))
                 pairs = [
                     (p, n) for p, n in pairs
@@ -954,22 +982,19 @@ def render_sam2(args: argparse.Namespace) -> dict:
         if result.frame_idx % args.ocr_every == 0:
             resolver.resolve(result.frame_idx)
         color_lookup = [color_index(player) for player in players]
-        geometry.add(
-            result.frame_idx, player_ids, result.boxes, masks, color_lookup,
+        in_flight.append(drawer.submit(
+            draw, result.frame_idx, frame_bgr, player_ids, result.boxes, masks, color_lookup,
             [player.voted_team_id for player in players],
-        )
-        annotated = annotate_frame(
-            frame_bgr, result.boxes, player_ids, color_lookup, masks,
             voted_labels(player_ids, color_lookup, voter, roster,
                          canonical=registry.canonical),
-            mask_annotator, label_annotator,
-        )
-        draw_legend(annotated, palette)
-        writer.write(annotated)
+        ))
         frames_written += 1
-        if preview is None and result.frame_idx >= info.total_frames // 2:
-            preview = annotated.copy()
+        while len(in_flight) > 2:
+            in_flight.popleft().result()  # bounded, and re-raises a worker error
 
+    while in_flight:
+        in_flight.popleft().result()
+    drawer.shutdown()
     writer.release()
     if preview is not None:
         if preview.shape[1] > 1600:
