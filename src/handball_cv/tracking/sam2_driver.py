@@ -132,12 +132,127 @@ def filter_edge_fragments(
     return out
 
 
+_PINNED_MASKS: torch.Tensor | None = None
+
+
+def _to_host(masks: torch.Tensor) -> np.ndarray:
+    """Copy a CUDA bool stack to host through a reused pinned buffer.
+
+    On GB10 a plain `.cpu()` of the 13 x 1080p stack measured ~67 ms -- it
+    allocates and faults in fresh pageable memory every frame -- against ~1 ms
+    into page-locked memory, with identical bytes. The returned array views the
+    buffer, so it is only valid until the next call; `masks_from_logits` copies
+    out of it before returning.
+    """
+    global _PINNED_MASKS
+    if not masks.is_cuda:
+        return masks.numpy()
+    if (_PINNED_MASKS is None or _PINNED_MASKS.shape[1:] != masks.shape[1:]
+            or _PINNED_MASKS.shape[0] < masks.shape[0]):
+        rows = max(masks.shape[0], 32)
+        _PINNED_MASKS = torch.empty((rows, *masks.shape[1:]), dtype=torch.bool, pin_memory=True)
+    view = _PINNED_MASKS[:masks.shape[0]]
+    view.copy_(masks)
+    return view.numpy()
+
+
 def masks_from_logits(mask_logits: torch.Tensor) -> np.ndarray:
     """(N, 1, H, W) logits -> (N, H, W) bool, edge-fragment filtered."""
-    masks = (mask_logits > 0.0).squeeze(1).cpu().numpy().astype(bool)
+    masks = _to_host((mask_logits > 0.0).squeeze(1))
     return np.array([
         filter_edge_fragments(m, relative_distance=0.03) for m in masks
     ])
+
+
+class LazyFrames:
+    """SAM2's `inference_state["images"]`, decoded when SAM2 asks for a frame.
+
+    Upstream `init_state` decodes every JPEG of the clip before tracking starts
+    and holds them as one float32 (N, 3, 1024, 1024) tensor: 12.6 MB a frame,
+    about 19 GB and most of a minute for a 1500-frame window, and the reason
+    long windows run out of memory. SAM2 only ever indexes it
+    (`_get_image_feature`), so this decodes on demand, a few frames ahead on a
+    thread, and keeps nothing behind but the last two frames.
+
+    The values are upstream's to the bit: the same `_load_img_as_tensor` (PIL
+    resize, /255 in float64), the same float64 -> float32 cast the preload's
+    assignment performs, then the same elementwise `-= mean` and `/= std` on the
+    compute device, applied per frame instead of to the whole stack.
+    """
+
+    MEAN = (0.485, 0.456, 0.406)  # load_video_frames' defaults, which init_state uses
+    STD = (0.229, 0.224, 0.225)
+
+    def __init__(self, paths: list[Path], image_size: int, device, ahead: int = 2) -> None:
+        from PIL import Image
+        from sam2.utils.misc import _load_img_as_tensor
+
+        self._load_img = _load_img_as_tensor
+        self.paths = [str(p) for p in paths]
+        self.image_size = image_size
+        self.device = device
+        self.ahead = ahead
+        with Image.open(self.paths[0]) as first:
+            self.video_width, self.video_height = first.size
+        self.mean = torch.tensor(self.MEAN, dtype=torch.float32)[:, None, None].to(device)
+        self.std = torch.tensor(self.STD, dtype=torch.float32)[:, None, None].to(device)
+        self._pool = ThreadPoolExecutor(max_workers=1)
+        self._pending: dict[int, Future] = {}
+        self._recent: dict[int, torch.Tensor] = {}
+
+    def __len__(self) -> int:
+        return len(self.paths)
+
+    def _decode(self, idx: int) -> torch.Tensor:
+        img, _, _ = self._load_img(self.paths[idx], self.image_size)
+        return img.to(torch.float32)
+
+    def __getitem__(self, idx: int) -> torch.Tensor:
+        idx = int(idx)
+        if idx in self._recent:
+            return self._recent[idx]
+        future = self._pending.pop(idx, None)
+        image = future.result() if future is not None else self._decode(idx)
+        for later in range(idx + 1, min(idx + 1 + self.ahead, len(self))):
+            if later not in self._pending:
+                self._pending[later] = self._pool.submit(self._decode, later)
+        image = image.to(self.device)
+        image -= self.mean
+        image /= self.std
+        self._recent = {k: v for k, v in self._recent.items() if k == idx - 1}
+        self._recent[idx] = image
+        return image
+
+
+def init_state_lazily(predictor, frame_cache_dir: Path) -> dict:
+    """`predictor.init_state` with `LazyFrames` in place of the whole-clip preload.
+
+    Only upstream's own `SAM2VideoPredictor` loads frames through the function
+    replaced here; anything else gets its plain `init_state`.
+    """
+    try:
+        import sam2.sam2_video_predictor as video_predictor
+    except ImportError:
+        return predictor.init_state(video_path=str(frame_cache_dir))
+    if not isinstance(predictor, video_predictor.SAM2VideoPredictor):
+        return predictor.init_state(video_path=str(frame_cache_dir))
+
+    paths = sorted(
+        (p for p in Path(frame_cache_dir).iterdir() if p.suffix in (".jpg", ".jpeg", ".JPG", ".JPEG")),
+        key=lambda p: int(p.stem),  # upstream's frame order
+    )
+
+    def load_lazily(video_path, image_size, offload_video_to_cpu, async_loading_frames=False,
+                    compute_device=torch.device("cuda"), **_):
+        frames = LazyFrames(paths, image_size, compute_device)
+        return frames, frames.video_height, frames.video_width
+
+    preload = video_predictor.load_video_frames
+    video_predictor.load_video_frames = load_lazily
+    try:
+        return predictor.init_state(video_path=str(frame_cache_dir))
+    finally:
+        video_predictor.load_video_frames = preload
 
 
 @dataclass
@@ -304,6 +419,12 @@ def drive_sam2(
         from sam2.build_sam import build_sam2_video_predictor
 
         predictor = build_sam2_video_predictor(SAM2_CONFIG, checkpoint)
+        # build_sam2_video_predictor sets fill_hole_area=8, but hole filling needs
+        # the compiled sam2._C extension, which this checkout does not have; it
+        # warns and returns the mask unchanged. Every scored result was made that
+        # way, so pin it: a checkout that does build _C must not silently start
+        # filling holes and change the tracker's output.
+        predictor.fill_hole_area = 0
     else:
         predictor = predictor_factory(checkpoint)
 
@@ -318,7 +439,10 @@ def drive_sam2(
     is_gk0 = det0.class_id == goalkeeper_class_id
     obj_ids0 = track_manager.seed(0, det0.xyxy, frame0, is_gk0)
 
-    state = predictor.init_state(video_path=str(frame_cache_dir))
+    # The default predictor gets frames on demand (LazyFrames, identical values);
+    # an injected backend keeps its own init_state untouched.
+    state = (init_state_lazily(predictor, frame_cache_dir) if predictor_factory is None
+             else predictor.init_state(video_path=str(frame_cache_dir)))
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         for oid, xyxy in zip(obj_ids0, det0.xyxy):
             predictor.add_new_points_or_box(
