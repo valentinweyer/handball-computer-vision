@@ -107,6 +107,11 @@ test itself can be built, and they are the reason this item is still open:
   rather than fine-tuned. `run_court_mapping.py` now pins version 3. No
   retraining and no `inference` upgrade is needed, so the pinned aarch64/GB10
   torch install does not have to be touched.
+  **Superseded 2026-10-14:** that mAP ranking does not hold on the export's
+  held-out test images. Version 4 runs locally from its ONNX export
+  (`handball_cv.court.rfdetr_keypoints`) and beats version 3 (a YOLO11s-pose,
+  not YOLOv8x) on goal views (recall 0.97 vs 0.84, court error 39 vs 56 cm) and
+  decisively on middle-court views (0.94 vs 0.63, 75 vs 653 cm).
 - **The estimator cannot tell a good fit from a bad one.** `ViewTransformer`
   calls `cv2.findHomography(source, target)` with no method argument, so it is
   plain least squares over every point -- no RANSAC, and the inlier mask is
@@ -384,6 +389,41 @@ Artifacts: `runs/court_mapping/Melsungen_court_overlay_h264.mp4` (the overlay
 render), `Melsungen_keypoints.json` (per-frame keypoints, so re-scoring needs no
 inference pass) and `Melsungen_court_perframe.json`.
 
+### The template's centre circle is not the court's (found 2026-09-25)
+
+The IHF throw-off circle is 4 m across, so all four of its landmarks sit 200 cm
+from the centre. The `sports` fork's template puts KP16/KP18 (left/right) at
+`center_circle_radius=180`, and KP15/KP19 (near/far arms) at y=1150/850 -- the
+goal-post offsets, 150 cm from the centre. So the template's "circle" is a
+180 x 150 cm ellipse.
+
+The hand labels side with the rules. Along the centre line, the three labelled
+points KP14/KP17/KP20 fix every position exactly (a 1-D projective map needs
+three), and on the 55 images that have all three, the labelled arms sit at a
+median of **190 cm (KP15) and 199 cm (KP19)** from the centre (IQR 168-211).
+Refitting the export with a true 4 m circle:
+
+```
+                          template circle     4 m circle
+middle-court (62 images)  fit 28.1 cm         fit 17.7 cm
+                          leave-one-out 51.4  leave-one-out 40.3
+all 892 images            fit 32.9 cm         fit 30.9 cm
+```
+
+The error is concentrated in the framing that already fails (the circle is most
+of the evidence there), and it is on the court side only: the keypoint model is
+trained in image space, so fixing it needs no retraining.
+
+**First step:** in the fork (`valentinweyer/roboflow-sports-handball`,
+`feat/handball`, `sports/handball/config.py`) set `center_circle_radius=200` and
+place KP15/KP19 at y=1200/800 from the radius rather than the goal posts; check
+that `draw_court` follows. Then rerun `scripts.recover_court_keypoint_mapping`
+(`--compare` must still match) and the court tests. Caveat: the 4 m circle is
+mandatory at IHF events and senior professional leagues only since 1 July 2022,
+so older or lower-league footage may have no circle, or a different one --
+worth checking before trusting circle points on such clips. Scores from
+`scripts/vlm_court_keypoints.py` in cm will shift once this lands.
+
 ---
 
 ## 3. Bench occupancy as an identity constraint (blocked on the court test)
@@ -505,7 +545,53 @@ would change what the tracker and the reader see on every clip.
 
 ---
 
-## 7. Housekeeping
+## 7. Optimized inference: RF-DETR detection, court keypoints, SAM2 (deferred 2026-10-15)
+
+Speed work, parked while the focus is pipeline quality. What is measured so far
+(GB10, our own fine-tunes):
+
+```
+court keypoints (RF-DETR keypoint, 576 px), per frame
+  ONNX on CPU (onnxruntime, current runner)            ~385-396 ms
+  rfdetr predict(), eager PyTorch GPU (finetune venv)     40 ms   end to end
+  rfdetr predict() after optimize_for_inference()         45 ms   (slower)
+  TorchScript in this venv, preprocessing on GPU          26 ms   end to end
+JPEG decode of a 1080p frame (CPU)                        19 ms
+RF-DETR Large detector, rfdetr predict() in the finetune
+  venv's GPU cache pass (cache_number_detections.py)    ~35 ms   (53 s / 1500 frames incl. load)
+SAM2 reprompt tracker                                  ~0.46 s   (CLAUDE.md; docs/sam2-speed-research.md)
+```
+
+TorchScript parity with the ONNX export: visible keypoints median 0.06 px, max
+0.7 px at 1080p **with TF32 off**; with TF32 on, median 0.26 px, max 5 px -- a
+GPU runner must pin TF32 off. The trace was built in the finetune venv
+(`torch.jit.trace` of `model.model.model` after `DinoV2.export()` at 576x576)
+and loads in this venv with plain torch (both are torch 2.9.1+cu130); no rfdetr
+here, which matters because rfdetr needs transformers>=5.1 and this project
+pins <5.
+
+**Untested and probably fastest: TensorRT.** Installable for this machine:
+`tensorrt-cu13` 11.4 has aarch64 wheels on pypi.nvidia.com, and
+`onnxruntime-gpu` 1.31 has aarch64 CUDA-13 wheels on PyPI (an earlier note
+here that none existed was wrong). Roboflow's own stack does not fit:
+`inference-models`' `trt10` extra needs `tensorrt-cu12` (TensorRT 10) and its
+GPU-ONNX extras pin `onnxruntime-gpu` < 1.23/1.24, which on aarch64 is the
+Jetson build only; it also loads models by Roboflow ID, not local weights.
+
+**First step:** in a throwaway venv (not either project's -- the CUDA torch
+install is fragile), install `tensorrt-cu13` and `onnxruntime-gpu`, build FP32
+and FP16 engines from `rfdetr-handball-finetune/exports/court-keypoints-local/
+rfdetr-keypoint-preview.onnx`, and measure speed and keypoint parity against
+the ONNX output as above. If it wins, repeat for the detector export, then
+decide where it is installed for real. JPEG decode (19 ms) becomes the floor
+once the model is a few ms: overlap it with inference or decode on GPU (nvJPEG
+/ torchvision.io.decode_jpeg on cuda). SAM2 has its own shortlist in
+`docs/sam2-speed-research.md` (same-weight compilation, then smaller
+checkpoints); TensorRT for its image encoder belongs to the same experiment.
+
+---
+
+## 8. Housekeeping
 
 - ~~`pytest -q tests` fails collection on duplicated basenames~~ -- fixed in
   `a0a5a9e` by deleting the superseded root copies. The documented command now
@@ -649,6 +735,20 @@ landmarks all in the left half of that frame, the near sideline and the far
 right are extrapolation. That is the conditioning problem the estimator work in
 item 2 has to answer, and the reason it needs a residual and an abstain path
 rather than better tuning.
+
+**Follow-up (2026-09-24): the shipped mapping was the half-turned twin.** A
+handball court is unchanged by a 180-degree turn, so the residual, the
+leave-one-out error and the `flip_idx` check all score a mapping and its turned
+twin identically, and the recovery's seeds tie between them. The one it shipped
+numbered every landmark from the wrong end: KP01 "TL-Corner" landed at the
+bottom-right of the frame, and the frame's left goal carried KP28-KP33. The
+annotation template (Roboflow, drawn like `draw_court`: far sideline on top,
+KP01 top-left, KP01-KP13 on the left goal) settles which is meant. Measured with
+`keypoints.upright` over the 892 images: the corrected mapping is upright on 887,
+the old one on 0 (the other 5 are mirrored annotation slips). The recovery now
+keeps the upright twin, and `test_court_keypoints.py` pins it. Homographies built
+with the old mapping were valid, only turned: distances and on-court tests are
+unaffected, "left goal" and minimap orientation were reversed.
 
 **Not fixed:** `experiments/sam2_baseline/run_pipeline.py:167` and
 `experiments/team_gated_tracking/run_pipeline.py:180` carry the same wrong

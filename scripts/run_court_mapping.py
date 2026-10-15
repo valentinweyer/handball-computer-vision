@@ -41,6 +41,9 @@ PLAYER_CLASS_IDS = [GOALKEEPER_CLASS_ID, FIELD_PLAYER_CLASS_ID]
 # on the same 892 images, and Roboflow reports it as the better model besides:
 # mAP 99.5 / precision 99.96 / recall 100.0, against 97.0 / 98.6 / 97.9 for
 # version 4 (which was trained from scratch rather than fine-tuned).
+# Measured since on the export's held-out test images, version 4 is the better
+# model (middle-court court error 75 cm against 653 cm); it runs from its ONNX
+# export through handball_cv.court.rfdetr_keypoints, see scripts/render_court_view.py.
 KEYPOINT_DETECTION_MODEL_ID = "keypointv333-uwois-xprdi/3"
 KEYPOINT_DETECTION_MODEL_CONFIDENCE = 0.5
 KEYPOINT_ANCHOR_CONFIDENCE = 0.5

@@ -42,6 +42,7 @@ from handball_cv.court.keypoints import (
     KEYPOINT_COUNT,
     KEYPOINT_FLIP_INDEX,
     KEYPOINT_TO_VERTEX,
+    upright,
 )
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -175,6 +176,24 @@ def score(files: list[Path], mapping, vertices: np.ndarray) -> tuple[float, floa
     return float(np.median(fit_a)), float(np.median(loo_a)), float(100 * (fit_a < 50).mean())
 
 
+def half_turn(vertices: np.ndarray) -> list[int]:
+    """``half_turn(v)[i]`` is the vertex at vertex ``i`` turned through 180 degrees."""
+    turned = vertices.max(axis=0) - vertices
+    return [int(np.argmin(np.linalg.norm(vertices - t, axis=1))) for t in turned]
+
+
+def upright_count(files: list[Path], mapping, vertices: np.ndarray) -> int:
+    """Images whose labels see the court the way the annotation template does."""
+    count = 0
+    for path in files:
+        label = load_label(path)
+        if label is None:
+            continue
+        slots = visible(label)
+        count += upright(image_points(label, slots), vertices[[mapping(s) for s in slots]])
+    return count
+
+
 def flip_agreement(mapping, vertices: np.ndarray) -> int:
     """Slots where the export's own mirror table agrees with the mapping."""
     mirrored = vertices.copy()
@@ -258,6 +277,16 @@ def main() -> None:
 
     recovered = tuple(mapping[s] for s in range(KEYPOINT_COUNT))
     assert sorted(recovered) == list(range(KEYPOINT_COUNT)), "mapping is not a permutation"
+
+    # The court is unchanged by a half turn, so the seeds above tie between a
+    # mapping and its turned twin. Keep the one the annotation template matches.
+    turn = half_turn(vertices)
+    turned = tuple(turn[v] for v in recovered)
+    kept = upright_count(files, lambda s: recovered[s], vertices)
+    other = upright_count(files, lambda s: turned[s], vertices)
+    if other > kept:
+        recovered, kept, other = turned, other, kept
+    print(f"orientation: upright on {kept}/{len(files)} images (half-turned twin: {other})")
 
     print(f"\nrecovered all {len(mapping)}/{KEYPOINT_COUNT} slots (bijection confirmed)\n")
     fit0, loo0, under0 = score(files, lambda s: s, vertices)

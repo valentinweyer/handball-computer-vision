@@ -1,7 +1,7 @@
 """Translate the court-keypoint model's output order into court template vertices.
 
-The keypoint model (Roboflow ``keypointv333-uwois-xprdi``, a YOLO-pose network
-trained from ``notebooks/handball_court_keypoint_training.ipynb``) emits 37
+The keypoint model (Roboflow ``keypointv333-uwois-xprdi``: version 3 is a
+YOLO11s-pose network, version 4 an RF-DETR keypoint model) emits 37
 landmarks in the slot order its training export happened to use. The ``sports``
 library's :class:`~sports.handball.CourtConfiguration` also lists 37 vertices,
 in a *different* order. Nothing previously translated between the two:
@@ -42,17 +42,39 @@ keypoints -- the minimum a homography needs, so nothing actually agreed --
 against 8 once both halves are corrected, with the reprojected 6 m and 9 m lines
 landing on the painted arcs.
 
-Use version 3 of the checkpoint. Version 4 is served as
-``rfdetr-keypoint-preview``, which the pinned ``inference`` 0.62.0 has no
-implementation class for, so ``get_model`` raises ``KeyError`` before any
-inference happens; version 3 loads and runs locally and is the better model
-anyway (mAP 99.5 against 97.0).
+Orientation
+-----------
+A handball court is unchanged by a half turn, so neither the residual nor the
+mirror table can tell a mapping from the same mapping turned through 180
+degrees: both fit every image equally well. The first shipped mapping was the
+turned one, and fitted perfectly while numbering every landmark from the wrong
+end -- KP01 "TL-Corner" at the bottom-right of the frame.
+
+The annotation template settles it. It is drawn like ``draw_court`` and like
+the broadcast camera: far sideline (court y=2000) on top, KP01 top-left,
+KP01-KP13 on the left goal. :func:`upright` measures that orientation from the
+labels themselves; over the 892 labelled images the shipped mapping is upright
+on 887 and the turned one on 0. The other 5 are mirrored under either mapping
+-- annotation slips, not a third orientation.
+
+Both versions share this slot order: Roboflow's ``keypoints_metadata`` gives
+the annotators' KP name for every slot, and it matches this mapping on all 37
+(pinned in ``tests/unit/test_court_rfdetr_keypoints.py``).
+
+Version 4 is served as ``rfdetr-keypoint-preview``, which the pinned
+``inference`` 0.62.0 has no implementation class for, so ``get_model`` raises
+``KeyError``; it runs from its ONNX export through
+:mod:`handball_cv.court.rfdetr_keypoints`. Roboflow's mAP (99.5 for version 3,
+97.0 for version 4) favoured version 3, but on the export's held-out test images
+version 4 is the better model, decisively on middle-court views -- see that
+module for the numbers.
 """
 
 from __future__ import annotations
 
 from typing import Iterable, Sequence
 
+import cv2
 import numpy as np
 
 __all__ = [
@@ -62,20 +84,22 @@ __all__ = [
     "KEYPOINT_FLIP_INDEX",
     "vertex_indices",
     "court_points",
+    "upright",
 ]
 
 KEYPOINT_COUNT = 37
 
 #: ``KEYPOINT_TO_VERTEX[slot]`` is the index into ``CourtConfiguration.vertices``
-#: that the model's 0-based keypoint ``slot`` actually denotes. A permutation.
+#: that the model's 0-based keypoint ``slot`` actually denotes. A permutation,
+#: oriented so the labels are :func:`upright` (see "Orientation" above).
 KEYPOINT_TO_VERTEX: tuple[int, ...] = (
-    31, 28, 25, 32, 27, 19,
-    16, 13,  0,  1,  4,  5,
-     2,  3, 30, 29, 17, 15,
-    14, 18, 26, 23,  6,  9,
-     8, 21, 20, 22, 12, 11,
-    10, 24,  7, 36, 35, 34,
-    33,
+     1,  4,  7,  0,  5, 13,
+    16, 19, 32, 31, 28, 27,
+    30, 29,  2,  3, 15, 17,
+    18, 14,  6,  9, 26, 23,
+    24, 11, 12, 10, 20, 21,
+    22,  8, 25, 33, 34, 35,
+    36,
 )
 
 #: The export's left/right mirror table, verbatim from its ``data.yaml``. Kept
@@ -124,3 +148,21 @@ def court_points(slots: Iterable[int], vertices: Sequence[Sequence[float]]) -> n
             f"expected {KEYPOINT_COUNT} court vertices, got {table.shape[0]}"
         )
     return table[vertex_indices(slots)]
+
+
+def upright(image_xy: np.ndarray, court_xy: np.ndarray) -> bool:
+    """True if labelled points see the court the way the annotation template does.
+
+    That is court +x pointing right in the image and court +y pointing up (far
+    sideline, y=2000, on top), judged through the points' homography at their
+    centroid, where it is best conditioned. A half-turned mapping fails both
+    tests; a mirrored labelling fails one.
+    """
+    court_xy = np.asarray(court_xy, dtype=np.float32)
+    matrix, _ = cv2.findHomography(court_xy, np.asarray(image_xy, dtype=np.float32))
+    if matrix is None:
+        return False
+    centre = court_xy.mean(axis=0)
+    probe = np.array([[centre, centre + (100.0, 0.0), centre + (0.0, 100.0)]], np.float32)
+    origin, along_x, along_y = cv2.perspectiveTransform(probe, matrix)[0]
+    return bool(along_x[0] > origin[0] and along_y[1] < origin[1])

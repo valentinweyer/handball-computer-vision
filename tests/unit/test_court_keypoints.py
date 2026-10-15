@@ -24,6 +24,7 @@ from handball_cv.court.keypoints import (
     KEYPOINT_TO_VERTEX,
     SELF_MIRRORING_SLOTS,
     court_points,
+    upright,
     vertex_indices,
 )
 
@@ -156,6 +157,30 @@ class HomographyResidualTests(unittest.TestCase):
     def test_the_naive_identity_mapping_is_off_by_metres(self):
         naive = tuple(range(KEYPOINT_COUNT))
         self.assertGreater(self.median_residual(naive), 500.0)
+
+    def upright_share(self, mapping):
+        return float(np.mean([
+            upright(src, self.vertices[[mapping[s] for s in slots]])
+            for slots, src in self.samples
+        ]))
+
+    def half_turned(self):
+        turned = self.vertices.max(axis=0) - self.vertices
+        turn = [int(np.argmin(np.linalg.norm(self.vertices - t, axis=1))) for t in turned]
+        return tuple(turn[v] for v in KEYPOINT_TO_VERTEX)
+
+    def test_labels_come_out_the_way_the_template_draws_them(self):
+        # KP01 top-left, far sideline on top: 887 of 892 over the full export.
+        self.assertGreater(self.upright_share(KEYPOINT_TO_VERTEX), 0.95)
+
+    def test_the_half_turned_twin_fits_as_well_and_is_never_upright(self):
+        # Why the residual alone once shipped the turned mapping: the court is
+        # symmetric under a half turn, so only the orientation tells them apart.
+        twin = self.half_turned()
+        self.assertAlmostEqual(
+            self.median_residual(twin), self.median_residual(KEYPOINT_TO_VERTEX), delta=1.0
+        )
+        self.assertLess(self.upright_share(twin), 0.05)
 
 
 if __name__ == "__main__":
