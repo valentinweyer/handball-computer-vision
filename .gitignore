@@ -170,3 +170,14 @@ notebooks/handball_ai_how_to_detect_track_and_identify_handball_players_sam3_1.i
 # 135.9 MB because directory_level_references repeats a folder's reference
 # list on every file in it, so it is kept out of the repository.
 docs/outputs-migration-manifest.csv
+
+# Shared asset symlinks used by isolated experiment worktrees.
+/sam3
+/sam3-checkpoints
+/sam2-upstream
+/segment-anything-2-real-time
+/data/cache
+/data/raw
+/outputs
+/source
+/runs/tracklet_labels
