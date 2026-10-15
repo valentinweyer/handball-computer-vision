@@ -90,6 +90,10 @@ conda.env
 /data/raw/*
 /data/interim/*
 /data/cache/*
+# The ball labeller's rendered frames and crop cache (~240 MB); the label JSONs
+# beside them are tracked, and scripts/label_ball_clip.py regenerates these.
+/data/annotations/ball/*_label_frames/
+/data/annotations/ball/*_label_cache/
 /models/*
 !/models/README.md
 *.h5

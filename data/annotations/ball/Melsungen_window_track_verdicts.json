@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "video": "Melsungen_window",
+  "labelled_at": "2026-09-15T21:12:48.940933+00:00",
+  "method": "every trajectory the motion pipeline proposed over the full 1498-frame clip was read on a per-track contact sheet and judged by eye; tracks against crowd backgrounds were re-read at tight zoom before a verdict",
+  "measures": "track precision only -- this says nothing about what was missed",
+  "tracks": 21,
+  "tracks_ball": 18,
+  "track_precision": 0.857,
+  "flight_frames_ball": 161,
+  "flight_frames_total": 181,
+  "frame_precision": 0.89,
+  "labels": {
+    "765-782": {
+      "verdict": "ball",
+      "note": "clean flight across the court, ends as a player reaches to catch",
+      "frames": 18
+    },
+    "926-939": {
+      "verdict": "ball",
+      "note": "airborne above the court, seen against the crowd",
+      "frames": 14
+    },
+    "289-300": {
+      "verdict": "ball",
+      "note": "flight over the far boards",
+      "frames": 12
+    },
+    "883-894": {
+      "verdict": "ball",
+      "note": "airborne above the court, seen against the crowd",
+      "frames": 12
+    },
+    "230-239": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 10
+    },
+    "1305-1314": {
+      "verdict": "not_ball",
+      "note": "a player's raised bare forearm, just outside the person box",
+      "frames": 10
+    },
+    "260-268": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 9
+    },
+    "639-647": {
+      "verdict": "ball",
+      "note": "airborne above the court, seen against the crowd",
+      "frames": 9
+    },
+    "825-833": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 9
+    },
+    "520-527": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 8
+    },
+    "964-971": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 8
+    },
+    "1132-1139": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 8
+    },
+    "1271-1278": {
+      "verdict": "ball",
+      "note": "flight in front of the goal",
+      "frames": 8
+    },
+    "1000-1006": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 7
+    },
+    "1465-1471": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 7
+    },
+    "478-483": {
+      "verdict": "ball",
+      "note": "flight above the boards",
+      "frames": 6
+    },
+    "604-609": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 6
+    },
+    "97-101": {
+      "verdict": "not_ball",
+      "note": "scrolling text on an LED advertising board",
+      "frames": 5
+    },
+    "824-828": {
+      "verdict": "not_ball",
+      "note": "a player's hand and forearm against the jersey",
+      "frames": 5
+    },
+    "973-977": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 5
+    },
+    "1419-1423": {
+      "verdict": "ball",
+      "note": "flight across open court",
+      "frames": 5
+    }
+  }
+}

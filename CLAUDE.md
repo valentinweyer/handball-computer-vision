@@ -10,7 +10,7 @@ it when the task touches the pipeline.
 Also: `docs/architecture.md` (dependency rules), `docs/legacy-layout.md`,
 `docs/tracking-evaluation.md` (per-frame tracker measurements; supersedes older
 tracker claims), `docs/identity-decoupling.md`,
-`docs/overlap-mask-experiment.md`.
+`docs/overlap-mask-experiment.md`, `docs/ball-tracking.md`.
 
 ## Layout
 
