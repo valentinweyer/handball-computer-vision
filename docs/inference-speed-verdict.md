@@ -72,6 +72,10 @@ during SAM2 renders.** `drive_sam2` yields each frame from inside
 and autocast state stays on while the generator is suspended, so the render
 loop's reader calls run under it. The 0.858 reader accuracy was measured in
 FP32, and every `*_reads.json` written by a SAM2 render holds BF16 reads.
+Measured on the same labelled set run under that autocast: accuracy at the
+shipping 0.5 confidence gate is 0.86 either way; 6 of 621 crops read
+differently and 4 of them cross the gate. Worth fixing for consistency, not
+for accuracy.
 
 ## 1. Per-frame time budget (default SAM2 render, Han-Ber4-class load of about 13.4 objects)
 

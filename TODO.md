@@ -563,8 +563,10 @@ of the tracking loop, so further gains change output and need re-scoring.
 the consumer, so the render's reader calls and every `*_reads.json` from a SAM2
 render are BF16 while the 0.858 accuracy was measured in FP32. Fixing it (run
 the reader under `torch.autocast(..., enabled=False)`, or yield outside the
-block) changes reads, so measure the reader both ways on the 323 labelled crops
-first.
+block) changes reads. Measured on the labelled 1080p set (scripts.benchmark_jersey_parseq,
+621 crops): at the shipping 0.5 gate accuracy is 0.86 in both FP32 and BF16; 6
+crops read differently and 4 cross the gate, so the fix is consistency, not a
+measurable accuracy gain.
 
 What was measured before that round
 (GB10, our own fine-tunes):
