@@ -552,7 +552,9 @@ would change what the tracker and the reader see on every clip.
 
 ## 7. Optimized inference: RF-DETR detection, court keypoints, SAM2 (deferred 2026-10-15)
 
-Speed work, parked while the focus is pipeline quality. What is measured so far
+Speed work, parked while the focus is pipeline quality. The ranked plan for
+detection, tracking and the stages wired to them (code-read, not yet timed) is
+`docs/inference-speed-verdict.md`. What is measured so far
 (GB10, our own fine-tunes):
 
 ```
