@@ -2,7 +2,7 @@
 
 Version 4 of ``keypointv333-uwois-xprdi`` is an ``rfdetr-keypoint-preview``
 model, a type the pinned ``inference`` 0.62.0 cannot load, which is why the
-pipeline ran the YOLO11s-pose version 3 instead. Run directly from its ONNX
+pipeline once ran the YOLO11s-pose version 3 (now retired) instead. Run directly from its ONNX
 export (fetched read-only from Roboflow's ``/ort`` endpoint; the PyTorch file
 is not downloadable on this plan), it is the better model on the export's own
 held-out test images, decisively so on the middle-court framing:
@@ -33,7 +33,9 @@ has ``Court`` at logit 0 and a ``(37, 8)`` block. In both, ``Court`` is the last
 keypoint group, which is how :func:`decode_court_keypoints` tells them apart. The slot order is the export's, so slots go
 through :data:`~handball_cv.court.keypoints.KEYPOINT_TO_VERTEX` like version 3's;
 Roboflow's ``keypoints_metadata`` names agree with that mapping on all 37 slots
-for both versions.
+for both versions. Our own fine-tune, which ``scripts/render_court_view.py`` runs
+by default, scores at least as well again (``notes/court-keypoints.md`` in that
+checkout: middle-court court error 55 cm against version 4's 75).
 """
 from __future__ import annotations
 

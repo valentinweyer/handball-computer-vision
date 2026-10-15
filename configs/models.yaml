@@ -4,8 +4,11 @@ models:
     provider: roboflow
     id: player-and-handball-detection-3z9xf/3
   court_keypoints:
-    provider: roboflow
-    id: keypointv333-uwois-xprdi/4
+    # Our RF-DETR fine-tune, in the rfdetr-handball-finetune checkout
+    # ($RFDETR_FINETUNE_DIR); trained on keypointv333-uwois-xprdi version 4's data.
+    # Roboflow's own version 4 export sits at runs/court-keypoints-roboflow-v4/weights.onnx
+    # there; version 3 (YOLO11s-pose) is retired.
+    path: ../rfdetr-handball-finetune/exports/court-keypoints-local/rfdetr-keypoint-preview.onnx
   sam_vit_b:
     path: models/sam/sam_vit_b_01ec64.pth
     sha256: ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912

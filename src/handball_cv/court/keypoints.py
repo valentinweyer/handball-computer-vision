@@ -1,8 +1,8 @@
 """Translate the court-keypoint model's output order into court template vertices.
 
-The keypoint model (Roboflow ``keypointv333-uwois-xprdi``: version 3 is a
-YOLO11s-pose network, version 4 an RF-DETR keypoint model) emits 37
-landmarks in the slot order its training export happened to use. The ``sports``
+The keypoint model (an RF-DETR keypoint model: our fine-tune or Roboflow's
+``keypointv333-uwois-xprdi`` version 4; its retired version 3 was a YOLO11s-pose
+network, with the same slot order) emits 37 landmarks in the slot order its training export happened to use. The ``sports``
 library's :class:`~sports.handball.CourtConfiguration` also lists 37 vertices,
 in a *different* order. Nothing previously translated between the two:
 ``scripts/run_court_mapping.py`` indexed ``config.vertices`` with the model's

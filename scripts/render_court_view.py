@@ -9,10 +9,16 @@ above with every cached person detection's feet mapped through the same fit.
         --motion runs/court_mapping/Melsungen_motion.json \\
         --detections outputs/team_dataset/.Melsungen_window_detections_v1.npz
 
-Keypoints are cached unfiltered (all 37 slots with confidence) in the same
-format as ``runs/court_mapping/Melsungen_keypoints.json``, so a redraw needs no
-inference, and passing that older file as ``--keypoints`` renders the YOLO
-version 3 through the identical pipeline for comparison.
+The model defaults to our own RF-DETR court-keypoint fine-tune from the
+sibling ``rfdetr-handball-finetune`` checkout (its ``notes/court-keypoints.md``
+scores it against Roboflow's version 4: equal on goal views, 55 cm court error
+against 75 on middle-court ones). ``--weights`` runs any export
+:class:`~handball_cv.court.rfdetr_keypoints.OfflineCourtKeypoints` reads,
+Roboflow's version 4 included.
+
+Keypoints are cached unfiltered (all 37 slots with confidence), named after the
+weights' directory, so a redraw needs no inference and two models' caches never
+collide.
 """
 from __future__ import annotations
 
@@ -36,8 +42,7 @@ from handball_cv.tracking.sam2_driver import ffmpeg_exe
 
 ROOT = Path(__file__).resolve().parents[1]
 FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
-DEFAULT_WEIGHTS = FINETUNE_ROOT / "runs/court-keypoints-roboflow-v4/weights.onnx"
-MODEL_ID = "keypointv333-uwois-xprdi/4"
+DEFAULT_WEIGHTS = FINETUNE_ROOT / "exports/court-keypoints-local/rfdetr-keypoint-preview.onnx"
 
 FRAME_W, FRAME_H = 1280, 720      # left panel
 SIDE_W = 640                      # right panel
@@ -61,6 +66,11 @@ def to_template(config: CourtConfiguration, scale: float, pad: float) -> np.ndar
     return np.array([[scale, 0.0, pad], [0.0, -scale, config.court_width * scale + pad], [0.0, 0.0, 1.0]])
 
 
+def weights_tag(weights: Path) -> str:
+    """Short name for a court-keypoint export: its directory, less the shared prefix."""
+    return weights.parent.name.removeprefix("court-keypoints-")
+
+
 def load_or_infer(args, frames: list[Path]) -> list[list[tuple[int, float, float, float]]]:
     if args.keypoints.exists():
         cached = json.loads(args.keypoints.read_text())
@@ -73,7 +83,7 @@ def load_or_infer(args, frames: list[Path]) -> list[list[tuple[int, float, float
         points, _ = model.infer(cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB))
         keypoints.append([list(p) for p in points])
     args.keypoints.parent.mkdir(parents=True, exist_ok=True)
-    args.keypoints.write_text(json.dumps({"model": MODEL_ID, "conf": CONFIDENCE, "clip": args.clip,
+    args.keypoints.write_text(json.dumps({"model": str(args.weights), "conf": CONFIDENCE, "clip": args.clip,
                                           "keypoints": keypoints}))
     return keypoints
 
@@ -217,13 +227,15 @@ def main() -> None:
     parser.add_argument("--motion", type=Path, default=None,
                         help="camera-motion cache; read if present, else measured (and written if given)")
     parser.add_argument("--detections", type=Path, default=None, help="person detection cache (.npz)")
-    parser.add_argument("--label", default="v4 RF-DETR keypoints")
+    parser.add_argument("--label", default=None, help="model name drawn on the frame")
     parser.add_argument("--fps", type=float, default=25.0)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
     args.frames_dir = args.frames_dir or ROOT / "data/cache/frames" / args.clip
-    args.keypoints = args.keypoints or ROOT / "runs/court_view" / f"{args.clip}_v4_keypoints.json"
-    args.output = args.output or ROOT / "runs/court_view" / f"{args.clip}_v4_court_view_h264.mp4"
+    tag = weights_tag(args.weights)
+    args.label = args.label or f"RF-DETR keypoints ({tag})"
+    args.keypoints = args.keypoints or ROOT / "runs/court_view" / f"{args.clip}_{tag}_keypoints.json"
+    args.output = args.output or ROOT / "runs/court_view" / f"{args.clip}_{tag}_court_view_h264.mp4"
     render(args)
 
 

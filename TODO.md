@@ -112,6 +112,11 @@ test itself can be built, and they are the reason this item is still open:
   (`handball_cv.court.rfdetr_keypoints`) and beats version 3 (a YOLO11s-pose,
   not YOLOv8x) on goal views (recall 0.97 vs 0.84, court error 39 vs 56 cm) and
   decisively on middle-court views (0.94 vs 0.63, 75 vs 653 cm).
+  **Version 3 retired 2026-10-15:** both court scripts now run an RF-DETR ONNX
+  export through `OfflineCourtKeypoints`, defaulting to our own fine-tune
+  (`rfdetr-handball-finetune/exports/court-keypoints-local/`, middle-court court
+  error 55 cm against version 4's 75), so new training frames can go into a
+  model we own.
 - **The estimator cannot tell a good fit from a bad one.** `ViewTransformer`
   calls `cv2.findHomography(source, target)` with no method argument, so it is
   plain least squares over every point -- no RANSAC, and the inlier mask is

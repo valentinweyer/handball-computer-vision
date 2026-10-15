@@ -19,6 +19,8 @@ from sports import MeasurementUnit, ViewTransformer, TeamClassifier
 from sports.handball import CourtConfiguration, League, draw_court, draw_points_on_court
 
 from handball_cv.court.keypoints import court_points
+from handball_cv.court.rfdetr_keypoints import OfflineCourtKeypoints
+from scripts.render_court_view import DEFAULT_WEIGHTS
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -35,17 +37,12 @@ GOALKEEPER_CLASS_ID = 1
 FIELD_PLAYER_CLASS_ID = 2
 PLAYER_CLASS_IDS = [GOALKEEPER_CLASS_ID, FIELD_PLAYER_CLASS_ID]
 
-# Version 3, not 4. Version 4 is served as `rfdetr-keypoint-preview`, a type the
-# pinned `inference` 0.62.0 has no implementation class for, so `get_model`
-# raises KeyError before any inference happens. Version 3 loads and runs locally
-# on the same 892 images, and Roboflow reports it as the better model besides:
-# mAP 99.5 / precision 99.96 / recall 100.0, against 97.0 / 98.6 / 97.9 for
-# version 4 (which was trained from scratch rather than fine-tuned).
-# Measured since on the export's held-out test images, version 4 is the better
-# model (middle-court court error 75 cm against 653 cm); it runs from its ONNX
-# export through handball_cv.court.rfdetr_keypoints, see scripts/render_court_view.py.
-KEYPOINT_DETECTION_MODEL_ID = "keypointv333-uwois-xprdi/3"
-KEYPOINT_DETECTION_MODEL_CONFIDENCE = 0.5
+# The court-keypoint model render_court_view.py runs (our own RF-DETR fine-tune
+# by default); HANDBALL_CV_COURT_WEIGHTS points at another export. Roboflow's
+# YOLO11s-pose version 3, which this script ran through `inference` before, is
+# retired: 653 cm middle-court court error against 75 for Roboflow's version 4
+# and 55 for ours.
+KEYPOINT_WEIGHTS = Path(os.getenv("HANDBALL_CV_COURT_WEIGHTS", DEFAULT_WEIGHTS))
 KEYPOINT_ANCHOR_CONFIDENCE = 0.5
 
 TEAM_COLORS = {
@@ -60,7 +57,7 @@ COURT_PADDING = 50
 # ── Models ────────────────────────────────────────────────────────────────────
 
 player_model = get_model(model_id=PLAYER_DETECTION_MODEL_ID)
-keypoint_model = get_model(model_id=KEYPOINT_DETECTION_MODEL_ID)
+keypoint_model = OfflineCourtKeypoints(KEYPOINT_WEIGHTS)
 
 config = CourtConfiguration(league=League.IHF, measurement_unit=MeasurementUnit.CENTIMETERS)
 
@@ -83,31 +80,18 @@ team_classifier.fit(crops)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def keypoint_slot(kp):
-    """The model's 0-based keypoint slot for a prediction.
+def get_confident_keypoints(points):
+    """``(slot, x, y, visibility)`` above the anchor threshold, one per court point.
 
-    Read `class_id`, not `class_name`. They are different numberings: `class_id`
-    is the slot, while `class_name` is the label the annotator typed, and the
-    two agree on only 6 of 31 landmarks (measured against the labelled export).
-    This script used `int(kp.class_name) - 1` and indexed `config.vertices` with
-    it, which got both halves wrong -- the wrong field, then no translation from
-    slot order to the template's vertex order. On one Melsungen frame that
-    produced 4 RANSAC inliers of 11 keypoints, against 8 once corrected.
-
-    Still not a court vertex index: `handball_cv.court.keypoints` holds that
-    translation.
+    A slot is the model's output order, not a court vertex index;
+    `handball_cv.court.keypoints.court_points` translates it.
     """
-    return kp.class_id
-
-
-def get_confident_keypoints(result):
-    raw = result.predictions[0].keypoints if result.predictions else []
-    kps = [kp for kp in raw if kp.confidence > KEYPOINT_ANCHOR_CONFIDENCE]
+    kps = [kp for kp in points if kp[3] > KEYPOINT_ANCHOR_CONFIDENCE]
     # deduplicate keypoints that map to identical court coordinates
     seen = set()
     deduped = []
     for kp in kps:
-        pt = tuple(court_points([keypoint_slot(kp)], config.vertices)[0])
+        pt = tuple(court_points([kp[0]], config.vertices)[0])
         if pt not in seen:
             seen.add(pt)
             deduped.append(kp)
@@ -115,8 +99,8 @@ def get_confident_keypoints(result):
 
 
 def build_transformer(kps):
-    court_pts = court_points([keypoint_slot(kp) for kp in kps], config.vertices)
-    frame_pts = np.array([[kp.x, kp.y] for kp in kps], dtype=np.float32)
+    court_pts = court_points([kp[0] for kp in kps], config.vertices)
+    frame_pts = np.array([[kp[1], kp[2]] for kp in kps], dtype=np.float32)
     return ViewTransformer(source=frame_pts, target=court_pts)
 
 # ── Main loop ─────────────────────────────────────────────────────────────────
@@ -140,8 +124,8 @@ with sv.VideoSink(str(OUTPUT_PATH), video_info) as sink:
         teams = np.array(team_classifier.predict(crops)) if crops else np.array([], dtype=int)
 
         # detect court keypoints
-        kp_result = keypoint_model.infer(frame, confidence=KEYPOINT_DETECTION_MODEL_CONFIDENCE)[0]
-        confident_kps = get_confident_keypoints(kp_result)
+        points, _ = keypoint_model.infer(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+        confident_kps = get_confident_keypoints(points)
 
         if len(confident_kps) < 4 or len(detections) == 0:
             sink.write_frame(frame)
