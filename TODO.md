@@ -552,9 +552,21 @@ would change what the tracker and the reader see on every clip.
 
 ## 7. Optimized inference: RF-DETR detection, court keypoints, SAM2 (deferred 2026-10-15)
 
-Speed work, parked while the focus is pipeline quality. The ranked plan for
-detection, tracking and the stages wired to them (code-read, not yet timed) is
-`docs/inference-speed-verdict.md`. What is measured so far
+Speed work. `docs/inference-speed-verdict.md` §0 records the 2026-10-16 round:
+output-identical changes took the Melsungen render from 800 to 655 s (-18%) and
+SAM2 tracking 10-17%; boundary-frame skipping (changes output) and object
+batching (slower on GB10) were measured and dropped. The SAM2 model is now ~95%
+of the tracking loop, so further gains change output and need re-scoring.
+
+**Open, found during that round: PARSeq runs in BF16 in SAM2 renders.**
+`drive_sam2` yields from inside its BF16 autocast block, which stays active in
+the consumer, so the render's reader calls and every `*_reads.json` from a SAM2
+render are BF16 while the 0.858 accuracy was measured in FP32. Fixing it (run
+the reader under `torch.autocast(..., enabled=False)`, or yield outside the
+block) changes reads, so measure the reader both ways on the 323 labelled crops
+first.
+
+What was measured before that round
 (GB10, our own fine-tunes):
 
 ```

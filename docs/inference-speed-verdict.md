@@ -4,8 +4,74 @@
 > downstream stages, each adversarially checked against the source; engine research for GB10).
 > Nothing was run or timed: every ms figure not cited to a repo measurement is an estimate,
 > to be confirmed by the benchmark plan in section 4. Court keypoints were out of scope.
-> Unverified: whether PARSeq runs under SAM2's BF16 autocast during SAM2 renders
-> (`drive_sam2` yields from inside the autocast block, `src/handball_cv/tracking/sam2_driver.py`).
+> Sections 1-4 are that review, unchanged. **Section 0 is what was then built and
+> measured (2026-10-16) and supersedes them where they disagree.**
+
+## 0. Measured results (2026-10-16)
+
+Fixed workload, GB10 with no other GPU work running, one run per configuration:
+SAM2 tracking-only on Han-Ber4 (198 frames), FelixClaar (248) and the BHC-FAG
+window (499), plus the full `render_full_pipeline --tracker sam2` on the
+1499-frame Melsungen window with live PARSeq reads. Runner, hashing and stage
+profiler were scratch scripts; outputs are under `runs/perf_speedups/`.
+Every kept change was accepted only when all outputs were identical to the
+baseline: replay boxes and lifecycle events for the three tracking clips; run
+JSON, reads JSON, geometry cache and the mp4's bytes for the render.
+
+| Run | Baseline (`493f662`) | Now (`af1c375`) | Change |
+|---|---:|---:|---:|
+| Han-Ber4 tracking | 120.2 s | 100.1 s | -16.7% |
+| FelixClaar tracking | 125.6 s | 111.3 s | -11.4% |
+| BHC-FAG tracking | 242.8 s | 218.9 s | -9.8% |
+| Melsungen full render | 800.2 s | 655.5 s | -18.1% (534 -> 437 ms/frame) |
+
+Kept, in commit order (all output-identical):
+
+- `1e4410c` -- render overlap and mask scans (items 2, 3a, 4). Frames decoded
+  ahead on a thread; drawing, encoding and geometry packing on an ordered
+  worker so propagation continues meanwhile; masks no longer restacked;
+  checkpoint mask counts and boxes computed once with disjoint pairs skipped;
+  number-to-player IoS on box-local slices. Render 800 -> 723 s.
+- `a54ab7a` -- **the largest single find, which the review missed**:
+  `masks_from_logits` called `.cpu()` on the thresholded mask stack, and on
+  GB10 that allocates and faults in fresh pageable memory, ~67 ms for 13 masks
+  at 1080p against ~1 ms into a reused pinned buffer. The stage fell from
+  30.3 to 8.0 ms/frame. Same commit: `LazyFrames` replaces `init_state`'s
+  whole-clip preload (item 5; bit-identical tensors, no up-front decode,
+  memory no longer grows with clip length), and `fill_hole_area` pinned to the
+  0 it already effectively was.
+- `af1c375` -- the repeated RoPE frequency tensor built once per layer instead
+  of per call (part of item 6).
+
+Tried and dropped:
+
+- **Item 1, skipping the repeated boundary frame, changes output.** The
+  recomputed frame-t output is not bit-identical to the stored one; skipping
+  it moved 5-45 boxes per clip by up to 12 px and cost FelixClaar 2
+  wrong-identity frames (95.01% -> 94.92%; Han-Ber4 and BHC-FAG unchanged).
+- **Item 7, batching objects through memory attention, is slower on GB10.**
+  At the steady-state shapes, 13 calls at batch 1 took 212 ms and one call at
+  batch 13 took 242 ms (groups of 2, 4 and 7: 235-240 ms), and no batched
+  slice was bit-identical (max abs diff 0.012). Do not build it.
+- Choosing another attention kernel: the default already is FlashAttention
+  (identical output when forced); memory-efficient is 1.9x and math 9.2x
+  slower. `torch.profiler` records no CUDA kernels on this sm_121 setup, so
+  stage timing has to use synchronized timers.
+
+Where the time goes now (Han-Ber4, synchronized timers, ms/frame; measured
+before the RoPE commit): memory attention 238 (RoPE ~30% of it), image encoder
+92, memory encoder 34, mask decoder 25, `masks_from_logits` 8, checkpoint
+decisions 7 (mostly the team model), prompt encoder 3, propagation bookkeeping
+2. The model is now ~95% of the tracking loop, and its remaining large terms
+are not reachable without changing output: RoPE's float32 copies and complex
+multiply could be fused, but a fused kernel would round differently.
+
+Confirmed from the code, not fixed (it changes reads): **PARSeq runs in BF16
+during SAM2 renders.** `drive_sam2` yields each frame from inside
+`with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16)`,
+and autocast state stays on while the generator is suspended, so the render
+loop's reader calls run under it. The 0.858 reader accuracy was measured in
+FP32, and every `*_reads.json` written by a SAM2 render holds BF16 reads.
 
 ## 1. Per-frame time budget (default SAM2 render, Han-Ber4-class load of about 13.4 objects)
 
