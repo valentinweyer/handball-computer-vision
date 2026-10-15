@@ -224,6 +224,48 @@ class LazyFrames:
         return image
 
 
+def install_rope_repeat_cache() -> None:
+    """Make SAM2's memory attention reuse its repeated RoPE frequencies.
+
+    Every cross-attention call in `RoPEAttention` passes `repeat_freqs_k=True`,
+    and upstream `apply_rotary_enc` then rebuilds `freqs_cis.repeat(..., r, 1)`
+    -- the same 7x complex tensor -- on every call: 4 layers x ~13 objects x
+    every frame. This wraps it so the repeat is built once per (freqs tensor,
+    r) and otherwise runs upstream's arithmetic unchanged; outputs are
+    identical (torch.equal). Idempotent.
+    """
+    try:
+        import sam2.modeling.sam.transformer as transformer
+        from sam2.modeling.position_encoding import reshape_for_broadcast
+    except ImportError:
+        return  # not upstream SAM2 (a test double, or another backend)
+
+    if getattr(transformer.apply_rotary_enc, "_repeat_cached", False):
+        return
+    upstream = transformer.apply_rotary_enc
+    repeats: dict = {}
+
+    def apply_rotary_enc(xq, xk, freqs_cis, repeat_freqs_k=False):
+        if not repeat_freqs_k or xk.shape[-2] == 0 or not freqs_cis.is_cuda:
+            return upstream(xq, xk, freqs_cis, repeat_freqs_k)
+        xq_ = torch.view_as_complex(xq.float().reshape(*xq.shape[:-1], -1, 2))
+        xk_ = torch.view_as_complex(xk.float().reshape(*xk.shape[:-1], -1, 2))
+        freqs = reshape_for_broadcast(freqs_cis, xq_)
+        xq_out = torch.view_as_real(xq_ * freqs).flatten(3)
+        r = xk_.shape[-2] // xq_.shape[-2]
+        key = (id(freqs_cis), freqs_cis.data_ptr(), tuple(freqs.shape), r)
+        if key not in repeats:
+            if len(repeats) >= 16:  # one entry per attention layer is all a model needs
+                repeats.clear()
+            # The entry holds freqs_cis itself, so its id cannot be reused while cached.
+            repeats[key] = (freqs_cis, freqs.repeat(*([1] * (freqs.ndim - 2)), r, 1))
+        xk_out = torch.view_as_real(xk_ * repeats[key][1]).flatten(3)
+        return xq_out.type_as(xq).to(xq.device), xk_out.type_as(xk).to(xk.device)
+
+    apply_rotary_enc._repeat_cached = True
+    transformer.apply_rotary_enc = apply_rotary_enc
+
+
 def init_state_lazily(predictor, frame_cache_dir: Path) -> dict:
     """`predictor.init_state` with `LazyFrames` in place of the whole-clip preload.
 
@@ -425,6 +467,7 @@ def drive_sam2(
         # way, so pin it: a checkout that does build _C must not silently start
         # filling holes and change the tracker's output.
         predictor.fill_hole_area = 0
+        install_rope_repeat_cache()
     else:
         predictor = predictor_factory(checkpoint)
 
