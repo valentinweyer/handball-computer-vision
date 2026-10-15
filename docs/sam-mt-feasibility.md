@@ -35,3 +35,27 @@ If native individual insertion proves impractical, an experimental fallback coul
 SAM-MT merits a focused proof-of-concept ahead of a broad CUTIE integration when the objective is a large throughput gain. The first decision should come from native GB10 speed and the known same-team overlap case. Keep the existing SAM2 implementation as the quality reference until the complete lifecycle and paired evaluation pass.
 
 This assessment inspected source and ran only the isolated registration-helper check. It did not download model weights, run SAM-MT inference or alter production tracking behavior.
+
+Local setup follow-up (2026-10-15): the pinned source and official checkpoint
+are now present. Imports, configuration, checksum and strict CPU weight loading
+passed using the existing project environment; no inference was run. See the
+[setup instructions](../experiments/sam_mt/README.md). Local speed, mask quality
+and individual-player lifecycle behavior remain unmeasured.
+
+GPU follow-up (2026-10-15): real prompting and propagation passed on NVIDIA GB10
+with six cached Han-Ber4 frames and 14 targets. Model parameters, frames, state
+storage and mask outputs were on CUDA; all 84 masks were finite and nonempty.
+BF16 autocast, eager execution and strict checkpoint loading were used, with no
+CPU inference fallback. Peak CUDA allocation was 1.22 GiB. The PyTorch capability
+warning did not block this run. Evidence is in
+`runs/sam_mt_gpu_smoke_20261015/report.json`. This is a GPU smoke test only; it
+does not resolve the quality, throughput or player-lifecycle gates above.
+
+Native benchmark follow-up (2026-10-15): two matched seed-once point-prompt
+comparisons completed. SAM-MT scored 69.87% vs SAM2.1-L's 93.72% on FelixClaar,
+and 65.19% vs 94.15% on Han-Ber4. Single-run throughput was 3.83 vs 1.76 FPS and
+1.22 vs 1.72 FPS respectively, under shared-machine memory pressure. The BHC-FAG
+process was killed before producing a score; repeats and mask review did not
+run. The user explicitly stopped the comparison and chose to retain SAM2.
+The prototype priority above is historical; do not resume it automatically.
+See the [benchmark report](sam-mt-benchmark-results.md) for protocol and limits.

@@ -20,6 +20,15 @@ models:
   sam2_large_baseline:
     path: segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt
     sha256: 2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318
+  sam_mt_experimental:
+    path: models/sam_mt/checkpoints/sam-mt.pt
+    sha256: 8646f62975a5d3692eabb883003b8ca46160953d77c6a4c7310feccd39010f48
+    provider: huggingface
+    id: FudanCVL/SAM-MT
+    revision: 253e14a35585de8a662dba3c3e19096c7644c5a4
+    source: https://github.com/FudanCVL/SAM-MT
+    source_revision: 55952679e062feb05004b598bb835d4a7a8205a1
+    config: configs/sam2.1/sam2.1_hiera_b+.yaml
 
 cleanup:
   batch_a_completed: 2026-08-25

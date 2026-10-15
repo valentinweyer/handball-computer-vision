@@ -1,5 +1,15 @@
 # SAM2 performance and alternatives for handball tracking
 
+**Requirement update, 2026-10-15:** the user accepts 30 FPS player IDs with
+masks generated when needed, but **no reduction in tracking accuracy**.
+The [quality-first follow-up](quality-first-tracker-research.md) supersedes the
+candidate ranking and next-step advice below: SAM3.1 Object Multiplex is the
+strongest architecture lead; none has demonstrated the required quality and
+speed locally. SAM-MT was tested, rejected, and its comparison explicitly
+stopped; see [the local results](sam-mt-benchmark-results.md).
+
+The remaining assessment is historical research from September 10.
+
 **Keep SAM2.1-L as the quality reference. The best immediate opportunity is to remove redundant work around its existing lifecycle; the best larger opportunity is to accelerate the per-object temporal computation. No alternative examined has demonstrated equal tracking quality and higher throughput on this project's current hardware.** CUTIE deserves the first independent propagation experiment. DeepStream MaskTracker and SAM3.1 deserve narrowly scoped feasibility checks. SAM-MT has strong multi-object evidence but a difficult lifecycle interface.
 
 This assessment uses the repository and public sources available on September 10, 2026. The objective is maximum speed **without reducing tracking quality on the existing GB10 machine**. Existing experiments are distinguished from the new diagnostic below. Production tracking code was not changed for this investigation.
