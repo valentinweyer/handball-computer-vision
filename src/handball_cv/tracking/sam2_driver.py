@@ -324,6 +324,48 @@ def init_state_lazily(predictor, frames: "Path | VideoFrames") -> dict:
         video_predictor.load_video_frames = preload
 
 
+# Frames kept beyond the farthest one SAM2's memory attention reads; slack only.
+PRUNE_MARGIN_FRAMES = 4
+
+
+def memory_window(predictor) -> int | None:
+    """How many frames back forward propagation reads stored per-frame outputs.
+
+    Mask memory reads the last `num_maskmem - 1` frames at
+    `memory_temporal_stride_for_eval`; object pointers read the last
+    `max_obj_ptrs_in_encoder - 1`. None for a predictor without these
+    attributes, which is then never pruned.
+    """
+    try:
+        masks = (predictor.num_maskmem - 1) * max(1, predictor.memory_temporal_stride_for_eval)
+        pointers = (predictor.max_obj_ptrs_in_encoder - 1) if predictor.use_obj_ptrs_in_encoder else 0
+    except AttributeError:
+        return None
+    return max(masks, pointers)
+
+
+def prune_frame_outputs(state: dict, frame_idx: int, window: int) -> int:
+    """Drop stored per-frame outputs older than `window` + margin frames before `frame_idx`.
+
+    Upstream keeps every frame's non-conditioning output for every object for the
+    whole session -- about 1 MB per object per frame, so memory, not compute,
+    capped clip length -- while forward propagation only ever reads the last
+    `window` of them. Conditioning (prompted) frames are never touched: memory
+    attention reads all of them. The per-frame "already tracked" records go
+    too; a prompt only ever lands on the current frame. Returns entries dropped.
+    """
+    oldest = frame_idx - window - PRUNE_MARGIN_FRAMES
+    stores = [outputs["non_cond_frame_outputs"]
+              for outputs in state.get("output_dict_per_obj", {}).values()]
+    stores += list(state.get("frames_tracked_per_obj", {}).values())
+    dropped = 0
+    for store in stores:
+        for t in [t for t in store if t < oldest]:
+            del store[t]
+            dropped += 1
+    return dropped
+
+
 @dataclass
 class Sam2FrameResult:
     """One propagated frame, in the order live objects were returned.
@@ -413,6 +455,7 @@ def drive_sam2(
     predictor_factory: Callable[[str], object] | None = None,
     prefetch_frames: int = 0,
     frame_source: str = "jpeg",
+    prune_memory: bool = True,
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -454,6 +497,10 @@ def drive_sam2(
     was made this way. `"video"` decodes the video directly (`VideoFrames`):
     nothing written to disk and no second lossy encode, but different input
     pixels from the scored runs, so it is not byte-identical to them.
+
+    `prune_memory` drops each object's stored per-frame outputs once they fall
+    out of the window forward propagation reads (`prune_frame_outputs`), so
+    memory stays flat however long the clip. Output is unchanged by it.
 
     `checkpoint_policy` selects how `TrackManager`'s decisions reach the
     predictor. It does not change what those decisions are.
@@ -536,6 +583,7 @@ def drive_sam2(
     # forks are timed on the same frame loading; any other backend keeps its
     # own init_state untouched (init_state_lazily falls back to it).
     state = init_state_lazily(predictor, frames_for_sam2)
+    window = memory_window(predictor) if prune_memory else None
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         for oid, xyxy in zip(obj_ids0, det0.xyxy):
             predictor.add_new_points_or_box(
@@ -606,6 +654,8 @@ def drive_sam2(
                     )
 
                     chunk_end = fid
+                    if window is not None:
+                        prune_frame_outputs(state, fid, window)
                     if fid == t + chunk_len:
                         last_masks_by_id = dict(zip(obj_ids, masks))
                         last_frame = reader()  # decoded once, shared with the consumer
