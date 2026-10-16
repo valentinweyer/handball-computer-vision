@@ -57,14 +57,16 @@ def _segments_by_player(run: dict, ocr_every: int) -> dict:
     return by_player
 
 
-def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int) -> pd.DataFrame:
+def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
+                 team_confidence: np.ndarray | None = None) -> pd.DataFrame:
     """One row per tracked player per frame.
 
     `number` is the backfilled verdict -- the segment's settled number, reaching
     back over the frames before it was decided, exactly as `--redraw` draws it.
     `number_live` is what the run itself knew at that frame. `court_x/court_y`
     are the box's bottom-centre through that frame's court fit, NaN where the
-    fit abstained.
+    fit abstained. `team_confidence`, when the tracking pass recorded it, is
+    one value per geometry row; without it the column is NaN.
     """
     canonical = canonical_resolver(run.get("player_aliases", {}))
     by_player = _segments_by_player(run, ocr_every)
@@ -98,7 +100,8 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int) ->
             columns["track_id"].append(int(track_id))
             columns["team"].append(int(teams[row]))
             columns["team_state"].append(TEAM_STATE.get(color))
-            columns["team_confidence"].append(np.nan)  # not recorded by this run format
+            columns["team_confidence"].append(
+                np.nan if team_confidence is None else float(team_confidence[lo + row]))
             columns["is_goalkeeper"].append(color == GOALKEEPER)
             columns["number"].append(segment.value_at(frame) if segment else None)
             columns["number_live"].append(segment.live_at(frame) if segment else None)

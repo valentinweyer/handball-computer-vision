@@ -80,7 +80,6 @@ def main() -> None:
     weights_tag = args.court_weights.parent.name
 
     video = VideoFrames(video_path)
-    geometry = GeometryCache.load(geometry_path)
     print(f"{video_path.name}: {len(video)} frames, {video.width}x{video.height} @ {video.fps:g} fps")
 
     def run_keypoints():
@@ -94,8 +93,25 @@ def main() -> None:
 
     with np.load(args.detections, allow_pickle=False) as data:
         detection_cache = {k: data[k] for k in data.files}
+    build_bundle(run, video, video_path, geometry_path, detection_cache, args.team_model,
+                 keypoints, motion, args.out, ocr_every=args.ocr_every,
+                 court_weights=args.court_weights,
+                 provenance={"built_by": "scripts.bundle_from_run", "from_run": str(args.run),
+                             "geometry": str(geometry_path), "detections": str(args.detections)})
 
-    tracks = tables.tracks_table(run, geometry, fits, video.fps, args.ocr_every)
+
+def build_bundle(run: dict, video: VideoFrames, video_path: Path, geometry_path: Path,
+                 detection_cache: dict, team_model_path: Path, keypoints: list, motion: list,
+                 out: Path, *, ocr_every: int, court_weights: Path, provenance: dict,
+                 parameters: dict | None = None) -> Path:
+    """Join a tracking run, its detections and the court into a bundle at `out`."""
+    geometry = GeometryCache.load(geometry_path)
+    fits = fit_court(keypoints, motion, (video.width, video.height))
+    team_confidence = None
+    if run.get("extras") and Path(run["extras"]).is_file():
+        with np.load(run["extras"]) as extras:
+            team_confidence = extras["team_confidence"]
+    tracks = tables.tracks_table(run, geometry, fits, video.fps, ocr_every, team_confidence)
     built = {
         "tracks": tracks,
         "players": tables.players_table(run, tracks),
@@ -114,23 +130,24 @@ def main() -> None:
         "models": {
             "detector": str(detection_cache.get("detector_id", "")),
             "tracker": run.get("tracker"), "reid_embedding": run.get("reid_embedding"),
-            "reader": run.get("reader"), "court_keypoints": str(args.court_weights),
+            "reader": run.get("reader"), "court_keypoints": str(court_weights),
         },
         "parameters": {
-            "ocr_every": args.ocr_every,
+            "ocr_every": ocr_every,
+            "frame_source": run.get("frame_source", "jpeg"),
             "detection_threshold": float(detection_cache["threshold"]) if "threshold" in detection_cache else None,
             "detection_stride": int(detection_cache["stride"]) if "stride" in detection_cache else 1,
+            **(parameters or {}),
         },
-        "provenance": {"built_by": "scripts.bundle_from_run", "from_run": str(args.run),
-                       "geometry": str(geometry_path), "detections": str(args.detections),
-                       "git_commit": git_commit()},
+        "provenance": {**provenance, "git_commit": git_commit()},
     }
-    write_bundle(args.out, built,
-                 files={"video": video_path, "masks": geometry_path, "team_model": args.team_model},
+    write_bundle(out, built,
+                 files={"video": video_path, "masks": geometry_path, "team_model": team_model_path},
                  info=info)
-    print(f"bundle -> {args.out}")
+    print(f"bundle -> {out}")
     for name, frame in built.items():
         print(f"  {name:<11} {len(frame):>7} rows")
+    return Path(out)
 
 
 if __name__ == "__main__":

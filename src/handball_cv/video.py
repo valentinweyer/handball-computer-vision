@@ -89,6 +89,12 @@ class VideoFrames:
                         if not self._capture.grab():
                             raise RuntimeError(f"{self.video} ended before frame {idx}")
                     self._next = idx
+                # Frames that would fall out of the buffer before `idx` is reached
+                # are only grabbed: decoded by ffmpeg, never converted or stored.
+                while self._next < idx - self.keep:
+                    if not self._capture.grab():
+                        raise RuntimeError(f"{self.video} ended at frame {self._next}")
+                    self._next += 1
                 while self._next <= idx:
                     ok, frame_bgr = self._capture.read()
                     if not ok:

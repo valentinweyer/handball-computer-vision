@@ -206,7 +206,8 @@ def read_numbers_doctr(predictor, frame_rgb: np.ndarray, number_xyxy: np.ndarray
 PARSEQ_MIN_CONFIDENCE = 0.5
 
 
-def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray) -> list:
+def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray,
+                        confidences: list | None = None) -> list:
     """Recognize the tight crops with the original `baudm/parseq` weights.
 
     Same architecture as `read_numbers_doctr`, different training. Measured on
@@ -229,6 +230,10 @@ def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray) 
 
     `reader` is the `(model, transform)` pair from `_jersey_parseq.load_jersey_parseq`.
     Not wrapped in try/except, for the reason `read_numbers_doctr` gives.
+
+    `confidences`, when a list is passed, is filled with the recogniser's
+    confidence per box, read or not (0.0 where there was no usable crop), so a
+    caller can keep it next to the text without changing what is returned.
     """
     number_xyxy = np.asarray(number_xyxy).reshape(-1, 4)
     if len(number_xyxy) == 0:
@@ -246,6 +251,8 @@ def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray) 
             kept.append(position)
 
     out = [""] * len(boxes)
+    if confidences is not None:
+        confidences[:] = [0.0] * len(boxes)
     if not crops:
         return out
     model, transform = reader
@@ -253,6 +260,8 @@ def read_numbers_parseq(reader, frame_rgb: np.ndarray, number_xyxy: np.ndarray) 
 
     for position, (text, confidence) in zip(kept, read_crops(model, transform, crops)):
         text = str(text).strip()
+        if confidences is not None:
+            confidences[position] = float(confidence)
         if confidence >= PARSEQ_MIN_CONFIDENCE and is_valid_number(text):
             out[position] = text
     return out

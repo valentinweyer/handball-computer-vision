@@ -351,6 +351,68 @@ class TeamModel:
         return cls.fit_from_crops(crops[:max_crops], seed=seed, device=device, classifier=classifier)
 
     @classmethod
+    def fit_from_detection_cache(
+        cls,
+        video_path,
+        cache: dict,
+        player_class_ids=(2,),
+        person_class_ids=(1, 2),
+        stride: int = 10,
+        max_frames: int = 600,
+        max_crops: int = 2000,
+        seed: int = 0,
+        device: str = "cuda",
+        frame_count: int | None = None,
+    ) -> "TeamModel":
+        """Fit from a detection cache, with crops drawn from across the whole video.
+
+        `fit_from_video` stops at its first `max_crops` clean crops -- roughly
+        the first 80 s -- which on a full match is the warm-up, often in
+        training tops. This takes up to `max_frames` frames spread evenly over
+        every `stride`-th frame the cache scored, then thins the crops evenly to
+        `max_crops`, so the fit sees the whole game. Same crop geometry, same
+        quality and contamination gates, same field-player-only rule (class 2;
+        goalkeepers are a third kit and stay out of a two-team fit).
+        """
+        from handball_cv.video import VideoFrames
+
+        offsets = np.asarray(cache["offsets"])
+        total = len(offsets) - 1
+        cache_stride = int(cache.get("stride", 1))
+        if stride % cache_stride:
+            raise ValueError(f"stride {stride} does not land on the cache's scored frames "
+                             f"(every {cache_stride}th)")
+        candidates = np.arange(0, total, stride)
+        if len(candidates) > max_frames:
+            candidates = candidates[np.linspace(0, len(candidates) - 1, max_frames).round().astype(int)]
+        video = VideoFrames(video_path, count=frame_count)
+        boxes_all, classes_all = np.asarray(cache["boxes"]), np.asarray(cache["class_id"])
+        crops = []
+        for frame_index in candidates:
+            lo, hi = int(offsets[frame_index]), int(offsets[frame_index + 1])
+            if hi == lo:
+                continue
+            classes = classes_all[lo:hi]
+            # Overlap is judged against every person, goalkeepers included, as
+            # `fit_from_video` judges it; only field players are then cropped.
+            people = boxes_all[lo:hi][np.isin(classes, person_class_ids)]
+            keep = np.isin(classes[np.isin(classes, person_class_ids)], player_class_ids)
+            if not keep.any():
+                continue
+            frame_rgb = video.rgb(int(frame_index))
+            contamination = torso_contamination(people)[keep]
+            for box, overlap in zip(torso_boxes(people[keep]), contamination):
+                if overlap > MAX_TORSO_CONTAMINATION:
+                    continue
+                crop = sv.crop_image(frame_rgb, box)
+                if crop_quality(crop).accepted:
+                    crops.append(crop)
+        if len(crops) > max_crops:
+            keep = np.linspace(0, len(crops) - 1, max_crops).round().astype(int)
+            crops = [crops[i] for i in keep]
+        return cls.fit_from_crops(crops, seed=seed, device=device)
+
+    @classmethod
     def fit_from_run(
         cls,
         run_npz_path,

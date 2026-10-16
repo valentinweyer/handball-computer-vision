@@ -37,6 +37,7 @@ import sys
 import cv2
 import numpy as np
 import supervision as sv
+import torch
 from dotenv import load_dotenv
 from hydra.core.global_hydra import GlobalHydra
 from tqdm import tqdm
@@ -73,7 +74,7 @@ GOALKEEPER_CLASS_ID = 1
 DEFAULT_FONT = ROOT / "notebooks" / "fonts" / "ConcertOne-Regular.ttf"
 
 
-def parse_args() -> argparse.Namespace:
+def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("video", type=Path)
     parser.add_argument("--detections", required=True, type=Path)
@@ -175,7 +176,22 @@ def parse_args() -> argparse.Namespace:
              '{"A": {"7": "Name"}, "B": {...}} to disambiguate per team',
     )
     parser.add_argument("--font", type=Path, default=DEFAULT_FONT)
-    return parser.parse_args()
+    parser.add_argument(
+        "--frame-source", choices=("jpeg", "video"), default="jpeg",
+        help="sam2 only. jpeg: extract a JPEG folder and read it (how every stored "
+             "result was made); video: decode the video directly, nothing written. "
+             "Scored equal on the three references (docs/tracking-evaluation.md 8.12)",
+    )
+    parser.add_argument(
+        "--no-video", action="store_true",
+        help="sam2 only: track and read numbers, write the run JSON, reads and "
+             "geometry, but draw and encode nothing -- the extraction pass",
+    )
+    return parser
+
+
+def parse_args(argv=None) -> argparse.Namespace:
+    return build_parser().parse_args(argv)
 
 
 def load_roster(path: Path | None) -> dict:
@@ -525,12 +541,14 @@ def build_reader(args, ocr_model, read_with_qwen=None):
     and the behaviour would silently disagree.
     """
     if args.reader == "easyocr":
-        return lambda bgr, rgb, boxes: read_numbers(ocr_model, rgb, boxes)
+        return lambda bgr, rgb, boxes, confidences=None: read_numbers(ocr_model, rgb, boxes)
     if args.reader == "doctr":
-        return lambda bgr, rgb, boxes: read_numbers_doctr(ocr_model, rgb, boxes)
+        return lambda bgr, rgb, boxes, confidences=None: read_numbers_doctr(ocr_model, rgb, boxes)
     if args.reader == "parseq":
-        return lambda bgr, rgb, boxes: read_numbers_parseq(ocr_model, rgb, boxes)
-    return lambda bgr, rgb, boxes: read_with_qwen(
+        # The only reader that reports a confidence; the others leave it unset.
+        return lambda bgr, rgb, boxes, confidences=None: read_numbers_parseq(
+            ocr_model, rgb, boxes, confidences)
+    return lambda bgr, rgb, boxes, confidences=None: read_with_qwen(
         bgr, boxes, args.output.parent / "_scratch",
         args.base_url, args.model, args.max_tokens,
     )
@@ -835,12 +853,14 @@ def render_sam2(args: argparse.Namespace) -> dict:
         color_lookup=sv.ColorLookup.INDEX,
     )
 
-    writer = cv2.VideoWriter(
-        str(args.output), cv2.VideoWriter_fourcc(*"mp4v"), info.fps,
-        (info.width, info.height),
-    )
-    if not writer.isOpened():
-        raise RuntimeError(f"could not open video writer: {args.output}")
+    writer = None
+    if not args.no_video:
+        writer = cv2.VideoWriter(
+            str(args.output), cv2.VideoWriter_fourcc(*"mp4v"), info.fps,
+            (info.width, info.height),
+        )
+        if not writer.isOpened():
+            raise RuntimeError(f"could not open video writer: {args.output}")
 
     track_manager, _seed_boxes, frames = drive_sam2(
         source, lambda idx: person_detections(cache, idx), team_model,
@@ -850,6 +870,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         desc=f"full pipeline sam2 {source.stem}",
         reid_encoder=build_reid_encoder(args),
         prefetch_frames=4,
+        frame_source=args.frame_source,
     )
     registry = track_manager.registry
 
@@ -884,9 +905,15 @@ def render_sam2(args: argparse.Namespace) -> dict:
     # when this loop asks for the next frame. Everything handed over is final
     # for its frame -- labels are computed here because they read vote state
     # the next frame changes.
+    # Each geometry row's team confidence, in the order the rows are added --
+    # which is the cache's own row order, since frames arrive in order.
+    team_confidence_rows: list[float] = []
+
     def draw(frame_idx, frame_bgr, player_ids, boxes, masks, color_lookup, team_ids, labels):
         nonlocal preview
         geometry.add(frame_idx, player_ids, boxes, masks, color_lookup, team_ids)
+        if writer is None:
+            return
         annotated = annotate_frame(
             frame_bgr, boxes, player_ids, color_lookup, masks, labels,
             mask_annotator, label_annotator,
@@ -900,7 +927,9 @@ def render_sam2(args: argparse.Namespace) -> dict:
     in_flight: deque = deque()
     for result in frames:
         frame_rgb = result.read_frame()
-        frame_bgr = cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+        # Only the drawing and the Qwen reader take BGR; skip the conversion otherwise.
+        frame_bgr = (cv2.cvtColor(frame_rgb, cv2.COLOR_RGB2BGR)
+                     if writer is not None or args.reader == "qwen" else None)
         player_ids = result.player_ids
         masks = result.masks
         players = [
@@ -915,7 +944,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             if len(number_xyxy):
                 ocr_frames += 1
                 pairs = unique_pairs(match_numbers_to_players(
-                    masks, number_xyxy, frame_bgr.shape
+                    masks, number_xyxy, frame_rgb.shape
                 ))
                 pairs = [
                     (p, n) for p, n in pairs
@@ -924,12 +953,18 @@ def render_sam2(args: argparse.Namespace) -> dict:
                 rejected_crops += len(number_xyxy) - len(pairs)
                 if pairs:
                     wanted = sorted({n for _, n in pairs})
+                    confidences: list = []
                     if cached_reads is not None:
                         hit = cached_reads.get(str(result.frame_idx), {})
                         texts = [hit.get(str(n), "") for n in wanted]
                     else:
-                        texts = read(frame_bgr, frame_rgb, number_xyxy[wanted])
+                        # drive_sam2 yields from inside its BF16 autocast, which
+                        # stays on in this loop; the reader's 0.858 was measured
+                        # in FP32, so it runs outside it.
+                        with torch.autocast("cuda", enabled=False):
+                            texts = read(frame_bgr, frame_rgb, number_xyxy[wanted], confidences)
                     text_by_row = dict(zip(wanted, texts))
+                    confidence_by_row = dict(zip(wanted, confidences))
                     reads_log.setdefault(str(result.frame_idx), {}).update(
                         {str(n): t for n, t in zip(wanted, texts)}
                     )
@@ -941,17 +976,21 @@ def render_sam2(args: argparse.Namespace) -> dict:
                             # identity, not the id the tracker happens to use.
                             pid = registry.canonical(int(player_ids[local_row]))
                             voter.observe(pid, raw)
-                            number_reads.append({
+                            entry = {
                                 "frame": result.frame_idx,
                                 "player_id": pid, "value": raw,
                                 "number_row": int(number_row),
                                 "box": number_xyxy[number_row].tolist(),
-                            })
+                            }
+                            if number_row in confidence_by_row:
+                                entry["confidence"] = confidence_by_row[number_row]
+                            number_reads.append(entry)
 
         presence[str(result.frame_idx)] = sorted(int(p) for p in player_ids)
         if result.frame_idx % args.ocr_every == 0:
             resolver.resolve(result.frame_idx)
         color_lookup = [color_index(player) for player in players]
+        team_confidence_rows.extend(float(player.team_confidence) for player in players)
         in_flight.append(drawer.submit(
             draw, result.frame_idx, frame_bgr, player_ids, result.boxes, masks, color_lookup,
             [player.voted_team_id for player in players],
@@ -965,7 +1004,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
     while in_flight:
         in_flight.popleft().result()
     drawer.shutdown()
-    writer.release()
+    if writer is not None:
+        writer.release()
     if preview is not None:
         if preview.shape[1] > 1600:
             ratio = 1600 / preview.shape[1]
@@ -974,6 +1014,9 @@ def render_sam2(args: argparse.Namespace) -> dict:
                 interpolation=cv2.INTER_AREA,
             )
         cv2.imwrite(str(preview_path), preview)
+
+    extras_path = args.output.with_name(args.output.stem + "_extras.npz")
+    np.savez_compressed(extras_path, team_confidence=np.asarray(team_confidence_rows, np.float32))
 
     if cached_reads is None:
         reads_cache_path.write_text(json.dumps(reads_log))
@@ -989,6 +1032,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
         "output": str(args.output),
         "preview": str(preview_path),
         "geometry_cache": str(geometry_path),
+        "extras": str(extras_path),
+        "frame_source": args.frame_source,
         "tracker": "sam2",
         "reid_embedding": args.reid_embedding,
         # Two different recognisers are both called "parseq" -- docTR's
