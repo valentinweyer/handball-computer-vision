@@ -123,5 +123,18 @@ class FilterEdgeFragmentsEquivalenceTests(unittest.TestCase):
             )
 
 
+class MasksFromLogitsShapeTests(unittest.TestCase):
+    def test_a_frame_with_no_tracked_objects_keeps_its_frame_shape(self):
+        # A frame where every track has been removed (Cutie on VfL frame 620)
+        # used to come back as shape (0,), and sv.mask_to_xyxy crashed on it.
+        import torch
+        from handball_cv.tracking.sam2_driver import masks_from_logits
+
+        masks = masks_from_logits(torch.empty((0, 1, 36, 64)))
+        self.assertEqual(masks.shape, (0, 36, 64))
+        self.assertEqual(masks.dtype, np.bool_)
+        self.assertEqual(sv.mask_to_xyxy(masks=masks).shape, (0, 4))
+
+
 if __name__ == "__main__":
     unittest.main()

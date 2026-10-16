@@ -159,9 +159,11 @@ def _to_host(masks: torch.Tensor) -> np.ndarray:
 def masks_from_logits(mask_logits: torch.Tensor) -> np.ndarray:
     """(N, 1, H, W) logits -> (N, H, W) bool, edge-fragment filtered."""
     masks = _to_host((mask_logits > 0.0).squeeze(1))
+    # reshape keeps (0, H, W) when nothing is tracked; np.array of an empty
+    # list would be (0,), which breaks every consumer of the stack.
     return np.array([
         filter_edge_fragments(m, relative_distance=0.03) for m in masks
-    ])
+    ], dtype=bool).reshape(masks.shape)
 
 
 class LazyFrames:
