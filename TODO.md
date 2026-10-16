@@ -558,6 +558,14 @@ SAM2 tracking 10-17%; boundary-frame skipping (changes output) and object
 batching (slower on GB10) were measured and dropped. The SAM2 model is now ~95%
 of the tracking loop, so further gains change output and need re-scoring.
 
+**Update (2026-10-16): not all of them.** `docs/sam2-gpu-bottleneck.md` profiles
+the model (about half memory-bound, a quarter compute-bound attention, 11% GPU
+idle) and measures a bit-identical fused Triton RoPE at 1.12x on Han-Ber4
+(`experiments/sam2_profile/fused_rope.py`). Open: put it in `sam2_driver.py`
+with a fallback when Triton or a sm_121 ptxas is missing, and check byte
+identity on FelixClaar and BHC-FAG. Next identical candidate: CUDA graphs for
+the per-player step.
+
 **Open, found during that round: PARSeq runs in BF16 in SAM2 renders.**
 `drive_sam2` yields from inside its BF16 autocast block, which stays active in
 the consumer, so the render's reader calls and every `*_reads.json` from a SAM2
