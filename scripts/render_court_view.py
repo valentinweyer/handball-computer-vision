@@ -9,12 +9,13 @@ above with every cached person detection's feet mapped through the same fit.
         --motion runs/court_mapping/Melsungen_motion.json \\
         --detections outputs/team_dataset/.Melsungen_window_detections_v1.npz
 
-The model defaults to our own RF-DETR court-keypoint fine-tune from the
-sibling ``rfdetr-handball-finetune`` checkout (its ``notes/court-keypoints.md``
-scores it against Roboflow's version 4: equal on goal views, 55 cm court error
-against 75 on middle-court ones). ``--weights`` runs any export
-:class:`~handball_cv.court.rfdetr_keypoints.OfflineCourtKeypoints` reads,
-Roboflow's version 4 included.
+The model defaults to our own RF-DETR court-keypoint fine-tune, epoch 139's
+EMA weights from the sibling ``rfdetr-handball-finetune`` checkout (best of
+its 200-epoch run on the held-out test split and on frame-to-frame wobble),
+exported by ``scripts/export_court_keypoints.py`` and run from TorchScript on
+the GPU: ~45 ms a frame against ~390 ms for the same model's ONNX export on
+the CPU, keypoints within 0.4 px of it. ``--weights`` takes a ``.ts`` or an
+``.onnx`` export (see ``load_court_keypoints``), Roboflow's version 4 included.
 
 Keypoints are cached unfiltered (all 37 slots with confidence), named after the
 weights' directory, so a redraw needs no inference and two models' caches never
@@ -42,7 +43,7 @@ from handball_cv.tracking.sam2_driver import ffmpeg_exe
 
 ROOT = Path(__file__).resolve().parents[1]
 FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
-DEFAULT_WEIGHTS = FINETUNE_ROOT / "exports/court-keypoints-local/rfdetr-keypoint-preview.onnx"
+DEFAULT_WEIGHTS = FINETUNE_ROOT / "exports/court-keypoints-local-ep139/rfdetr-keypoint-preview.ts"
 
 FRAME_W, FRAME_H = 1280, 720      # left panel
 SIDE_W = 640                      # right panel
@@ -76,8 +77,8 @@ def load_or_infer(args, frames: list[Path]) -> list[list[tuple[int, float, float
         cached = json.loads(args.keypoints.read_text())
         print(f"keypoints from {args.keypoints} ({cached.get('model')})")
         return cached["keypoints"]
-    from handball_cv.court.rfdetr_keypoints import OfflineCourtKeypoints
-    model = OfflineCourtKeypoints(args.weights)
+    from handball_cv.court.rfdetr_keypoints import load_court_keypoints
+    model = load_court_keypoints(args.weights)
     keypoints = []
     for path in tqdm(frames, desc="court keypoints"):
         points, _ = model.infer(cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB))

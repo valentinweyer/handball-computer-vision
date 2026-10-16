@@ -47,7 +47,10 @@ import onnxruntime as ort
 
 from .keypoints import KEYPOINT_COUNT
 
-__all__ = ["OfflineCourtKeypoints", "decode_court_keypoints"]
+__all__ = [
+    "OfflineCourtKeypoints", "TorchScriptCourtKeypoints", "decode_court_keypoints",
+    "load_court_keypoints",
+]
 
 _MEANS = np.asarray([0.485, 0.456, 0.406], dtype=np.float32)
 _STDS = np.asarray([0.229, 0.224, 0.225], dtype=np.float32)
@@ -117,3 +120,61 @@ class OfflineCourtKeypoints:
         image = np.ascontiguousarray(image.transpose(2, 0, 1)[None], np.float32)
         _, logits, keypoints = self.session.run(None, {self.input_name: image})
         return decode_court_keypoints(logits[0], keypoints[0], width, height)
+
+
+class TorchScriptCourtKeypoints:
+    """Run the TorchScript court-keypoint export on the GPU.
+
+    The ONNX runner above is CPU-only in this venv (onnxruntime 1.21 has no
+    CUDA provider here), ~390 ms a frame for the 576 px model. This runs the
+    same export-mode graph, traced by ``scripts/export_court_keypoints.py``,
+    with plain torch: no rfdetr, which needs a transformers this project pins
+    below. Preprocessing runs on the GPU too -- resize, then normalise; the
+    order differs from the ONNX runner's, so values agree to rounding, not bit
+    for bit.
+
+    TF32 is switched off around each call. With it on, a trace of this model
+    moved visible keypoints by up to 5 px at 1080p against the ONNX output;
+    with it off, by under 1 px.
+    """
+
+    def __init__(self, weights: Path, device: str = "cuda", resolution: int = 576) -> None:
+        import torch
+
+        weights = Path(weights)
+        if not weights.is_file():
+            raise FileNotFoundError(weights)
+        self.torch = torch
+        self.device = torch.device(device)
+        self.model = torch.jit.load(str(weights), map_location=self.device).eval()
+        self.height = self.width = resolution
+        self.mean = torch.tensor(_MEANS, device=self.device).view(1, 3, 1, 1)
+        self.std = torch.tensor(_STDS, device=self.device).view(1, 3, 1, 1)
+
+    def infer(self, frame_rgb: np.ndarray) -> tuple[list[tuple[int, float, float, float]], float]:
+        """Keypoints for one RGB frame; see :func:`decode_court_keypoints`."""
+        torch = self.torch
+        height, width = frame_rgb.shape[:2]
+        matmul_tf32 = torch.backends.cuda.matmul.allow_tf32
+        torch.backends.cuda.matmul.allow_tf32 = False
+        try:
+            with torch.inference_mode(), torch.backends.cudnn.flags(enabled=True, allow_tf32=False):
+                image = torch.from_numpy(np.ascontiguousarray(frame_rgb)).to(self.device)
+                image = image.permute(2, 0, 1)[None].float() / 255.0
+                # "Stretch to" the square input, as the model was trained.
+                image = torch.nn.functional.interpolate(
+                    image, size=(self.height, self.width), mode="bilinear", align_corners=False)
+                image = (image - self.mean) / self.std
+                _, logits, keypoints = self.model(image)
+                logits, keypoints = logits[0].float().cpu().numpy(), keypoints[0].float().cpu().numpy()
+        finally:
+            torch.backends.cuda.matmul.allow_tf32 = matmul_tf32
+        return decode_court_keypoints(logits, keypoints, width, height)
+
+
+def load_court_keypoints(weights: Path, device: str = "cuda"):
+    """The runner for an export, by file type: ``.ts`` on the GPU, ``.onnx`` via onnxruntime."""
+    weights = Path(weights)
+    if weights.suffix == ".ts":
+        return TorchScriptCourtKeypoints(weights, device=device)
+    return OfflineCourtKeypoints(weights, device=device)

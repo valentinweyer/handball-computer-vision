@@ -573,10 +573,12 @@ What was measured before that round
 
 ```
 court keypoints (RF-DETR keypoint, 576 px), per frame
-  ONNX on CPU (onnxruntime, current runner)            ~385-396 ms
+  ONNX on CPU (onnxruntime; fallback runner)           ~385-396 ms
   rfdetr predict(), eager PyTorch GPU (finetune venv)     40 ms   end to end
   rfdetr predict() after optimize_for_inference()         45 ms   (slower)
   TorchScript in this venv, preprocessing on GPU          26 ms   end to end
+  ...the default since 2026-10-16 (epoch 139, TF32 off)  ~45 ms   isolated;
+     ~33 ms/frame in render_court_view's loop, within 0.03 px median of ONNX
 JPEG decode of a 1080p frame (CPU)                        19 ms
 RF-DETR Large detector, rfdetr predict() in the finetune
   venv's GPU cache pass (cache_number_detections.py)    ~35 ms   (53 s / 1500 frames incl. load)

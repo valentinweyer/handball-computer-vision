@@ -19,7 +19,7 @@ from sports import MeasurementUnit, ViewTransformer, TeamClassifier
 from sports.handball import CourtConfiguration, League, draw_court, draw_points_on_court
 
 from handball_cv.court.keypoints import court_points
-from handball_cv.court.rfdetr_keypoints import OfflineCourtKeypoints
+from handball_cv.court.rfdetr_keypoints import load_court_keypoints
 from scripts.render_court_view import DEFAULT_WEIGHTS
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -57,7 +57,7 @@ COURT_PADDING = 50
 # ── Models ────────────────────────────────────────────────────────────────────
 
 player_model = get_model(model_id=PLAYER_DETECTION_MODEL_ID)
-keypoint_model = OfflineCourtKeypoints(KEYPOINT_WEIGHTS)
+keypoint_model = load_court_keypoints(KEYPOINT_WEIGHTS)
 
 config = CourtConfiguration(league=League.IHF, measurement_unit=MeasurementUnit.CENTIMETERS)
 
