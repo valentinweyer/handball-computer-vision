@@ -30,6 +30,7 @@ import supervision as sv
 import torch
 from tqdm import tqdm
 
+from handball_cv.tracking.sam2_acceleration import install_fused_rope, install_small_module_graphs
 from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
@@ -470,6 +471,10 @@ def drive_sam2(
         # filling holes and change the tracker's output.
         predictor.fill_hole_area = 0
         install_rope_repeat_cache()
+        # Output-identical speedups (~1.16x on GB10); each falls back to the
+        # upstream path for anything it cannot reproduce exactly.
+        install_fused_rope()
+        install_small_module_graphs(predictor)
     else:
         predictor = predictor_factory(checkpoint)
 

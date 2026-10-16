@@ -560,11 +560,13 @@ of the tracking loop, so further gains change output and need re-scoring.
 
 **Update (2026-10-16): not all of them.** `docs/sam2-gpu-bottleneck.md` profiles
 the model (about half memory-bound, a quarter compute-bound attention, 11% GPU
-idle) and measures a bit-identical fused Triton RoPE at 1.12x on Han-Ber4
-(`experiments/sam2_profile/fused_rope.py`). Open: put it in `sam2_driver.py`
-with a fallback when Triton or a sm_121 ptxas is missing, and check byte
-identity on FelixClaar and BHC-FAG. Next identical candidate: CUDA graphs for
-the per-player step.
+idle). A bit-identical fused Triton RoPE plus CUDA graphs for the memory
+encoder and mask decoder are now in production
+(`tracking/sam2_acceleration.py`): tracking 1.14-1.16x, the Melsungen render
+1.16x, all outputs byte-identical. Parked on purpose: the CPU/GPU overlap
+patch (~1.03x, `experiments/sam2_profile/patches/cpu_overlap.py`), which is only
+correct while predictor state changes between chunks -- revisit once the
+lifecycle work settles.
 
 **Open, found during that round: PARSeq runs in BF16 in SAM2 renders.**
 `drive_sam2` yields from inside its BF16 autocast block, which stays active in

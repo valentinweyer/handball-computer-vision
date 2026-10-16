@@ -117,11 +117,26 @@ every frame's packed masks:
 | `roofline.py --mode rope-ab`, in one process, mean ms/frame | 425.3 | **380.5** | 429.4 | identical on 198/198 frames |
 | `ab.py`, one process per config, loop wall | 85.0 s | **75.7 s** (1.12x, 2.33 -> 2.61 fps) | | identical on 198/198 frames |
 
-**Status: experiment only.** Not in `sam2_driver.py`; not yet checked on
-FelixClaar or BHC-FAG; and it needs `TRITON_PTXAS_PATH` pointing at a ptxas
-that knows sm_121 (Triton's bundled ptxas does not; see
-[sam2-speed-research.md](sam2-speed-research.md), Stage A). A production
-version must fall back to the current path when Triton is unavailable.
+**Status: in production since 2026-10-16**, together with Codex's
+memory-encoder and mask-decoder CUDA graphs, as
+`src/handball_cv/tracking/sam2_acceleration.py`, installed by `drive_sam2` on
+its default predictor. The fused RoPE checks the first call of every input
+shape against the previous implementation with `torch.equal` and disables
+itself on any mismatch or Triton failure, since its bit-identity is a property
+of this compiler stack. It sets `TRITON_PTXAS_PATH` to torch's own ptxas when
+unset (Triton's bundled one predates sm_121; see
+[sam2-speed-research.md](sam2-speed-research.md), Stage A). CUDA graphs capture
+in thread-local error mode. The CPU/GPU overlap patch stays an experiment: it
+is correct only while predictor state changes between chunks, never inside one,
+and lifecycle work may change that.
+
+Production-path verification (`runs/sam2_accel_prod_verify/`, gitignored):
+`scripts.run_sam2_reprompt_tracker` reproduces the stored production npz of
+`runs/perf_speedups/rope/` exactly on Han-Ber4, FelixClaar and BHC-FAG (100.1 ->
+88.2 s, 111.3 -> 97.9 s, 218.9 -> 189.2 s, baselines from an earlier session).
+The 1499-frame Melsungen `render_full_pipeline --tracker sam2` with live PARSeq
+reads matches a fresh production render run back to back: mp4 bytes, geometry
+cache, reads JSON and run JSON identical, 652.7 -> 562.9 s (1.16x).
 
 ## Remaining candidates
 
