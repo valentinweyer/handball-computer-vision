@@ -25,6 +25,8 @@ def main():
     parser.add_argument("--max-frames", type=int, default=141)
     parser.add_argument("--warmup-frames", type=int, default=0)
     parser.add_argument("--capture-masks", action="store_true")
+    parser.add_argument("--capture-range", type=int, nargs=2, default=(90, 140),
+                        metavar=("FIRST", "LAST"), help="frames whose masks --capture-masks saves")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     assert args.max_frames >= 2
@@ -124,7 +126,7 @@ def main():
             stats.append(row)
             rows.extend((result.frame_idx, int(oid), box.copy())
                         for oid, box in zip(result.player_ids, result.boxes))
-            if args.capture_masks and 90 <= result.frame_idx <= 140:
+            if args.capture_masks and args.capture_range[0] <= result.frame_idx <= args.capture_range[1]:
                 np.savez_compressed(args.output / "masks" / f"{result.frame_idx:05d}.npz",
                                     ids=result.player_ids, masks=np.packbits(result.masks, axis=-1),
                                     width=result.masks.shape[-1])
