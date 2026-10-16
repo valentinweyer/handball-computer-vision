@@ -36,8 +36,7 @@ from sports import MeasurementUnit
 from sports.handball import CourtConfiguration, League, draw_court
 from tqdm import tqdm
 
-from handball_cv.court.camera_motion import estimate_camera_motion
-from handball_cv.court.homography import CourtTracker
+from handball_cv.court.sequence import fit_court, infer_keypoints, measure_motion
 from handball_cv.court.keypoints import KEYPOINT_TO_VERTEX
 from handball_cv.tracking.sam2_driver import ffmpeg_exe
 
@@ -72,17 +71,18 @@ def weights_tag(weights: Path) -> str:
     return weights.parent.name.removeprefix("court-keypoints-")
 
 
+def read_rgb(paths: list[Path], desc: str):
+    for path in tqdm(paths, desc=desc):
+        yield cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
+
+
 def load_or_infer(args, frames: list[Path]) -> list[list[tuple[int, float, float, float]]]:
     if args.keypoints.exists():
         cached = json.loads(args.keypoints.read_text())
         print(f"keypoints from {args.keypoints} ({cached.get('model')})")
         return cached["keypoints"]
     from handball_cv.court.rfdetr_keypoints import load_court_keypoints
-    model = load_court_keypoints(args.weights)
-    keypoints = []
-    for path in tqdm(frames, desc="court keypoints"):
-        points, _ = model.infer(cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB))
-        keypoints.append([list(p) for p in points])
+    keypoints = infer_keypoints(load_court_keypoints(args.weights), read_rgb(frames, "court keypoints"))
     args.keypoints.parent.mkdir(parents=True, exist_ok=True)
     args.keypoints.write_text(json.dumps({"model": str(args.weights), "conf": CONFIDENCE, "clip": args.clip,
                                           "keypoints": keypoints}))
@@ -92,13 +92,7 @@ def load_or_infer(args, frames: list[Path]) -> list[list[tuple[int, float, float
 def load_or_measure_motion(args, frames: list[Path]) -> list:
     if args.motion and args.motion.exists():
         return json.loads(args.motion.read_text())
-    motion, previous = [None], None
-    for i, path in enumerate(tqdm(frames, desc="camera motion")):
-        gray = cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2GRAY)
-        if i:
-            matrix = estimate_camera_motion(previous, gray)
-            motion.append(None if matrix is None else matrix.tolist())
-        previous = gray
+    motion = measure_motion(read_rgb(frames, "camera motion"))
     if args.motion:
         args.motion.write_text(json.dumps(motion))
     return motion
@@ -124,7 +118,6 @@ def render(args) -> None:
     first = cv2.imread(str(frames[0]))
     height, width = first.shape[:2]
     config = court_config()
-    vertices = np.asarray(config.vertices, dtype=np.float64)
 
     keypoints = load_or_infer(args, frames)
     motion = load_or_measure_motion(args, frames)
@@ -143,7 +136,7 @@ def render(args) -> None:
     side_scale = SIDE_W / (config.court_length * TEMPLATE_SCALE + 2 * TEMPLATE_PAD)
     side_from_court = np.diag([side_scale, side_scale, 1.0]) @ side_from_court
 
-    tracker = CourtTracker(vertices, (width, height))
+    fits = fit_court(keypoints, motion, (width, height))
     raw = args.output.with_suffix(".raw.mp4")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     writer = cv2.VideoWriter(str(raw), cv2.VideoWriter_fourcc(*"mp4v"), args.fps, (FRAME_W + SIDE_W, FRAME_H))
@@ -153,8 +146,7 @@ def render(args) -> None:
 
     for t, path in enumerate(tqdm(frames, desc="render")):
         frame = cv2.imread(str(path))
-        m = motion[t] if t < len(motion) else None
-        fit = tracker.update([tuple(k) for k in keypoints[t]], motion=None if m is None else np.array(m))
+        fit = fits[t]
         sources[fit.source] += 1
 
         if fit.usable:

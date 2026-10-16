@@ -620,7 +620,7 @@ class Segment:
     votes: int                    # final tally, for reporting
     margin: float
 
-    def _causal_at(self, frame: int) -> str | None:
+    def live_at(self, frame: int) -> str | None:
         """The label the render drew on `frame`, `None` where it drew none."""
         value = None
         for at, candidate in self.timeline:
@@ -657,7 +657,7 @@ class Segment:
     @property
     def labelled(self) -> tuple:
         """Live frames the render already drew a number on."""
-        return tuple(f for f in self.live if self._causal_at(f) is not None)
+        return tuple(f for f in self.live if self.live_at(f) is not None)
 
     @property
     def backfill(self) -> tuple:
@@ -683,7 +683,7 @@ class Segment:
             return None
         if frame < self.resolved_at:
             return self.verdict if self.stable else None
-        return self._causal_at(frame)
+        return self.live_at(frame)
 
 
 def causal_labels(reads, events, live_frames, teams=None,

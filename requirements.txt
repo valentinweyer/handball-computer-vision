@@ -17,6 +17,10 @@ opencv-python==4.10.0.84
 numpy==2.3.4
 scipy==1.16.3
 
+# ── result bundle (Parquet tables; handball_cv.pipeline.result) ──────────────
+pandas==2.3.3
+pyarrow==26.0.0
+
 # ── team classification / re-ID (SigLIP + UMAP + KMeans) ─────────────────────
 transformers==4.57.6
 umap-learn==0.5.9.post2

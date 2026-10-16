@@ -8,7 +8,8 @@ import numpy as np
 import pytest
 import torch
 
-from handball_cv.tracking.sam2_driver import VideoFrames, rgb_to_sam2_tensor
+from handball_cv.tracking.sam2_driver import rgb_to_sam2_tensor
+from handball_cv.video import VideoFrames
 
 FRAMES = 40
 

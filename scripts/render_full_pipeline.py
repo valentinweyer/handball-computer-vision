@@ -52,10 +52,13 @@ from handball_cv.jersey.identity import (
     match_numbers_to_players,
     read_numbers,
 )
-from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE, TeamModel, crop_quality
+from handball_cv.teams.model import TeamModel, crop_quality
 from handball_cv.tracking.geometry_cache import GeometryCache
 from handball_cv.tracking.sam2_driver import ensure_frame_cache
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
+from handball_cv.visualization.palette import (
+    LEGEND, PALETTE_HEX, TEAM_A, TEAM_B, color_index,
+)
 from scripts.render_raw_team_classification import (
     number_detections,
     person_detections,
@@ -67,23 +70,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAYER_MODEL_ID = "player-and-handball-detection-3z9xf/3"
 GOALKEEPER_CLASS_ID = 1
 
-# One palette, indexed by the lookup below. Team A/B first so a roster-less
-# clip still reads like the notebook's two-team overlay.
-TEAM_A, TEAM_B, NEW_UNCERTAIN, CONTESTED, GOALKEEPER = 0, 1, 2, 3, 4
-PALETTE_HEX = [
-    "#00BEFF",  # A
-    "#FF7800",  # B
-    "#FFDC00",  # new / never had a qualified read
-    "#DC0000",  # established but actively contested
-    "#B4B4B4",  # goalkeeper
-]
-LEGEND = [
-    (TEAM_A, "Team A"),
-    (TEAM_B, "Team B"),
-    (NEW_UNCERTAIN, "New / uncertain"),
-    (CONTESTED, "Contested"),
-    (GOALKEEPER, "GK"),
-]
 DEFAULT_FONT = ROOT / "notebooks" / "fonts" / "ConcertOne-Regular.ttf"
 
 
@@ -282,22 +268,6 @@ def tracklet_masks(mask_output, tracker_ids) -> list:
         row = row_by_tracker.get(int(tracker_id))
         out.append(masks[int(row)] if row is not None and 0 <= int(row) < len(masks) else None)
     return out
-
-
-def color_index(player) -> int:
-    """Which palette entry this player draws with.
-
-    Keeps yesterday's distinction between a brand-new player still building
-    evidence and an established one whose team is under active opposition --
-    the second is the interesting failure, the first is just bootstrapping.
-    """
-    if player.is_goalkeeper:
-        return GOALKEEPER
-    if player.team_is_provisional:
-        return NEW_UNCERTAIN
-    if player.team_confidence < MIN_STABLE_TEAM_CONFIDENCE:
-        return CONTESTED
-    return TEAM_A if player.voted_team_id == 0 else TEAM_B
 
 
 # Matches the notebook's PLAYER_DETECTION_MODEL_CONFIDENCE / IOU_THRESHOLD.

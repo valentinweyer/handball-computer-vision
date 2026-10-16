@@ -158,6 +158,32 @@ class _LoadedGeometry:
         """Every frame the tracking pass recorded, in order, empty ones included."""
         return [int(i) for i in self._s["visited"]]
 
+    def rows(self, frame_idx: int) -> tuple:
+        """`(player_ids, boxes, color_index, team_id)` for one frame, masks not decoded."""
+        s = self._s
+        lo, hi = int(s["offsets"][frame_idx]), int(s["offsets"][frame_idx + 1])
+        return (s["player_ids"][lo:hi], s["boxes"][lo:hi].astype(float),
+                s["color_index"][lo:hi], s["team_id"][lo:hi])
+
+    def row_offset(self, frame_idx: int) -> int:
+        """Global row index of `frame_idx`'s first player -- what `row_mask` takes."""
+        return int(self._s["offsets"][frame_idx])
+
+    def row_mask(self, index: int) -> np.ndarray:
+        """One player-frame's full-size mask, by global row index."""
+        mask = np.zeros((self.height, self.width), dtype=bool)
+        self._paint(int(index), mask)
+        return mask
+
+    def _paint(self, index: int, out: np.ndarray) -> None:
+        s = self._s
+        x0, y0, w, h = (int(v) for v in s["crop_rect"][index])
+        if not (w and h):
+            return
+        start, stop = int(s["mask_offsets"][index]), int(s["mask_offsets"][index + 1])
+        crop = np.unpackbits(s["mask_bits"][start:stop], count=h * w)
+        out[y0:y0 + h, x0:x0 + w] = crop.reshape(h, w).astype(bool)
+
     def frame(self, frame_idx: int) -> FrameGeometry:
         s = self._s
         offsets = s["offsets"]
@@ -165,15 +191,9 @@ class _LoadedGeometry:
             lo = hi = 0
         else:
             lo, hi = int(offsets[frame_idx]), int(offsets[frame_idx + 1])
-        shape = (self.height, self.width)
-        masks = np.zeros((hi - lo, *shape), dtype=bool)
+        masks = np.zeros((hi - lo, self.height, self.width), dtype=bool)
         for row, index in enumerate(range(lo, hi)):
-            x0, y0, w, h = (int(v) for v in s["crop_rect"][index])
-            if not (w and h):
-                continue
-            start, stop = int(s["mask_offsets"][index]), int(s["mask_offsets"][index + 1])
-            crop = np.unpackbits(s["mask_bits"][start:stop], count=h * w)
-            masks[row, y0:y0 + h, x0:x0 + w] = crop.reshape(h, w).astype(bool)
+            self._paint(index, masks[row])
         return FrameGeometry(
             frame_idx=frame_idx,
             player_ids=s["player_ids"][lo:hi],

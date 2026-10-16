@@ -84,6 +84,7 @@ __all__ = [
     "KEYPOINT_FLIP_INDEX",
     "vertex_indices",
     "court_points",
+    "court_vertices",
     "upright",
 ]
 
@@ -128,6 +129,19 @@ def vertex_indices(slots: Iterable[int]) -> np.ndarray:
             f"{out.min()}..{out.max()}"
         )
     return np.asarray(KEYPOINT_TO_VERTEX, dtype=int)[out]
+
+
+def court_vertices() -> np.ndarray:
+    """The IHF court's 37 template vertices in centimetres, ``(37, 2)``.
+
+    The coordinate system every court position in this project is reported in:
+    x along the 4000 cm length, y across the 2000 cm width, origin at a corner.
+    """
+    from sports import MeasurementUnit
+    from sports.handball import CourtConfiguration, League
+
+    config = CourtConfiguration(league=League.IHF, measurement_unit=MeasurementUnit.CENTIMETERS)
+    return np.asarray(config.vertices, dtype=np.float64)
 
 
 def court_points(slots: Iterable[int], vertices: Sequence[Sequence[float]]) -> np.ndarray:
