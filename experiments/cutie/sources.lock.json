@@ -1,0 +1,17 @@
+{
+  "cutie": {
+    "url": "https://github.com/hkchengrex/Cutie.git",
+    "revision": "ec5cdd4cf16f75c73ad785a2f96fb97dbad4125a",
+    "patch": "upstream-delete.patch",
+    "patch_sha256": "71b887b6398779bfc2ef0d3f2d521b9975358d094dbce6e1305c4c74cce8a784",
+    "weights": "/home/valentinweyer/projects/handball-computer-vision/models/cutie/cutie-base-mega.pth",
+    "weights_url": "https://github.com/hkchengrex/Cutie/releases/download/v1.0/cutie-base-mega.pth",
+    "weights_md5": "a6071de6136982e396851903ab4c083a",
+    "weights_sha256": "9c05402ee36d3a356fb72715d263ba7e1ea06ad3bada48c1306491792da43023"
+  },
+  "sam2_image_head": {
+    "revision": "2b90b9f5ceec907a1c18123530e92e794ad901a4",
+    "weights": "/home/valentinweyer/projects/handball-computer-vision/segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt",
+    "weights_sha256": "2647878d5dfa5098f2f8649825738a9345572bae2d4350a2468587ece47dd318"
+  }
+}
