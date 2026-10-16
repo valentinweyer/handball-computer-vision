@@ -3,12 +3,26 @@ from __future__ import annotations
 
 from collections import OrderedDict
 from pathlib import Path
+import shutil
 import threading
 
 import cv2
 import numpy as np
 
-__all__ = ["VideoFrames"]
+__all__ = ["VideoFrames", "ffmpeg_exe"]
+
+
+def ffmpeg_exe() -> str:
+    """Bare `ffmpeg` if on PATH, else the imageio-ffmpeg bundled static binary.
+
+    This host has no system ffmpeg and no passwordless sudo to install one;
+    imageio-ffmpeg ships a working static binary as a plain pip package.
+    """
+    found = shutil.which("ffmpeg")
+    if found:
+        return found
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 class VideoFrames:

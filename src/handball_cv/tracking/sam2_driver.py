@@ -20,7 +20,6 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from dataclasses import dataclass
 import functools
 from pathlib import Path
-import shutil
 import subprocess
 from typing import Callable, Iterator
 
@@ -30,25 +29,12 @@ import supervision as sv
 import torch
 from tqdm import tqdm
 
-from handball_cv.video import VideoFrames
+from handball_cv.video import VideoFrames, ffmpeg_exe  # ffmpeg_exe: re-exported for existing callers
 from handball_cv.tracking.sam2_acceleration import install_fused_rope, install_small_module_graphs
 from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
 CHECK_EVERY_DEFAULT = 10  # matches run_pipeline.py's detector-checkpoint cadence
-
-
-def ffmpeg_exe() -> str:
-    """Bare `ffmpeg` if on PATH, else the imageio-ffmpeg bundled static binary.
-
-    This host has no system ffmpeg and no passwordless sudo to install one;
-    imageio-ffmpeg ships a working static binary as a plain pip package.
-    """
-    found = shutil.which("ffmpeg")
-    if found:
-        return found
-    import imageio_ffmpeg
-    return imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def ensure_frame_cache(video: Path, frame_cache_dir: Path) -> list[Path]:
