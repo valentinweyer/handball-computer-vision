@@ -558,6 +558,16 @@ SAM2 tracking 10-17%; boundary-frame skipping (changes output) and object
 batching (slower on GB10) were measured and dropped. The SAM2 model is now ~95%
 of the tracking loop, so further gains change output and need re-scoring.
 
+**Update (2026-10-16): not all of them.** `docs/sam2-gpu-bottleneck.md` profiles
+the model (about half memory-bound, a quarter compute-bound attention, 11% GPU
+idle). A bit-identical fused Triton RoPE plus CUDA graphs for the memory
+encoder and mask decoder are now in production
+(`tracking/sam2_acceleration.py`): tracking 1.14-1.16x, the Melsungen render
+1.16x, all outputs byte-identical. Parked on purpose: the CPU/GPU overlap
+patch (~1.03x, `experiments/sam2_profile/patches/cpu_overlap.py`), which is only
+correct while predictor state changes between chunks -- revisit once the
+lifecycle work settles.
+
 **Open, found during that round: PARSeq runs in BF16 in SAM2 renders.**
 `drive_sam2` yields from inside its BF16 autocast block, which stays active in
 the consumer, so the render's reader calls and every `*_reads.json` from a SAM2

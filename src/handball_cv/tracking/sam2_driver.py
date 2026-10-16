@@ -30,6 +30,7 @@ import supervision as sv
 import torch
 from tqdm import tqdm
 
+from handball_cv.tracking.sam2_acceleration import install_fused_rope, install_small_module_graphs
 from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
@@ -470,6 +471,10 @@ def drive_sam2(
         # filling holes and change the tracker's output.
         predictor.fill_hole_area = 0
         install_rope_repeat_cache()
+        # Output-identical speedups (~1.16x on GB10); each falls back to the
+        # upstream path for anything it cannot reproduce exactly.
+        install_fused_rope()
+        install_small_module_graphs(predictor)
     else:
         predictor = predictor_factory(checkpoint)
 
@@ -484,10 +489,11 @@ def drive_sam2(
     is_gk0 = det0.class_id == goalkeeper_class_id
     obj_ids0 = track_manager.seed(0, det0.xyxy, frame0, is_gk0)
 
-    # The default predictor gets frames on demand (LazyFrames, identical values);
-    # an injected backend keeps its own init_state untouched.
-    state = (init_state_lazily(predictor, frame_cache_dir) if predictor_factory is None
-             else predictor.init_state(video_path=str(frame_cache_dir)))
+    # A SAM2VideoPredictor -- the default, or an injected SAM2 fork such as
+    # Lean-SAM2 -- gets frames on demand (LazyFrames, identical values), so
+    # forks are timed on the same frame loading; any other backend keeps its
+    # own init_state untouched (init_state_lazily falls back to it).
+    state = init_state_lazily(predictor, frame_cache_dir)
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         for oid, xyxy in zip(obj_ids0, det0.xyxy):
             predictor.add_new_points_or_box(

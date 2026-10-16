@@ -65,6 +65,10 @@ decisions 7 (mostly the team model), prompt encoder 3, propagation bookkeeping
 2. The model is now ~95% of the tracking loop, and its remaining large terms
 are not reachable without changing output: RoPE's float32 copies and complex
 multiply could be fused, but a fused kernel would round differently.
+**Corrected later on 2026-10-16:** a Triton kernel with the matching FMA order is
+bit-identical and makes Han-Ber4 tracking 1.12x faster with identical output;
+see [sam2-gpu-bottleneck.md](sam2-gpu-bottleneck.md) (experiment, not yet in
+production).
 
 Confirmed from the code, not fixed (it changes reads): **PARSeq runs in BF16
 during SAM2 renders.** `drive_sam2` yields each frame from inside

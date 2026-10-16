@@ -333,3 +333,53 @@ All live code and documentation links were inspected for this comparison on Sept
 [^29]: Farronato et al. [Q-SAM2: Accurate Quantization for Segment Anything Model 2](https://arxiv.org/html/2506.09782v1), June 2025. Quantization and video-quality research.
 [^30]: Mandal et al. [Fast SAM2 with Text-Driven Token Pruning](https://arxiv.org/abs/2512.21333), December 24, 2025. Reported pruning speed and memory benefits; local deployment not established.
 [^31]: Ouyang et al. [Lean-SAM2: Target-Anchored Memory and Encoder Acceleration for SAM2](https://arxiv.org/html/2607.19811v1), July 22, 2026. Timing protocol and comparator interpretation.
+
+## Further exact SAM2 speedups on GB10 (2026-10-16)
+
+Measured in `investigate/sam2-gpu-bottleneck-20261016` at revision `431009d550adb89e0561a3c6fffb1789fa45e466`, using the existing SAM2.1 Hiera-L checkpoint, 1024 input, CUDA BF16 autocast, PyTorch 2.9.1+cu130 and cached RF-DETR detections/checkpoints every ten frames. All changes are experiment monkeypatches; production source and shared upstream source were not edited.
+
+Timing is the existing A/B harness complete tracking-loop wall: propagation, CPU mask transfer/filtering, boxes, TrackManager/checkpoints and harness bookkeeping. Setup and the separate 12-frame warmup are excluded. Each row uses two independent repeats, strictly sequential on the one GPU, in base/candidate/base/candidate order. Speedup is mean base wall divided by mean candidate wall. Noise is the absolute difference between the two base walls divided by their mean. Every base-versus-base comparison was exact.
+
+Additional candidates below use **fused RoPE as baseline**. Exact means every propagated frame has the same frame index, ordered IDs, boxes and SHA-256 of packed binary masks, in both candidate repetitions.
+
+| Candidate | Base / candidate s | Speedup | Exact 2/2 | Base noise | Decision |
+|---|---:|---:|---|---:|---|
+| CPU/GPU post-processing overlap | 75.260 / 72.967 | 1.0314× | Yes | 0.665% | Promote |
+| Memory-encoder + mask-decoder CUDA graphs | 74.965 / 72.226 | 1.0379× | Yes | 1.034% | Promote |
+| In-place projected-key/query RoPE | 75.601 / 75.335 | 1.0035× | Yes | 0.005% | Below 2% |
+| Next-frame encoder on a side stream | 75.603 / 76.457 | 0.9888× | Yes | 0.018% | Slower |
+| Skip driver-discarded prompt previews | 75.643 / 76.508 | 0.9887× | Yes | 0.104% | Slower |
+| Cache dense prompt position map, clone returns | 75.470 / 76.307 | 0.9890× | Yes | 0.078% | Slower |
+| Share memory additions and BF16 casts across layers | 75.092 / 75.001 | 1.0012× | Yes | 0.985% | Within noise; below 2% |
+
+**Final stack:** `experiments.sam2_profile.fused_rope:install`, `experiments.sam2_profile.patches.cpu_overlap:install`, then `experiments.sam2_profile.patches.cuda_small_graphs:install`. The following baseline is current production (`ab run` with no `--patch`); each clip again ran base/stack/base/stack in separate processes.
+
+| Clip | Propagated frames | Base / stack s | Speedup | Exact 2/2 | Base noise |
+|---|---:|---:|---:|---|---:|
+| Han-Ber4 | 198 | 84.607 / 70.395 | 1.2019× | Yes | 0.728% |
+| FelixClaar | 248 | 95.639 / 79.766 | 1.1990× | Yes | 0.084% |
+| BHC-FAG window | 499 | 204.511 / 170.054 | 1.2026× | Yes | 0.062% |
+
+Across the final stack, all 945 propagated frames matched in both repeats: zero differing ID, box or mask-hash frames; first differing frame is absent and maximum box delta is zero. This is about 20% more complete-loop throughput on each clip.
+
+The overlap patch gives one producer thread a private CUDA stream for one finite propagation chunk. Events and `record_stream` protect mask handoff; the producer joins before checkpoint corrections, resets, additions or removals. The queue has one slot and bounds lookahead. Graphs copy dynamic inputs into owned static buffers, preserve expanded strides and clone all tensor outputs. For safe composition, the first two source results are buffered before consumer CUDA work; subsequent unknown graph signatures stay eager. The cache caps are four graphs per module plus a supplementary 512 MiB active-allocation budget per module. At the end of BHC (499 frames), logs report one memory-encoder graph and four decoder graphs, the same entry counts as Felix; there were no capture failures. Frame-bank filling, duplicate boundary recomputation and lifecycle changes remain exercised by the full clips.
+
+Other gates and negative results:
+
+- **Memory-attention-only CUDA graphs:** exact changed inputs, retained outputs and autocast-boundary replay, but 0.9891× / 0.9848× module wall speedup at 28,736 / 24,608 memory tokens. Eager/graph were 11.423/11.549 ms and 10.413/10.573 ms. Input copies, output clones and captured parameter casts were retained for lifetime safety; stop at the module gate. The smaller-module graphs above did improve the complete loop.
+- **Fused LayerNorm2d:** rejected at `torch.equal`, without tolerance changes or a video run. The final microtest differed in 58,190 of 262,144 FP32 outputs for shape `(1,4,256,256)`, scale 1, maximum absolute error `2.384185791015625e-07`. Public installation refuses this known-inexact candidate; its private microtest preserves the negative experiment.
+- **cuBLASLt preference:** all 16 sampled BF16 linear shapes were equal, with mixed per-shape timings. Profile-count-weighted GEMM microtimes were 116.633 vs 114.916 ms (1.0149×); no complete-loop gain is claimed or promoted.
+- **cuDNN SDPA:** no available kernel on this installed stack for q/k/d `(4096,4096,256)`, `(4096,28736,256)` or `(4096,12304,256)`. No video run.
+- **Per-memory-frame value projection:** trained-weight chunk-versus-concatenation probes passed 48/48 exact cases across four layers, bank lengths and pointer suffixes. A persistent value cache was not implemented: safe provenance and eviction still need a memory-assembly seam; seven frames × four layers × fourteen objects would retain about 0.82 GB of projected values. This is feasibility evidence, not a measured speedup. Encoder position-map caching and batching unequal per-object banks also remain unimplemented; encoder compilation and other-model substitutions were not retried.
+
+Evidence: `runs/sam2_gpu_bottleneck/ab/20261016_followup/` contains every raw timing/identity JSON and log, candidate and per-clip `summary.json`, `report.{json,md}`, isolated probes, graph/thread CPU regression proof, code hashes and `provenance_audit.json`. All 40 protocol timing processes exited successfully and their patch hashes match the final files. Microtests additionally check input immutability, output retention, autocast transitions, unsupported-context fallbacks, producer exceptions/early closure, ordered buffered errors, context restoration and bounded caches. `experiments/sam2_profile/sweep.py` reproduces the serial alternation; it refuses to overwrite existing run files.
+
+Reproduce the final comparison from this worktree with the production virtualenv and a fresh output directory:
+
+```bash
+/home/valentinweyer/projects/handball-computer-vision/.venv/bin/python -m experiments.sam2_profile.sweep \
+  --output runs/sam2_gpu_bottleneck/ab/reproduce_followup_20261016 \
+  --stack experiments.sam2_profile.fused_rope:install \
+  --stack experiments.sam2_profile.patches.cpu_overlap:install \
+  --stack experiments.sam2_profile.patches.cuda_small_graphs:install
+```
