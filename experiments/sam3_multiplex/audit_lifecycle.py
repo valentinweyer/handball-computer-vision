@@ -32,8 +32,11 @@ def main():
         def prompt(oid, fid, box):
             predictor.add_new_points_or_box(state, fid, oid, box)
 
+        def group(oid):
+            return predictor._group_of(state, oid)
+
         def snapshot(oid, fid):
-            out = state["output_dict_per_obj"][state["obj_id_to_idx"][oid]]
+            out = group(oid)["output_dict_per_obj"][group(oid)["obj_id_to_idx"][oid]]
             row = out["cond_frame_outputs"].get(fid)
             if row is None:
                 row = out["non_cond_frame_outputs"][fid]
@@ -42,17 +45,18 @@ def main():
         def retained(oid, fid, saved):
             assert torch.equal(snapshot(oid, fid), saved), (oid, fid, "past prediction changed")
 
-        def propagate(start, end, expected):
+        def propagate(start, end, expected, buckets=1):
             seen = []
             for fid, ids, logits in predictor.propagate_in_video(state, start, end-start):
                 assert set(ids) == set(expected), (ids, expected)
                 assert logits.is_cuda and torch.isfinite(logits).all()
                 assert len(logits) == len(expected)
-                assert state["multiplex_state"].num_buckets == 1
+                assert predictor.bucket_count(state) == buckets
                 seen.append(fid)
                 outputs.append({"frame": fid, "ids": list(map(int, ids)),
                                 "nonempty_masks": int((logits > 0).flatten(1).any(1).sum()),
-                                "buckets": state["multiplex_state"].num_buckets})
+                                "buckets": predictor.bucket_count(state),
+                                "groups": len(state["groups"])})
             assert seen == list(range(start, end+1))
 
         with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
@@ -62,7 +66,7 @@ def main():
             prompt(303, 2, boxes[2])
             propagate(2, 3, [101, 202, 303])
             for oid in saved: retained(oid, 1, saved[oid])
-            assert 2 in state["output_dict"]["cond_frame_outputs"]
+            assert 2 in group(303)["output_dict"]["cond_frame_outputs"]
             checks.append("late addition preserves both prior players and historical predictions")
 
             saved = {oid: snapshot(oid, 2) for oid in [101, 303]}
@@ -82,9 +86,26 @@ def main():
             prompt(101, 4, boxes[0])
             propagate(4, 5, [303, 101])
             retained(303, 3, saved)
-            fresh = state["output_dict_per_obj"][state["obj_id_to_idx"][101]]
+            fresh = group(101)["output_dict_per_obj"][group(101)["obj_id_to_idx"][101]]
             assert 1 not in fresh["cond_frame_outputs"] and 1 not in fresh["non_cond_frame_outputs"]
             checks.append("remove/re-add resets one identity and retains the survivor's history")
+
+            # The BHC-FAG crash: more late players than the first group has
+            # never-used slots. They must open a second group, and both groups
+            # must keep tracking with their histories intact.
+            # Added at the last tracked frame, as drive_sam2's checkpoints do.
+            saved = {oid: snapshot(oid, 4) for oid in [303, 101]}
+            late = list(range(400, 416))
+            for i, oid in enumerate(late):
+                prompt(oid, 5, boxes[i % len(boxes)])
+            propagate(5, 7, [303, 101] + late, buckets=2)
+            for oid in saved: retained(oid, 4, saved[oid])
+            assert len(state["groups"]) == 2
+            second = [oid for oid in late if group(oid) is not group(303)]
+            assert second and all(4 not in group(oid)["output_dict"]["non_cond_frame_outputs"]
+                                  and 4 not in group(oid)["output_dict"]["cond_frame_outputs"]
+                                  for oid in second)
+            checks.append("overflowing the first group opens a second one with no history; no crash")
     report = {"passed": True, "strict_loading": loading, "checks": checks,
               "frames": outputs, "scope": "API/state integrity on a short real-video GPU probe; not handball identity-quality equivalence"}
     (args.output / "report.json").write_text(json.dumps(report, indent=2))

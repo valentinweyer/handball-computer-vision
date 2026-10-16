@@ -1,10 +1,56 @@
-# SAM3.1 multiplex local evaluation — 2026-10-15
+# SAM3.1 multiplex local evaluation — 2026-10-15, updated 2026-10-16
 
-**Full-clip quality is mixed, and a temporal-memory crash on the third clip
-blocks adoption of this adapter.** SAM3.1 scores above SAM2 on full Felix and
-slightly below it on Han. This does not establish general quality equivalence or
-regression. Production SAM2 remains the default. The earlier short comparison
-and reassessment are retained below.
+**The bucket-growth crash is fixed and all three clips now complete. SAM3.1 is
+1.4x faster than SAM2 in a paired run but less accurate on two of three clips,
+so SAM2 stays the default.** See "Group fix and paired three-clip run" below.
+The earlier sections are retained as written.
+
+## Group fix and paired three-clip run (2026-10-16)
+
+**Fix.** Each multiplex bucket's worth of players (16 slots) now lives in its
+own upstream SAM3.1 state ("group"); all groups share the image encoding and
+feature cache. Buckets never interact in the model, so this computes the same
+thing as one multi-bucket state, but no state ever grows a bucket, which is what
+`torch.cat` in `_prepare_memory_conditioned_features` could not handle. New IDs
+fill free slots of existing groups first (upstream never reuses removed slots,
+so a group only gains free slots by being created); otherwise they start a new
+group with no fabricated history. A group whose last ID is removed is dropped.
+Upstream source is unchanged; the change is confined to
+`experiments/sam3_multiplex/adapter.py`.
+
+`audit_lifecycle.py` passes all five checks, including a new overflow case: 16
+late IDs added to a full group at the last tracked frame, propagation continues
+with 2 buckets, the first group's history is unchanged and the second group has
+no earlier history (`runs/sam31_lifecycle_groups_20261016/report.json`).
+
+**Paired run.** Both backends ran through the same harness, on the same code, in
+the same session, one at a time on a quiet GPU (`runs/sam31_groups_20261016/`;
+tracking only, cached detections, 12 warmup frames).
+
+| Clip | SAM2 correct | SAM3.1 correct | Diff | Wrong-ID obs (2 / 3.1) | SAM2 FPS | SAM3.1 FPS |
+|---|---:|---:|---:|---:|---:|---:|
+| FelixClaar | 95.01% | 95.76% | +0.75 pp | 18 / 7 | 2.58 | 3.65 |
+| Han-Ber4 | 99.91% | 99.22% | −0.69 pp | 0 / 3 | 2.31 | 3.60 |
+| BHC-FAG | 98.88% | 97.63% | −1.24 pp | 6 / 46 | 2.42 | 3.39 |
+
+All SAM2 scores reproduce the references. SAM3.1's Felix and Han scores
+reproduce the 2026-10-15 runs exactly; both stay in one group. BHC-FAG used a
+second group from frame 371 to the end. Its process RSS was 3.4 GB against
+SAM2's 8.7 GB.
+
+**Where BHC-FAG loses.** The extra errors start before the second group exists,
+so they come from the model, not the group split. SAM3.1 needed three
+low-IoU reprompts of ID 4 at frames 340–360, where SAM2 needed none. At frame 360
+it lost reference player 8 for one frame, so the manager added ID 16 for the
+same player. IDs 8 and 16 then alternated on that player, and from frame 440 ID
+16 moved onto reference player 5. SAM2 held player 8 throughout. This is box
+matching; the masks were not visually inspected.
+
+**Verdict.** Not a drop-in replacement yet. The speed gain is real (+40% loop
+FPS), but the duplicate-then-swap pattern on BHC-FAG is the kind of confident
+wrong identity the pipeline is designed to avoid. Possible next steps are to
+check the frame-360 masks visually, or to try a stricter new-ID gate for
+SAM3.1; either would need re-scoring on all three clips.
 
 ## Worktree follow-up
 

@@ -119,7 +119,8 @@ def main():
                    "resume_seconds": now - previous,
                    "nonempty_targets": int(result.masks.any(axis=(1, 2)).sum())}
             if args.backend == "sam3":
-                row["buckets"] = predictor.last_state["multiplex_state"].num_buckets
+                row["buckets"] = predictor.bucket_count(predictor.last_state)
+                row["groups"] = len(predictor.last_state["groups"])
             stats.append(row)
             rows.extend((result.frame_idx, int(oid), box.copy())
                         for oid, box in zip(result.player_ids, result.boxes))

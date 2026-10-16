@@ -4,6 +4,18 @@ Use the trained interactive head to turn RF-DETR boxes into masks, then insert
 them together through the official mask API. Sequential add_new_points calls
 prefer new buckets upstream, defeating the multi-object sharing under test.
 No text detector, weight approximation, frame skipping or global memory reset.
+
+Players are tracked in groups, each an independent upstream state of at most
+one bucket's worth of objects. Upstream cannot grow a state's bucket count
+once tracking has started: every stored frame keeps the bucket count it was
+computed with, and the next frame's torch.cat of object pointers across frames
+fails ([1,16,256] against [2,16,256]; BHC-FAG crashed at frame 370). Removal is
+no escape -- a removed slot is marked removed, never reused, so player churn
+alone exhausts a bucket. Buckets are separate batch rows that never attend to
+each other, so a separate state per group computes what a bucket would, and a
+group created mid-video starts with no history instead of a fabricated one.
+New players fill a group's never-used slots first; a group whose last player
+leaves is dropped. All groups share one frame decode and one image encoding.
 """
 from __future__ import annotations
 
@@ -22,7 +34,8 @@ CHECKPOINT = ROOT / "sam3-checkpoints/sam3.1_multiplex.pt"
 def _tracking_image_feature(model, state, frame_idx, batch_size):
     from sam3.model.data_misc import NestedTensor
 
-    image, encoded = state["cached_features"].get(frame_idx, (None, None))
+    cache = state["cached_features"]  # shared by every group's state; mutate, never rebind
+    image, encoded = cache.get(frame_idx, (None, None))
     if encoded is None:
         image = state["images"][frame_idx].cuda().float().unsqueeze(0)
         # The standalone demo requests the unused SAM3 detection neck, whose
@@ -32,7 +45,8 @@ def _tracking_image_feature(model, state, frame_idx, batch_size):
             NestedTensor(tensors=image, mask=None), need_sam3_out=False,
             need_interactive_out=True, need_propagation_out=True,
         )
-        state["cached_features"] = {frame_idx: (image, encoded)}
+        cache.clear()
+        cache[frame_idx] = (image, encoded)
     return image, model._prepare_backbone_features(encoded)
 
 
@@ -87,13 +101,40 @@ class MultiplexAdapter:
         self.model = model
         self.image_size = model.image_size
 
+    # ── groups ────────────────────────────────────────────────────────────
+    def _new_group(self, state):
+        group = self.model.init_state(state["video_height"], state["video_width"], state["num_frames"])
+        group["images"] = state["images"]
+        group["cached_features"] = state["cached_features"]
+        state["groups"].append(group)
+        return group
+
+    @staticmethod
+    def _free_slots(group):
+        multiplex = group.get("multiplex_state")
+        return 0 if multiplex is None or multiplex.assignments is None else multiplex.available_slots
+
+    def _group_of(self, state, obj_id):
+        return next((g for g in state["groups"] if obj_id in g["obj_id_to_idx"]), None)
+
+    def _sync_ids(self, state):
+        ids = [oid for g in state["groups"] for oid in g["obj_ids"]]
+        state["obj_id_to_idx"] = {oid: i for i, oid in enumerate(ids)}
+
+    def bucket_count(self, state):
+        return sum(g["multiplex_state"].num_buckets for g in state["groups"]
+                   if g.get("multiplex_state") is not None and g["multiplex_state"].assignments)
+
+    # ── predictor API used by drive_sam2 ─────────────────────────────────
     def init_state(self, video_path):
         files = sorted(Path(video_path).glob("*.jpg"), key=lambda p: int(p.stem))
         with Image.open(files[0]) as image:
             width, height = image.size
-        state = self.model.init_state(height, width, len(files))
-        state["images"] = _Frames(files, self.image_size)
-        state["experiment_pending_boxes"] = {}
+        state = {"video_height": height, "video_width": width, "num_frames": len(files),
+                 "images": _Frames(files, self.image_size), "cached_features": {},
+                 "groups": [], "obj_id_to_idx": {}, "experiment_pending_boxes": {}}
+        # Hosts box-to-mask inference before any group exists.
+        state["feature_host"] = {"images": state["images"], "cached_features": state["cached_features"]}
         self.last_state = state
         return state
 
@@ -104,13 +145,21 @@ class MultiplexAdapter:
         state["experiment_pending_boxes"][(frame_idx, int(obj_id))] = np.asarray(box)
 
     def remove_object(self, state, obj_id):
+        obj_id = int(obj_id)
         for key in list(state["experiment_pending_boxes"]):
             if key[1] == obj_id:
                 del state["experiment_pending_boxes"][key]
-        return self.model.remove_object(state, obj_id=int(obj_id), need_output=False)
+        group = self._group_of(state, obj_id)
+        if group is None:
+            return
+        if len(group["obj_ids"]) == 1:
+            state["groups"].remove(group)  # upstream would leave an empty, invalid state
+        else:
+            self.model.remove_object(group, obj_id=obj_id, need_output=False)
+        self._sync_ids(state)
 
     def _box_masks(self, state, fid, boxes):
-        _, features = self.model._get_image_feature(state, fid, len(boxes))
+        _, features = self.model._get_image_feature(state["feature_host"], fid, len(boxes))
         interactive = features["interactive"]
         feats, sizes = interactive["vision_feats"], interactive["feat_sizes"]
         high_res = [x.permute(1, 2, 0).reshape(x.size(1), x.size(2), *size)
@@ -139,31 +188,49 @@ class MultiplexAdapter:
         fid = next(iter(frames))
         ids = [oid for _, oid in pending]
         masks = self._box_masks(state, fid, list(pending.values()))
-        old = [i for i, oid in enumerate(ids) if oid in state["obj_id_to_idx"]]
-        new = [i for i, oid in enumerate(ids) if oid not in state["obj_id_to_idx"]]
-        if old:
-            self.model.add_new_masks(state, fid, [ids[i] for i in old], masks[old],
-                                     reconditioning=True)
-        if new:
+        pending.clear()
+
+        # Corrections stay in their player's group.
+        for group in state["groups"]:
+            rows = [i for i, oid in enumerate(ids) if oid in group["obj_id_to_idx"]]
+            if rows:
+                self.model.add_new_masks(group, fid, [ids[i] for i in rows], masks[rows],
+                                         reconditioning=True)
+
+        # New players: never-used slots in existing groups first, never a new bucket.
+        new = [i for i, oid in enumerate(ids) if self._group_of(state, oid) is None]
+        for group in list(state["groups"]):
+            take, new = new[:self._free_slots(group)], new[self._free_slots(group):]
+            if not take:
+                continue
             # A late target's first prompt must remain a conditioning anchor.
             # Otherwise upstream classifies it as non-conditioning because this
-            # frame was already propagated for other players. Removing the last
-            # original target can then clear every survivor's tracking history.
+            # frame was already propagated for other players.
             previous = self.model.add_all_frames_to_correct_as_cond
             self.model.add_all_frames_to_correct_as_cond = True
             try:
-                self.model.add_new_masks(state, fid, [ids[i] for i in new], masks[new])
+                self.model.add_new_masks(group, fid, [ids[i] for i in take], masks[take])
             finally:
                 self.model.add_all_frames_to_correct_as_cond = previous
-        pending.clear()
+        if new:
+            # The rest seed a fresh group: initial conditioning frame, no history.
+            self.model.add_new_masks(self._new_group(state), fid, [ids[i] for i in new], masks[new])
+        self._sync_ids(state)
 
     def propagate_in_video(self, state, start_frame_idx, max_frame_num_to_track):
         self._flush(state)
-        self.model.propagate_in_video_preflight(state)
-        for fid, ids, low, masks, scores in self.model.propagate_in_video(
-            state, start_frame_idx=start_frame_idx,
-            max_frame_num_to_track=max_frame_num_to_track,
-            reverse=False, tqdm_disable=True,
-        ):
+        streams = []
+        for group in state["groups"]:
+            self.model.propagate_in_video_preflight(group)
+            streams.append(self.model.propagate_in_video(
+                group, start_frame_idx=start_frame_idx,
+                max_frame_num_to_track=max_frame_num_to_track,
+                reverse=False, tqdm_disable=True,
+            ))
+        for outputs in zip(*streams):
+            fids = {fid for fid, *_ in outputs}
+            assert len(fids) == 1, f"groups out of step: {fids}"
+            ids = [oid for _, group_ids, *_ in outputs for oid in group_ids]
+            masks = torch.cat([group_masks for _, _, _, group_masks, _ in outputs])
             assert masks.is_cuda
-            yield fid, ids, masks
+            yield fids.pop(), ids, masks
