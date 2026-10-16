@@ -62,6 +62,80 @@ def ensure_frame_cache(video: Path, frame_cache_dir: Path) -> list[Path]:
     return sorted(frame_cache_dir.glob("*.jpg"), key=lambda p: int(p.stem))
 
 
+class VideoFrames:
+    """RGB frames decoded straight from the video, in place of a JPEG folder.
+
+    The JPEG folder costs ~230 KB a frame on disk (~21 GB for a full match) and
+    a second lossy encode between the video and the tracker. Tracking reads
+    frames almost strictly in order -- the propagated frame, the repeated
+    chunk-boundary frame, the checkpoint frame -- all of them recent, so one
+    forward decoder and a short buffer of what it last produced serve it.
+
+    Thread-safe: SAM2's frame prefetch and the consumer's reader both call in.
+    An index older than the buffer reopens the video and decodes forward to it,
+    which is exact but slow; `backward_seeks` counts those so an access pattern
+    that relies on them shows up rather than quietly costing time.
+    """
+
+    def __init__(self, video: Path, keep: int = 16) -> None:
+        import threading
+        from collections import OrderedDict
+
+        self.video = str(video)
+        self.keep = keep
+        self.backward_seeks = 0
+        self._lock = threading.Lock()
+        self._buffer: OrderedDict[int, np.ndarray] = OrderedDict()
+        # Count by decoding: the container's frame count is only a header claim.
+        capture = self._open()
+        count = 0
+        while capture.grab():
+            count += 1
+        self.width = int(capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        self.height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        capture.release()
+        if count == 0:
+            raise ValueError(f"no frames decoded from {self.video}")
+        self._count = count
+        self._capture = self._open()
+        self._next = 0  # index the decoder produces on its next read
+
+    def _open(self) -> cv2.VideoCapture:
+        capture = cv2.VideoCapture(self.video)
+        if not capture.isOpened():
+            raise FileNotFoundError(f"could not open video: {self.video}")
+        return capture
+
+    def __len__(self) -> int:
+        return self._count
+
+    def rgb(self, idx: int) -> np.ndarray:
+        """Frame `idx` as an RGB array. A copy, so a caller may modify it."""
+        idx = int(idx)
+        if not 0 <= idx < self._count:
+            raise IndexError(f"frame {idx} out of range [0, {self._count})")
+        with self._lock:
+            if idx not in self._buffer:
+                if idx < self._next:
+                    self.backward_seeks += 1
+                    self._capture.release()
+                    self._capture = self._open()
+                    self._buffer.clear()
+                    for _ in range(idx):
+                        if not self._capture.grab():
+                            raise RuntimeError(f"{self.video} ended before frame {idx}")
+                    self._next = idx
+                while self._next <= idx:
+                    ok, frame_bgr = self._capture.read()
+                    if not ok:
+                        raise RuntimeError(f"{self.video} ended at frame {self._next}")
+                    self._buffer[self._next] = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                    self._next += 1
+                    while len(self._buffer) > self.keep:
+                        self._buffer.popitem(last=False)
+            return self._buffer[idx].copy()
+
+
 def filter_edge_fragments(
     mask: np.ndarray, relative_distance: float, connectivity: int = 8
 ) -> np.ndarray:
@@ -167,6 +241,18 @@ def masks_from_logits(mask_logits: torch.Tensor) -> np.ndarray:
     ], dtype=bool).reshape(masks.shape)
 
 
+def rgb_to_sam2_tensor(rgb: np.ndarray, image_size: int) -> torch.Tensor:
+    """Upstream `_load_img_as_tensor`'s steps, from a decoded RGB array.
+
+    Same PIL `convert("RGB").resize`, same /255 in float64, same permute; only
+    the opening of a file is missing, because there is no file.
+    """
+    from PIL import Image
+
+    img_np = np.array(Image.fromarray(rgb).convert("RGB").resize((image_size, image_size)))
+    return torch.from_numpy(img_np / 255.0).permute(2, 0, 1)
+
+
 class LazyFrames:
     """SAM2's `inference_state["images"]`, decoded when SAM2 asks for a frame.
 
@@ -181,22 +267,34 @@ class LazyFrames:
     resize, /255 in float64), the same float64 -> float32 cast the preload's
     assignment performs, then the same elementwise `-= mean` and `/= std` on the
     compute device, applied per frame instead of to the whole stack.
+
+    `source` is the JPEG folder's paths, or a `VideoFrames` decoding the video
+    itself. For the latter the decoded RGB array goes through the same PIL
+    steps `_load_img_as_tensor` applies to an opened JPEG, so the two paths
+    differ only in the pixels they start from.
     """
 
     MEAN = (0.485, 0.456, 0.406)  # load_video_frames' defaults, which init_state uses
     STD = (0.229, 0.224, 0.225)
 
-    def __init__(self, paths: list[Path], image_size: int, device, ahead: int = 2) -> None:
+    def __init__(self, source: "list[Path] | VideoFrames", image_size: int, device,
+                 ahead: int = 2) -> None:
         from PIL import Image
         from sam2.utils.misc import _load_img_as_tensor
 
         self._load_img = _load_img_as_tensor
-        self.paths = [str(p) for p in paths]
         self.image_size = image_size
         self.device = device
         self.ahead = ahead
-        with Image.open(self.paths[0]) as first:
-            self.video_width, self.video_height = first.size
+        if isinstance(source, VideoFrames):
+            self.video = source
+            self.paths = None
+            self.video_width, self.video_height = source.width, source.height
+        else:
+            self.video = None
+            self.paths = [str(p) for p in source]
+            with Image.open(self.paths[0]) as first:
+                self.video_width, self.video_height = first.size
         self.mean = torch.tensor(self.MEAN, dtype=torch.float32)[:, None, None].to(device)
         self.std = torch.tensor(self.STD, dtype=torch.float32)[:, None, None].to(device)
         self._pool = ThreadPoolExecutor(max_workers=1)
@@ -204,10 +302,13 @@ class LazyFrames:
         self._recent: dict[int, torch.Tensor] = {}
 
     def __len__(self) -> int:
-        return len(self.paths)
+        return len(self.video) if self.video is not None else len(self.paths)
 
     def _decode(self, idx: int) -> torch.Tensor:
-        img, _, _ = self._load_img(self.paths[idx], self.image_size)
+        if self.video is None:
+            img, _, _ = self._load_img(self.paths[idx], self.image_size)
+        else:
+            img = rgb_to_sam2_tensor(self.video.rgb(idx), self.image_size)
         return img.to(torch.float32)
 
     def __getitem__(self, idx: int) -> torch.Tensor:
@@ -269,33 +370,43 @@ def install_rope_repeat_cache() -> None:
     transformer.apply_rotary_enc = apply_rotary_enc
 
 
-def init_state_lazily(predictor, frame_cache_dir: Path) -> dict:
+def init_state_lazily(predictor, frames: "Path | VideoFrames") -> dict:
     """`predictor.init_state` with `LazyFrames` in place of the whole-clip preload.
 
+    `frames` is a JPEG folder, or a `VideoFrames` decoding the video directly.
     Only upstream's own `SAM2VideoPredictor` loads frames through the function
-    replaced here; anything else gets its plain `init_state`.
+    replaced here; anything else gets its plain `init_state`, which needs a
+    folder.
     """
+    video = frames if isinstance(frames, VideoFrames) else None
     try:
         import sam2.sam2_video_predictor as video_predictor
     except ImportError:
-        return predictor.init_state(video_path=str(frame_cache_dir))
-    if not isinstance(predictor, video_predictor.SAM2VideoPredictor):
-        return predictor.init_state(video_path=str(frame_cache_dir))
+        video_predictor = None
+    if video_predictor is None or not isinstance(predictor, video_predictor.SAM2VideoPredictor):
+        if video is not None:
+            raise ValueError("decoding the video directly needs upstream SAM2VideoPredictor; "
+                             "other backends read a JPEG folder")
+        return predictor.init_state(video_path=str(frames))
 
-    paths = sorted(
-        (p for p in Path(frame_cache_dir).iterdir() if p.suffix in (".jpg", ".jpeg", ".JPG", ".JPEG")),
-        key=lambda p: int(p.stem),  # upstream's frame order
-    )
+    if video is not None:
+        source, video_path = video, video.video
+    else:
+        source = sorted(
+            (p for p in Path(frames).iterdir() if p.suffix in (".jpg", ".jpeg", ".JPG", ".JPEG")),
+            key=lambda p: int(p.stem),  # upstream's frame order
+        )
+        video_path = str(frames)
 
     def load_lazily(video_path, image_size, offload_video_to_cpu, async_loading_frames=False,
                     compute_device=torch.device("cuda"), **_):
-        frames = LazyFrames(paths, image_size, compute_device)
-        return frames, frames.video_height, frames.video_width
+        lazy = LazyFrames(source, image_size, compute_device)
+        return lazy, lazy.video_height, lazy.video_width
 
     preload = video_predictor.load_video_frames
     video_predictor.load_video_frames = load_lazily
     try:
-        return predictor.init_state(video_path=str(frame_cache_dir))
+        return predictor.init_state(video_path=video_path)
     finally:
         video_predictor.load_video_frames = preload
 
@@ -388,6 +499,7 @@ def drive_sam2(
     checkpoint_policy: str = "reprompt",
     predictor_factory: Callable[[str], object] | None = None,
     prefetch_frames: int = 0,
+    frame_source: str = "jpeg",
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -424,6 +536,12 @@ def drive_sam2(
     The default 0 decodes lazily, which suits tracking-only callers that read
     pixels only at checkpoints. The decoded frames are identical either way.
 
+    `frame_source` is where frames come from. `"jpeg"` (default) extracts the
+    video to a JPEG folder once and reads that -- every scored result so far
+    was made this way. `"video"` decodes the video directly (`VideoFrames`):
+    nothing written to disk and no second lossy encode, but different input
+    pixels from the scored runs, so it is not byte-identical to them.
+
     `checkpoint_policy` selects how `TrackManager`'s decisions reach the
     predictor. It does not change what those decisions are.
 
@@ -449,16 +567,27 @@ def drive_sam2(
             f"checkpoint_policy must be 'reprompt' or 'reset_reseed', got {checkpoint_policy!r}"
         )
 
-    frame_cache_dir = frame_cache_dir or (
-        video.resolve().parent / "_sam2_frame_cache" / video.stem
-    )
-    frame_files = ensure_frame_cache(video, frame_cache_dir)
-    num_frames = len(frame_files)
+    if frame_source == "video":
+        # Straight from the video: no JPEG folder written, one decode per frame
+        # shared by SAM2 and the consumer.
+        video_frames = VideoFrames(video)
+        frames_for_sam2 = video_frames
+        num_frames = len(video_frames)
+        read_frame = video_frames.rgb
+    elif frame_source == "jpeg":
+        frame_cache_dir = frame_cache_dir or (
+            video.resolve().parent / "_sam2_frame_cache" / video.stem
+        )
+        frame_files = ensure_frame_cache(video, frame_cache_dir)
+        frames_for_sam2 = frame_cache_dir
+        num_frames = len(frame_files)
+
+        def read_frame(idx: int) -> np.ndarray:
+            return cv2.cvtColor(cv2.imread(str(frame_files[idx])), cv2.COLOR_BGR2RGB)
+    else:
+        raise ValueError(f"frame_source must be 'jpeg' or 'video', got {frame_source!r}")
     if max_frames is not None:
         num_frames = min(num_frames, max_frames)
-
-    def read_frame(idx: int) -> np.ndarray:
-        return cv2.cvtColor(cv2.imread(str(frame_files[idx])), cv2.COLOR_BGR2RGB)
 
     if predictor_factory is None:
         from sam2.build_sam import build_sam2_video_predictor
@@ -493,7 +622,7 @@ def drive_sam2(
     # Lean-SAM2 -- gets frames on demand (LazyFrames, identical values), so
     # forks are timed on the same frame loading; any other backend keeps its
     # own init_state untouched (init_state_lazily falls back to it).
-    state = init_state_lazily(predictor, frame_cache_dir)
+    state = init_state_lazily(predictor, frames_for_sam2)
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         for oid, xyxy in zip(obj_ids0, det0.xyxy):
             predictor.add_new_points_or_box(

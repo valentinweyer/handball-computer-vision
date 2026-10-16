@@ -104,6 +104,9 @@ def main() -> None:
     parser.add_argument("--checkpoint", default=SAM2_CHECKPOINT_DEFAULT)
     parser.add_argument("--check-every", type=int, default=CHECK_EVERY_DEFAULT)
     parser.add_argument("--frame-cache-dir", type=Path, default=None)
+    parser.add_argument("--frame-source", default="jpeg", choices=["jpeg", "video"],
+                         help="jpeg: extract to a JPEG folder and read that (how every "
+                              "scored result was made); video: decode the video directly")
     parser.add_argument("--max-frames", type=int, default=None,
                          help="truncate to the first N frames, for a quick smoke test")
     parser.add_argument("--checkpoint-policy", default="reprompt",
@@ -128,7 +131,8 @@ def main() -> None:
         frame_cache_dir=frame_cache_dir, max_frames=args.max_frames,
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
         checkpoint_policy=args.checkpoint_policy,
-        desc=f"SAM2 {args.checkpoint_policy}",
+        desc=f"SAM2 {args.checkpoint_policy} ({args.frame_source})",
+        frame_source=args.frame_source,
     )
 
     per_frame_boxes: dict[int, dict[int, np.ndarray]] = {0: seed_boxes}

@@ -717,3 +717,40 @@ separate through that window. The reference-8 trusted span ends at 90, so the
 aggregate score does not capture the full failure. See the paired report and
 `runs/efficienttam_pair/review/felix_same_team_paired_masks.jpg`; trusted labels
 and spans remain unchanged. This fails the continuity gate for replacing SAM2.
+
+## 8.12 Frame source: JPEG folder vs decoding the video directly (2026-10-17)
+
+**Question.** Every scored SAM2 run reads a JPEG folder that ffmpeg extracted
+from the video (`-q:v 2`). That folder is ~230 KB a frame on disk (~21 GB for
+a full match) and a second lossy encode between the video and the tracker.
+`drive_sam2(frame_source="video")` decodes the video directly instead
+(`sam2_driver.VideoFrames`, a forward cv2 decoder with a short buffer), so
+nothing is written. Is tracking as good from those pixels?
+
+**Inputs differ only slightly.** On all three clips the frame counts agree
+(249/199/500 decoded vs extracted), and against the JPEG folder the decoded
+frames differ by a mean 2.46 / 0.60 / 1.39 grey levels (FelixClaar / Han-Ber4 /
+BHC-FAG), with at most 1.65% of a frame's pixels off by more than 12 levels.
+The preprocessing itself is upstream's to the bit on identical pixels
+(`tests/unit/test_video_frames.py`).
+
+**Result.** Same three references, same scorer:
+
+| Clip | JPEG folder | Video directly | Wrong-identity frames | Mixed / switches / frags |
+|---|---:|---:|---:|---|
+| FelixClaar | 95.01% | 96.21% | 18 -> 16 | unchanged |
+| Han-Ber4 (players) | 99.91% | 99.91% | 0 -> 0 | unchanged |
+| BHC-FAG | 98.88% | 98.96% | 6 -> 5 | unchanged |
+
+No clip regresses, and wall time is the same (100 vs 96 s, 89 vs 89 s,
+190 vs 189 s). Read the FelixClaar gain as "no regression", not as an
+improvement: two frames on a 249-frame clip is within what a small input
+perturbation moves. The outputs are not byte-identical to the JPEG runs, as
+expected from different input pixels. The JPEG runs reproduced the stored
+2026-09-09 `_policy_reprompt` baselines byte for byte, so this comparison is
+against an unchanged baseline, accelerations of f44956b included.
+
+**Consequence.** The video path is safe to use where writing frames is the
+cost (full matches). `jpeg` stays the default for the existing scripts so their
+stored results keep reproducing. Artifacts: `runs/frame_source_rescore/`
+(`score.json`, per-run dumps, events and logs).
