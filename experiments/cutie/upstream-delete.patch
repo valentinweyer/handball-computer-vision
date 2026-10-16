@@ -1,0 +1,35 @@
+diff --git a/cutie/inference/kv_memory_store.py b/cutie/inference/kv_memory_store.py
+index 7d04974..1c04f7c 100644
+--- a/cutie/inference/kv_memory_store.py
++++ b/cutie/inference/kv_memory_store.py
+@@ -297,10 +297,10 @@ class KeyValueMemoryStore:
+             del self.k[bucket_id]
+             del self.s[bucket_id]
+             if self.save_selection:
+-                del self.e[bucket_id]
++                self.e.pop(bucket_id, None)
+             if self.save_usage:
+-                del self.use_cnt[bucket_id]
+-                del self.life_cnt[bucket_id]
++                self.use_cnt.pop(bucket_id, None)
++                self.life_cnt.pop(bucket_id, None)
+ 
+     def clear_non_permanent_memory(self):
+         # clear all non-permanent memory
+diff --git a/cutie/inference/object_manager.py b/cutie/inference/object_manager.py
+index edec93b..6b491af 100644
+--- a/cutie/inference/object_manager.py
++++ b/cutie/inference/object_manager.py
+@@ -137,10 +137,8 @@ class ObjectManager:
+         return len(self.obj_to_tmp_id)
+ 
+     def has_all(self, objects: List[int]) -> bool:
+-        for obj in objects:
+-            if obj not in self.obj_to_tmp_id:
+-                return False
+-        return True
++        # Incoming masks are complete only if they cover every current object.
++        return all(obj.id in objects for obj in self.obj_to_tmp_id)
+ 
+     def find_object_by_id(self, obj_id) -> ObjectInfo:
+         return self.obj_id_to_obj[obj_id]
