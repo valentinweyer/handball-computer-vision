@@ -173,6 +173,12 @@ docs/outputs-migration-manifest.csv
 
 # Isolated Cutie experiment assets and input links.
 /.local/cutie/
+
+# Shared asset symlinks used by isolated experiment worktrees.
+/sam3
+/sam3-checkpoints
+/sam2-upstream
+/segment-anything-2-real-time
 /data/cache
 /data/raw
 /outputs
