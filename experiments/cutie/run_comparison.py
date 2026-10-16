@@ -20,7 +20,9 @@ def json_default(value):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--case', choices=['felix', 'han', 'bhc'], default='felix')
-    parser.add_argument('--backend', choices=['cutie', 'sam2'], default='cutie')
+    parser.add_argument('--backend', choices=['cutie', 'sam2', 'lean_sam2'], default='cutie')
+    parser.add_argument('--lean-method', choices=['memory', 'off'], default='memory',
+                        help='lean_sam2 only; see experiments/lean_sam2/adapter.py')
     parser.add_argument('--cutie-size', type=int, choices=[480, 1024], default=1024)
     parser.add_argument('--max-frames', type=int, default=141)
     parser.add_argument('--warmup-frames', type=int, default=12)
@@ -35,6 +37,9 @@ def main():
         bootstrap, sha256, build_models,
     )
     bootstrap()
+    if args.backend == 'lean_sam2':
+        from experiments.lean_sam2 import adapter as lean
+        lean.bootstrap()
     from experiments.cutie.cases import inputs
     import numpy as np
     import torch
@@ -79,6 +84,12 @@ def main():
         manifest['strict_loading'] = loading
         manifest['cutie_config'] = __import__('omegaconf').OmegaConf.to_container(predictor.model.cfg, resolve=True)
         manifest['prompt_conversion'] = 'SAM2.1-L image-only box head; Cutie propagates every frame'
+    elif args.backend == 'lean_sam2':
+        # The fork's own builder; drive_sam2 serves it LazyFrames like production.
+        predictor, values = lean.build_predictor(SAM2_CHECKPOINT, args.lean_method)
+        manifest['lean_sam2'] = {'revision': lean.revision(), 'method': args.lean_method,
+                                 'model_arguments': values, 'tarr_routing': False}
+        manifest.pop('sam2_revision')
     else:
         from sam2.build_sam import build_sam2_video_predictor
         native = build_sam2_video_predictor('configs/sam2.1/sam2.1_hiera_l.yaml',

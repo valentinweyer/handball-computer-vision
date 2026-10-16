@@ -173,6 +173,7 @@ docs/outputs-migration-manifest.csv
 
 # Isolated Cutie experiment assets and input links.
 /.local/cutie/
+/.local/lean-sam2/
 
 # Shared asset symlinks used by isolated experiment worktrees.
 /sam3

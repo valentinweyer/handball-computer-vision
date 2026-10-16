@@ -1,4 +1,4 @@
-"""Render Cutie or SAM2 tracking on an unscored clip for a by-hand identity review.
+"""Render Cutie, SAM2 or Lean-SAM2 tracking on an unscored clip for a by-hand identity review.
 
 Every tracked player gets a fixed colour and a large ID label; the frame number
 is printed so a switch can be reported by frame. Tracking uses the same
@@ -56,7 +56,8 @@ def main():
     parser.add_argument('--frames', type=Path, required=True, help='directory of 00000.jpg ...')
     parser.add_argument('--detections', type=Path, required=True)
     parser.add_argument('--team', type=Path, required=True)
-    parser.add_argument('--backend', choices=['cutie', 'sam2'], default='cutie')
+    parser.add_argument('--backend', choices=['cutie', 'sam2', 'lean_sam2'], default='cutie')
+    parser.add_argument('--lean-method', choices=['memory', 'off'], default='memory')
     parser.add_argument('--cutie-size', type=int, choices=[480, 1024], default=480)
     parser.add_argument('--fps', type=float, default=25.0)
     parser.add_argument('--output', type=Path, required=True)
@@ -65,6 +66,9 @@ def main():
         parser.error('Output directory must be new')
     from experiments.cutie.adapter import CHECKPOINT, SAM2_CHECKPOINT, bootstrap, build_models
     bootstrap()
+    if args.backend == 'lean_sam2':
+        from experiments.lean_sam2 import adapter as lean
+        lean.bootstrap()
     import cv2
     import numpy as np
     import torch
@@ -80,6 +84,9 @@ def main():
     if args.backend == 'cutie':
         predictor, _ = build_models(max_internal_size=args.cutie_size)
         checkpoint, factory = CHECKPOINT, (lambda _: predictor)
+    elif args.backend == 'lean_sam2':
+        lean.revision()
+        checkpoint, factory = SAM2_CHECKPOINT, (lambda ckpt: lean.build_predictor(ckpt, args.lean_method)[0])
     else:
         checkpoint, factory = SAM2_CHECKPOINT, None    # the production SAM2 path
     team = TeamModel.load(args.team, device='cuda')
