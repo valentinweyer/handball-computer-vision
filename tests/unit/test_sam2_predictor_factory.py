@@ -94,3 +94,58 @@ def test_factory_preserves_lifecycle_and_output_order(tmp_path, monkeypatch, cus
         assert result.masks.dtype == bool
         np.testing.assert_array_equal(result.boxes, sv.mask_to_xyxy(result.masks))
         assert result.read_frame().shape == (8, 12, 3)
+
+
+def test_tracking_continues_when_every_player_leaves_the_frame(tmp_path, monkeypatch):
+    # A crowd pan removes every player; real SAM2 then resets its session and
+    # raises on propagate. The driver must yield empty frames and keep running
+    # checkpoints so players come back when play does.
+    for frame in range(7):
+        cv2.imwrite(str(tmp_path / f"{frame:05d}.jpg"), np.zeros((8, 12, 3), np.uint8))
+
+    class Predictor:
+        def init_state(self, video_path):
+            return {"obj_id_to_idx": {}}
+
+        def add_new_points_or_box(self, state, *, obj_id, **kwargs):
+            state["obj_id_to_idx"].setdefault(obj_id, len(state["obj_id_to_idx"]))
+
+        def remove_object(self, state, *, obj_id):
+            del state["obj_id_to_idx"][obj_id]
+
+        def propagate_in_video(self, state, start_frame_idx, max_frame_num_to_track):
+            if not state["obj_id_to_idx"]:
+                raise RuntimeError("No input points or masks are provided for any object")
+            for frame in range(start_frame_idx, start_frame_idx + max_frame_num_to_track + 1):
+                ids = list(state["obj_id_to_idx"])
+                masks = torch.full((len(ids), 1, 8, 12), -1.)
+                masks[:, 0, 1:5, 1:4] = 1
+                yield frame, ids, masks
+
+    class Manager:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def seed(self, *args):
+            return [11]
+
+        def update_from_propagation(self, frame, ids, masks):
+            assert masks.shape == (len(ids), 8, 12)
+
+        def checkpoint(self, frame, *args):
+            if frame == 2:
+                return [{"type": "remove", "obj_id": 11}]
+            if frame == 4:
+                return [{"type": "add", "obj_id": 12, "box": [1, 1, 4, 5]}]
+            return []
+
+    monkeypatch.setattr(driver, "TrackManager", Manager)
+    monkeypatch.setattr(driver.torch, "autocast", lambda *a, **k: nullcontext())
+    det = sv.Detections(xyxy=np.array([[1, 1, 4, 5]], float), class_id=np.array([2]))
+    _, _, frames = driver.drive_sam2(
+        tmp_path / "unused.mp4", lambda fid: det, None, "weights.pt",
+        check_every=2, frame_cache_dir=tmp_path, predictor_factory=lambda _: Predictor(),
+    )
+    results = list(frames)
+    assert [r.player_ids.tolist() for r in results] == [[11], [11], [], [], [12], [12]]
+    assert results[2].masks.shape == (0, 8, 12) and results[2].boxes.shape == (0, 4)

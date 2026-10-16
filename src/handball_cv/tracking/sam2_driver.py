@@ -509,6 +509,20 @@ def drive_sam2(
                 pending[ahead] = reader_pool.submit(read_frame, ahead)
         return pending.pop(fid).result
 
+    def propagate(t: int, chunk_len: int):
+        # With every player removed (the camera left the court: VfL frame 610
+        # is a crowd pan) SAM2 has reset its session and refuses to propagate.
+        # Nobody is tracked, so the chunk is empty frames; the checkpoint after
+        # it still runs and adds players back once play returns. Backends
+        # without `obj_id_to_idx` handle an empty state themselves.
+        if state.get("obj_id_to_idx", True):
+            yield from predictor.propagate_in_video(
+                state, start_frame_idx=t, max_frame_num_to_track=chunk_len)
+            return
+        empty = torch.empty((0, 1, *frame0.shape[:2]))
+        for fid in range(t, t + chunk_len + 1):
+            yield fid, [], empty
+
     def frames() -> Iterator[Sam2FrameResult]:
         next_new_fid = 1
         last_masks_by_id: dict[int, np.ndarray] = {}
@@ -526,8 +540,7 @@ def drive_sam2(
             # and recomputed frame-t outputs differ, and on FelixClaar skipping
             # it cost 2 wrong-identity frames (95.01% -> 94.92%). Keep it.
             with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
-                for fid, obj_ids, mask_logits in predictor.propagate_in_video(
-                        state, start_frame_idx=t, max_frame_num_to_track=chunk_len):
+                for fid, obj_ids, mask_logits in propagate(t, chunk_len):
                     if fid < next_new_fid or fid >= num_frames:
                         continue  # repeated boundary frame, or past our truncation
 
