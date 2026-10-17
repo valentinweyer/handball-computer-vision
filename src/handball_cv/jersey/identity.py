@@ -703,7 +703,8 @@ def causal_labels(reads, events, live_frames, teams=None,
     the two are not the same and the difference is not small. Three behaviours
     have to come along or a redraw silently drops labels the render showed:
 
-      - `suspend` on a re-ID revival keeps the accumulated votes and merely
+      - `suspend` on a re-ID revival or suspected identity switch reaches the
+        canonical number owner, keeps the accumulated votes and merely
         withholds the claim, so a correct revival re-asserts on its first
         agreeing read. Starting a fresh tally at each break instead costs
         `min_votes` reads every time -- measured at 765 player-frames on the 60s
@@ -711,8 +712,6 @@ def causal_labels(reads, events, live_frames, teams=None,
         regression dressed up as caution.
       - arbitration considers only identities visible in the current frame,
         including between OCR frames when a competing holder leaves or returns.
-      - a `suspected_id_switch` breaks a *segment* but does not suspend, exactly
-        as `NumberIdentityResolver.begin_frame` has it.
       - a `link` folds one identity into another at the frame it was made, and
         every label is read through the fold, as `voted_labels` draws it. Left
         out, a fragment the run labelled through its link shows nothing: on a
@@ -729,7 +728,7 @@ def causal_labels(reads, events, live_frames, teams=None,
     revivals: dict = {}
     links: dict = {}
     for event in events:
-        if event.get("type") == "reid":
+        if event.get("type") in ("reid", "suspected_id_switch"):
             revivals.setdefault(int(event["frame"]), []).append(int(event["player_id"]))
         elif event.get("type") == "link":
             links.setdefault(int(event["frame"]), []).append(
@@ -754,9 +753,9 @@ def causal_labels(reads, events, live_frames, teams=None,
     walk = {f for frames in live_frames.values() for f in frames} | set(revivals) | set(links)
     for frame in sorted(walk):
         for player_id in revivals.get(frame, ()):
-            voter.suspend(player_id)
+            voter.suspend(canonical(player_id))
         for player_id, value in reads_by_frame.get(frame, ()):
-            voter.observe(player_id, value)
+            voter.observe(canonical(player_id), value)
         # The render links, then arbitrates, in one resolve step after the
         # frame's reads (`NumberIdentityResolver.resolve`).
         for source, target in links.get(frame, ()):
@@ -837,8 +836,8 @@ def segment_verdicts(reads, events, live_frames, teams=None,
             within = tuple(
                 (frame, label) for frame, label in timeline if start <= frame < stop
             )
-            # A `suspected_id_switch` breaks the segment without suspending the
-            # voter, so the label simply continues and records no new entry. The
+            # A break may occur while nobody is visible, so the replay need not
+            # have emitted a label change at the boundary. The
             # new segment has to be told what was already on screen, or it reads
             # as unresolved and drops a label the render was drawing.
             #

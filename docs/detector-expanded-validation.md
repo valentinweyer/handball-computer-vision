@@ -66,4 +66,38 @@ its full-video effect.
 
 The focused lifecycle, team, re-ID and number suite passed 89 tests before
 branch preparation. The full scoped repository suite (`.venv/bin/python -m pytest -q tests`)
-passed 505 tests. The pipeline CLI and both default model paths were checked.
+passed 513 tests. The pipeline CLI and both default model paths were checked.
+
+## Cross-team re-ID trial: clipped entries and linked numbers
+
+The #61 example at 4:01 exposed two independent failures. At frame 5970 a
+30-pixel-wide crop at the left edge passed the team gate on one wrong observation.
+The revived tracker id 59 had previously been linked to number owner 47, so
+suspending id 59 did not suspend the inherited 61 tally.
+
+Field-player re-ID now requires two consecutive, qualified, agreeing team
+observations from distinct detector checkpoints. Boxes within one pixel of an
+image boundary do not contribute to that evidence and cannot revive an identity.
+A confirmed track with insufficient re-ID evidence still starts immediately under
+a fresh P-ID; later number evidence can link fragments. Ordinary goalkeeper team
+matching is unchanged, apart from the clipped-entry veto. Deferrals are recorded
+as `reid_deferred` lifecycle events with a reason.
+
+A re-ID revival or `suspected_id_switch` now suspends the canonical number owner,
+including through alias chains. Live processing and saved-run replay both require
+fresh agreeing number evidence before restoring an inherited verdict. A suspected
+identity switch remains diagnostic for tracker association; this change only
+invalidates the number claim and does not rewrite team observations or geometry.
+
+Validation: 513 repository tests pass, including edge entries, contradictory or
+unqualified team evidence, valid same-team re-ID, distinct-checkpoint evidence,
+alias-chain invalidation and recovery after a fresh read. Replaying the exact
+cached f5960/f5970 boxes with the recorded team score/quality and a controlled
+perfect appearance match creates a fresh id 60 instead of reviving 59. Replaying
+saved number evidence preserves the earlier valid 61 at f5880 and withholds it at
+f6025 (4:01), in both causal and backfilled labels.
+
+These are targeted tests and cached-data replays, not a new full SAM2 run. The
+existing watchable videos are unchanged. Full-video fragmentation and identity
+quality still need validation; the intended tradeoff is more temporary identities
+in exchange for fewer unsupported cross-team revivals.

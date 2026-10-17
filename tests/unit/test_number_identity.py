@@ -305,6 +305,34 @@ class InheritedVerdictTests(unittest.TestCase):
 
 
 class ResolverSuspensionTests(unittest.TestCase):
+    def test_aliased_identity_invalidation_reaches_the_number_owner(self):
+        for event_type in ("reid", "suspected_id_switch"):
+            with self.subTest(event_type=event_type):
+                voter = NumberVoter()
+                registry = _Registry({47: 0, 52: 0, 59: 0})
+                registry.alias.update({59: 52, 52: 47})
+                resolver = NumberIdentityResolver(registry, voter)
+                vote(voter, 47, "61", 9)
+                registry.events.append({"frame": 5970, "type": event_type, "player_id": 59})
+                resolver.begin_frame([59])
+                self.assertIsNone(voter.best(47)[0])
+                voter.observe(47, "61")  # a fresh agreeing read may restore it
+                resolver.begin_frame([59])
+                self.assertEqual(voter.best(47)[0], "61")
+
+    def test_replay_invalidates_linked_number_until_fresh_evidence(self):
+        for event_type in ("reid", "suspected_id_switch"):
+            with self.subTest(event_type=event_type):
+                rows = [{"frame": f, "player_id": 47, "value": "61"} for f in (0, 5, 10)]
+                rows.append({"frame": 35, "player_id": 47, "value": "61"})
+                timeline = causal_labels(
+                    rows,
+                    [{"frame": 20, "type": "link", "player_id": 59, "into_player_id": 47},
+                     {"frame": 30, "type": event_type, "player_id": 59}],
+                    {47: set(range(20)), 59: set(range(20, 41))},
+                )
+                self.assertEqual(timeline[59], ((20, "61"), (30, None), (35, "61")))
+
     def test_a_reid_event_suspends_before_the_frames_reads_are_counted(self):
         voter = NumberVoter()
         registry = _Registry({6: 0})

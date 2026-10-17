@@ -470,8 +470,8 @@ class NumberIdentityResolver:
         different person.
         """
         for event in self.registry.events[self._events_seen:]:
-            if event["type"] == "reid":
-                self.voter.suspend(event["player_id"])
+            if event["type"] in ("reid", "suspected_id_switch"):
+                self.voter.suspend(self.registry.canonical(event["player_id"]))
         self._events_seen = len(self.registry.events)
 
         ids = {int(p) for p in player_ids}
