@@ -34,11 +34,12 @@ import numpy as np
 import supervision as sv
 from scipy.optimize import linear_sum_assignment
 
-from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, PlayerRegistry
+from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, PlayerRegistry, is_qualified
 
 # tunables
 HISTORY_LEN = 30
 MIN_CONFIRM_CHECKPOINTS = 2          # consecutive checkpoints before acting
+REID_TEAM_CONFIRM_CHECKPOINTS = 2    # clean, agreeing team reads before identity reuse
 DUPLICATE_IOU_MIN = 0.6              # mask intersection-over-min-area
 DROPOUT_AREA_FRAC = 0.2              # of the track's own running median
 # Checkpoints a track may go unmatched by the detector before it is retired,
@@ -251,7 +252,7 @@ class TrackManager:
         self.events: list[dict] = []
         # confirmation counters for not-yet-seen players, keyed by a coarse
         # spatial slot (no Track object exists for these yet)
-        # [box, consecutive_checkpoint_count] per unconfirmed candidate
+        # [box, consecutive_checkpoint_count, qualified_team, agreeing_team_reads]
         self._pending_new_boxes: list = []
         # Frame the current no-play stretch began at, while tracking is paused.
         self.paused_since: int | None = None
@@ -369,10 +370,13 @@ class TrackManager:
                 if player is not None:
                     player.last_seen = frame_idx
 
-    def _match_pending(self, box) -> int | None:
+    def _match_pending(self, box, excluded=()) -> int | None:
         """Index of the pending candidate this detection continues, if any."""
         best, best_gap = None, PENDING_MAX_CENTRE_FRAC
-        for index, (pending_box, _count) in enumerate(self._pending_new_boxes):
+        for index, entry in enumerate(self._pending_new_boxes):
+            if index in excluded:
+                continue
+            pending_box = entry[0]
             gap = _centre_gap(box, pending_box)
             if gap < best_gap:
                 best, best_gap = index, gap
@@ -591,32 +595,48 @@ class TrackManager:
                 continue
             if not self.court_test_fn(box):
                 continue
-            # A genuinely new player should be seen again at the next checkpoint --
-            # but "the same place" has to mean "the same person", not "the same
-            # square of the image". Follow the candidate by box overlap so a
-            # running player confirms as readily as a standing one.
-            slot = self._match_pending(box)
-            if slot is None:
-                self._pending_new_boxes.append([box.copy(), 1])
-                confirmed_this_round.add(len(self._pending_new_boxes) - 1)
-                continue
-            self._pending_new_boxes[slot][0] = box.copy()
-            self._pending_new_boxes[slot][1] += 1
-            confirmed_this_round.add(slot)
-            if self._pending_new_boxes[slot][1] < MIN_CONFIRM_CHECKPOINTS:
-                continue
-            self._pending_new_boxes[slot][1] = 0   # consumed; drop below
-
             is_gk = bool(det_is_goalkeeper[di])
             emb = det_embeddings[di]
             team = int(det_teams[di])
             team_conf = float(det_confidence[di])
             team_quality = float(det_quality[di])
+            height, width = frame.shape[:2]
+            clipped = (box[0] <= 1 or box[1] <= 1
+                       or box[2] >= width - 1 or box[3] >= height - 1)
+            # A genuinely new player should be seen again at the next checkpoint --
+            # but "the same place" has to mean "the same person", not "the same
+            # square of the image". Follow the candidate by box overlap so a
+            # running player confirms as readily as a standing one.
+            slot = self._match_pending(box, excluded=confirmed_this_round)
+            if slot is None:
+                self._pending_new_boxes.append([box.copy(), 1, None, 0])
+                slot = len(self._pending_new_boxes) - 1
+            else:
+                self._pending_new_boxes[slot][0] = box.copy()
+                self._pending_new_boxes[slot][1] += 1
+            pending = self._pending_new_boxes[slot]
+            if not clipped and is_qualified(team_conf, team_quality):
+                pending[3] = pending[3] + 1 if pending[2] == team else 1
+                pending[2] = team
+            else:
+                pending[2], pending[3] = None, 0
+            confirmed_this_round.add(slot)
+            if pending[1] < MIN_CONFIRM_CHECKPOINTS:
+                continue
+            pending[1] = 0   # consumed; drop below
 
-            match = self.registry.reid_match(
-                emb, frame_idx, taken, team_id=team,
-                confidence=team_conf, quality=team_quality, is_goalkeeper=is_gk,
-            )
+            # A border sliver can confidently predict the wrong team (#61 at
+            # Kiel f5970). Track it, but do not inherit an old identity from it.
+            can_reid = not clipped and (is_gk or pending[3] >= REID_TEAM_CONFIRM_CHECKPOINTS)
+            match = None
+            if can_reid:
+                match = self.registry.reid_match(
+                    emb, frame_idx, taken, team_id=team,
+                    confidence=team_conf, quality=team_quality, is_goalkeeper=is_gk,
+                )
+            else:
+                self.events.append({"frame": frame_idx, "type": "reid_deferred",
+                                    "reason": "clipped_entry" if clipped else "team_unconfirmed"})
             if match is not None:
                 oid = match.player_id
                 taken.add(oid)
