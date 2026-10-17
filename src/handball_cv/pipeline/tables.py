@@ -223,11 +223,16 @@ def players_table(run: dict, tracks: pd.DataFrame) -> pd.DataFrame:
 def reads_table(run: dict) -> pd.DataFrame:
     rows = [{
         "frame": read["frame"], "player_id": read["player_id"], "value": read["value"],
+        # Optional additive provenance: older runs cannot recover this from a
+        # canonical player_id, so leave it missing rather than guessing.
+        "track_id": read.get("track_id"),
         "confidence": read.get("confidence", np.nan), "number_row": read["number_row"],
         "x1": read["box"][0], "y1": read["box"][1], "x2": read["box"][2], "y2": read["box"][3],
     } for read in run["number_reads"]]
-    columns = ["frame", "player_id", "value", "confidence", "number_row", "x1", "y1", "x2", "y2"]
-    return pd.DataFrame(rows, columns=columns).astype({"frame": "int32", "player_id": "int32"})
+    columns = ["frame", "player_id", "track_id", "value", "confidence", "number_row", "x1", "y1", "x2", "y2"]
+    return pd.DataFrame(rows, columns=columns).astype({
+        "frame": "int32", "player_id": "int32", "track_id": "Int32",
+    })
 
 
 def events_table(run: dict) -> pd.DataFrame:

@@ -101,3 +101,50 @@ These are targeted tests and cached-data replays, not a new full SAM2 run. The
 existing watchable videos are unchanged. Full-video fragmentation and identity
 quality still need validation; the intended tradeoff is more temporary identities
 in exchange for fewer unsupported cross-team revivals.
+
+## Identity audit: narrow correctness guards (2026-10-18)
+
+Following an independent Opus review, the validation branch adds:
+
+- Re-ID excludes an entire canonical family if any member is live or has
+  already been claimed in the current checkpoint. It cannot revive a second
+  track for an already represented person. Re-ID diagnostics count these
+  exclusions as `family_busy`.
+- Number-read JSON rows retain the source `track_id` alongside the canonical
+  `player_id`. The reads table adds an optional nullable `Int32` column; old
+  runs leave it missing, and existing version-1 bundles still load. No existing
+  column changes meaning or type.
+- A suspended number's contradictory observations retain their actual values.
+  Reads `24, 35` no longer become two votes for `35`.
+- The three number-voting callers reject a number when its best mask owners
+  tie within 1e-6 IoS. Low-level matching retains its previous default for
+  diagnostics. Clear winners, thresholds, and one-to-one ordering are unchanged.
+- Live arbitration and causal replay take a family's team from its visible
+  member; a retired alias cannot overwrite that team merely by dict order.
+  This does not change the historical final-team replay policy or resolve
+  legacy collisions with multiple visible members of one family.
+
+Partial-digit reconfirmation, number-folding thresholds, contested-team re-ID,
+appearance updates, detector weights, and court policies are unchanged. The
+validation-v3 job uses its frozen `355d208` snapshot and does not include these
+new guards; existing bundles/renders have not been overwritten.
+
+CPU comparison artifacts are in `runs/identity-guards-2026-10-18/`. Replaying
+the old Kiel tracking and historical links removes 28 of 4,454 saved reads
+whose best owners tie under the actual production pixel convention. None of
+those old reads moves to another owner. Geometry stays identical, and P13
+remains 41 at frame 3300. Folded field-number duplicates remain zero.
+
+This is a counterfactual label replay, not fresh tracking or an accuracy score.
+The mixed-contradiction fix can delay labels previously qualified by duplicated
+votes. The goalkeeper-51 `61` error persists in this frozen replay: removing
+tied reads alone does not eliminate its other inherited evidence. The 9:25
+family-collision guard is covered at the registry boundary, but its full-video
+effect still requires a fresh tracking pass. No claim of zero visual regressions
+or complete identity repair is made.
+
+Validation: 14 targeted regression cases cover occupied/claimed alias chains,
+valid free-family revival, actual mixed votes, preserved partial-digit recovery,
+visible-member team selection, causal replay, tied/clear number ownership,
+provenance and legacy/new bundle round trips. The full scoped suite passes
+527 tests.

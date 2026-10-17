@@ -92,11 +92,16 @@ def match_numbers_to_players(
     player_masks: np.ndarray,
     number_xyxy: np.ndarray,
     frame_shape: tuple,
+    *, reject_ambiguous: bool = False,
 ) -> list:
     """[(player_row, number_row), ...] pairs above MATCH_IOS_MIN, best match first.
 
     frame_shape: (height, width) -- note sv.xyxy_to_mask wants resolution_wh as
     (width, height), the reverse order.
+
+    `reject_ambiguous` drops number boxes whose best owner is tied within
+    floating-point tolerance. Voting callers opt in before the one-to-one
+    filter: row order cannot decide which overlapping person wore a number.
     """
     if len(player_masks) == 0 or len(number_xyxy) == 0:
         return []
@@ -111,6 +116,11 @@ def match_numbers_to_players(
     else:
         iou = _ios_box_local(player_masks, number_xyxy, w, h)
     rows, cols = np.where(iou > MATCH_IOS_MIN)
+    if reject_ambiguous:
+        best = iou.max(axis=0)
+        tied = np.count_nonzero(np.isclose(iou, best, rtol=0, atol=1e-6), axis=0) > 1
+        keep = ~tied[cols]
+        rows, cols = rows[keep], cols[keep]
     pairs = list(zip(rows.tolist(), cols.tolist()))
     pairs.sort(key=lambda rc: iou[rc[0], rc[1]], reverse=True)
     return pairs
@@ -388,7 +398,7 @@ class NumberVoter:
         # Rebuilt from scratch by every `arbitrate` call, so it is a view of the
         # current evidence and never an accumulating penalty.
         self._suppressed: dict = {}
-        # identity_id -> [verdict inherited across a re-ID, reads contradicting it].
+        # identity_id -> [inherited verdict, contradicting read values].
         # See `suspend`.
         self._unconfirmed: dict = {}
 
@@ -409,8 +419,8 @@ class NumberVoter:
         if value == inherited or (len(value) == 1 and inherited.endswith(value)):
             self._unconfirmed.pop(identity_id, None)
             return
-        pending[1] += 1
-        if pending[1] < CONTRADICTIONS_BEFORE_DISOWNING:
+        pending[1].append(value)
+        if len(pending[1]) < CONTRADICTIONS_BEFORE_DISOWNING:
             return
         # This identity is now reading a different shirt, so the inherited
         # tally describes somebody else and has to go -- leaving it in place
@@ -420,8 +430,8 @@ class NumberVoter:
         self._unconfirmed.pop(identity_id, None)
         self._settled.pop(identity_id, None)
         self._votes[identity_id] = _Votes()
-        for _ in range(pending[1]):
-            self._votes[identity_id].add(value)
+        for contradiction in pending[1]:
+            self._votes[identity_id].add(contradiction)
 
     def _qualified(self, identity_id: int):
         """(value, count, margin) where value is set only if both gates pass now."""
@@ -495,7 +505,7 @@ class NumberVoter:
         """
         held = self._verdict(identity_id)[0]
         if held is not None:
-            self._unconfirmed[identity_id] = [held, 0]
+            self._unconfirmed[identity_id] = [held, []]
         return held
 
     def claim(self, identity_id: int):
@@ -764,9 +774,9 @@ def causal_labels(reads, events, live_frames, teams=None,
                 alias[source] = target
                 voter.merge(source, target)
         if teams:
-            live = {canonical(pid) for pid, frames in live_frames.items() if frame in frames}
+            live = {pid for pid, frames in live_frames.items() if frame in frames}
             voter.arbitrate({canonical(pid): team for pid, team in teams.items()
-                             if canonical(pid) in live})
+                             if pid in live})
         for player_id, frames in live_frames.items():
             if frame not in frames:
                 continue

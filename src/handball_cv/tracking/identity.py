@@ -368,9 +368,15 @@ class PlayerRegistry:
         """
         incoming_qualified = is_qualified(confidence, quality)
         field_player = not is_goalkeeper
-        ranked, gated = [], {"team_mismatch": 0, "team_unproven": 0}
+        # A number link joins identities without renumbering tracker handles.
+        # Neither a live alias nor another detection in this checkpoint may
+        # revive a second member of that same person family (Kiel #8/#24).
+        occupied = {self.canonical(pid) for pid in self.live}
+        occupied.update(self.canonical(pid) for pid in taken)
+        ranked, gated = [], {"team_mismatch": 0, "team_unproven": 0, "family_busy": 0}
         for cand in self.retired:
-            if cand.player_id in taken:
+            if self.canonical(cand.player_id) in occupied:
+                gated["family_busy"] += 1
                 continue
             if self.play_frames(cand.last_seen, frame_idx) > self.reid_max_gap_frames:
                 continue

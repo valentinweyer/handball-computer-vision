@@ -183,7 +183,7 @@ def process_numbers_for_frame(
 
     stacked = np.stack([masks[i] for i in masked_rows])
     pairs = unique_pairs(
-        match_numbers_to_players(stacked, number_xyxy, frame_bgr.shape)
+        match_numbers_to_players(stacked, number_xyxy, frame_bgr.shape, reject_ambiguous=True)
     )
     pairs = [
         (p, n) for p, n in pairs

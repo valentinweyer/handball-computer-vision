@@ -484,10 +484,9 @@ class NumberIdentityResolver:
 
     def _arbitrate_live(self) -> None:
         canonical = self.registry.canonical
-        live = {canonical(pid) for pid in self._live_ids}
         self.voter.arbitrate({
             canonical(pid): team for pid, team in self.registry.team_by_player_id().items()
-            if canonical(pid) in live
+            if pid in self._live_ids
         })
 
     def _ever_together(self, a: int, b: int) -> bool:
@@ -750,7 +749,7 @@ def render(args: argparse.Namespace) -> dict:
                     ocr_frames += 1
                     stacked = np.stack([masks[i] for i in masked_rows])
                     pairs = unique_pairs(match_numbers_to_players(
-                        stacked, number_xyxy, frame_bgr.shape
+                        stacked, number_xyxy, frame_bgr.shape, reject_ambiguous=True,
                     ))
                     # Drop unreadable crops before OCR: confidence filtering
                     # alone cannot reliably identify every junk prediction.
@@ -780,6 +779,7 @@ def render(args: argparse.Namespace) -> dict:
                                 # cannot tell which physical player produced them.
                                 number_reads.append({
                                     "frame": frame_index, "player_id": _pid,
+                                    "track_id": int(tracked.tracker_id[masked_rows[local_row]]),
                                     "value": raw, "number_row": int(number_row),
                                     "box": number_xyxy[number_row].tolist(),
                                 })
@@ -976,7 +976,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             if len(number_xyxy):
                 ocr_frames += 1
                 pairs = unique_pairs(match_numbers_to_players(
-                    masks, number_xyxy, frame_rgb.shape
+                    masks, number_xyxy, frame_rgb.shape, reject_ambiguous=True,
                 ))
                 pairs = [
                     (p, n) for p, n in pairs
@@ -1011,6 +1011,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
                             entry = {
                                 "frame": result.frame_idx,
                                 "player_id": pid, "value": raw,
+                                "track_id": int(player_ids[local_row]),
                                 "number_row": int(number_row),
                                 "box": number_xyxy[number_row].tolist(),
                             }
