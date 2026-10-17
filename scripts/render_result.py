@@ -41,7 +41,9 @@ def court_fits(court) -> list:
     for row in court.itertuples(index=False):
         h = np.array([getattr(row, c) for c in h_cols], dtype=np.float64)
         if not np.all(np.isfinite(h)):
-            fits.append(CourtFit(source=row.source, age=int(row.age)))
+            # Bundles from before the column existed: no reason to think it was out of view.
+            fits.append(CourtFit(source=row.source, age=int(row.age),
+                                 court_in_view=bool(getattr(row, "court_in_view", True))))
             continue
         inv = np.array([getattr(row, c) for c in inv_cols], dtype=np.float64).reshape(3, 3)
         fits.append(CourtFit(homography=h.reshape(3, 3), inverse=inv, inliers=int(row.inliers),

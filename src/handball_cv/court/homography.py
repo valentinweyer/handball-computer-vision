@@ -35,10 +35,30 @@ inherited from frames that could see a goal.
 `cv2.findHomography` takes no weights, so `fit_homography` below is a weighted
 DLT. RANSAC still runs first, on the real landmarks alone, to throw out bad
 detections before the prior is allowed to speak.
+
+Time can also hold a wrong answer in place, which the first full broadcast
+(10 minutes of Kiel-Lemgo) showed in two ways:
+
+- **Lock-in.** Once the carried estimate is wrong, the identity gate rejects
+  the correct landmarks for disagreeing with it -- 6 of 14 per frame for 9 s
+  there, while 11 of 14 agreed with each other on a court metres away. So a
+  frame whose own landmarks outvote the gated set, without flipping the
+  court's orientation, now wins and drops the prior for that frame.
+- **No court at all.** In a lights-off timeout the keypoint model finds court
+  points on silhouettes, and the old tracker fitted 95% of those frames. Now
+  a frame whose keypoints mostly disagree is not fitted, and a run of such
+  frames means no court is in view: the tracker abstains and forgets its fit.
+
+Refitted from the stored keypoints, player feet more than 5 m outside the
+court went from 4.7% to 1.8% of rows in play on that broadcast, and frame-
+to-frame jitter at p90 from 26 to 11 px; the three short clips stayed level
+or improved (BHC-FAG 1.7 -> 1.4%, Melsungen 2.0 -> 2.0%, FelixClaar 5.0 ->
+4.8%). Some of what remains is people who really are off the court.
 """
 
 from __future__ import annotations
 
+from collections import Counter, deque
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
@@ -48,6 +68,9 @@ import numpy as np
 from .keypoints import court_points
 
 __all__ = ["CourtFit", "CourtTracker", "fit_homography", "robust_fit"]
+
+# Frames that must agree on the court's orientation before it is enforced.
+ORIENTATION_EVIDENCE = 3
 
 
 def _normalize(points: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -117,6 +140,28 @@ def _safe_inverse(matrix: np.ndarray) -> np.ndarray | None:
         return None
 
 
+def _orientation(matrix: np.ndarray, image_point: tuple[float, float]) -> tuple[int, int]:
+    """Which way round the court sits in the picture: (handedness, depth direction).
+
+    Both read off the image-to-court map at `image_point` -- the picture's
+    centre, which a broadcast camera keeps on the floor -- because a court
+    point far outside the picture can sit behind the camera, where the signs
+    mean nothing. Handedness is the sign of that map's Jacobian; depth
+    direction is which way court y runs as one moves up the picture. A camera
+    move changes neither. The two ways the court's symmetry can fool the
+    keypoint labels each flip one: mirroring the ends flips handedness, a half
+    turn reverses the depth direction.
+    """
+    inverse = _safe_inverse(matrix)
+    if inverse is None:
+        return 0, 0
+    x, y = image_point
+    probe = np.array([[[x, y]], [[x + 1.0, y]], [[x, y - 1.0]]], dtype=np.float64)
+    court = cv2.perspectiveTransform(probe, inverse).reshape(-1, 2)
+    right, up = court[1] - court[0], court[2] - court[0]
+    return int(np.sign(right[0] * up[1] - right[1] * up[0])), int(np.sign(up[1]))
+
+
 def robust_fit(
     source: np.ndarray, target: np.ndarray, threshold_px: float
 ) -> tuple[np.ndarray | None, np.ndarray]:
@@ -138,7 +183,10 @@ class CourtFit:
 
     `source` says where the estimate came from: "keypoints" when this frame's
     own landmarks carried it, "propagated" when they could not and the carried
-    prediction stood in, "none" when the tracker abstains.
+    prediction stood in, "none" when the tracker abstains. `court_in_view` is
+    False when the recent frames show no court at all -- a timeout huddle with
+    the lights off, a close-up -- which is a different reason to abstain from a
+    court the tracker merely lost.
     """
 
     homography: np.ndarray | None = None      # court -> image
@@ -148,6 +196,7 @@ class CourtFit:
     coverage_cm: tuple[float, float] = (0.0, 0.0)
     source: str = "none"
     age: int = 0                              # frames since real landmarks last carried it
+    court_in_view: bool = True
 
     @property
     def usable(self) -> bool:
@@ -186,6 +235,18 @@ class CourtTracker:
         max_age: after this many consecutive frames with no usable landmarks,
             stop propagating and abstain rather than keep projecting a stale
             camera.
+        min_agreement: the share of a frame's confident keypoints that must
+            agree on one court for the frame to be fitted at all. Below it the
+            frame is treated as having no usable landmarks. On the Kiel
+            broadcast, under half agreed in 85% of the frames of a lights-off
+            timeout (the model finding court points on silhouettes) against
+            1.8% of frames of play.
+        view_window: frames over which "is there a court in view" is decided.
+            One frame cannot settle it -- inside that timeout 15% of frames
+            still agree by chance -- so the court counts as in view while at
+            least half of the last `view_window` frames agreed. Out of view,
+            the tracker abstains and forgets its fit rather than carry it
+            through a stretch it cannot see.
     """
 
     def __init__(
@@ -200,6 +261,8 @@ class CourtTracker:
         prior_margin: float = 1.0,
         identity_gate_px: float | None = 400.0,
         max_age: int = 50,
+        min_agreement: float = 0.5,
+        view_window: int = 25,
     ) -> None:
         self._vertices = np.asarray(vertices, dtype=np.float64)
         self._image_size = (float(image_size[0]), float(image_size[1]))
@@ -209,7 +272,16 @@ class CourtTracker:
         self._ransac_px = ransac_px
         self._prior_weight = prior_weight
         self._max_age = max_age
+        self._min_agreement = min_agreement
+        self._recent_agreement: deque[bool] = deque(maxlen=view_window)
         self._homography: np.ndarray | None = None
+        # Which way round the court sits in the picture (see `_orientation`) is a
+        # property of the video -- the camera's side of the court and the keypoint
+        # model's labelling -- not of one fit. So it is a running vote over every
+        # frame whose keypoints mostly agree, never a single fit's answer: on two
+        # broadcasts 97% of such frames vote the same way, and a stray first
+        # frame cannot decide what every later one is held to.
+        self._orientation_votes: Counter = Counter()
         self._previous_points: dict[int, tuple[float, float]] = {}
         self._age = 0
 
@@ -293,8 +365,8 @@ class CourtTracker:
         to catch a landmark on the wrong half of a 40 m court, not to second-
         guess localisation.
 
-        Falls back to the ungated set when it would leave too little to fit, so
-        a stale or wrong prediction cannot starve the solve entirely.
+        May leave too little to fit; `update` then treats the prediction as
+        contradicted, so a stale or wrong one cannot starve the solve.
         """
         placed = cv2.perspectiveTransform(
             court_points(slots, self._vertices).reshape(-1, 1, 2).astype(np.float32),
@@ -304,7 +376,7 @@ class CourtTracker:
         with np.errstate(invalid="ignore"):
             distance = np.linalg.norm(placed - seen, axis=1)
         keep = np.isfinite(distance) & (distance <= self._identity_gate_px)
-        return [s for s, k in zip(slots, keep) if k] if keep.sum() >= 4 else slots
+        return [s for s, k in zip(slots, keep) if k]
 
     def update(
         self,
@@ -331,19 +403,37 @@ class CourtTracker:
         prediction = self._predict(observed, motion)
 
         slots = sorted(observed)
-        if prediction is not None and self._identity_gate_px is not None and slots:
-            slots = self._agreeing_slots(slots, observed, prediction)
-        image_points = np.array([observed[s] for s in slots], dtype=np.float64) if slots else np.zeros((0, 2))
-        court = court_points(slots, self._vertices) if slots else np.zeros((0, 2))
+        consensus = self._consensus(slots, observed)
+        # Whether this frame's keypoints agree on any court at all, before the
+        # prediction has a say: a mirrored labelling agrees with itself, points
+        # found on a dark huddle do not.
+        agrees = consensus is not None and len(consensus[1]) >= self._min_agreement * len(observed)
+        self._recent_agreement.append(agrees)
+        if 2 * sum(self._recent_agreement) < len(self._recent_agreement):
+            self._homography = None
+            self._previous_points = observed
+            self._age += 1
+            return CourtFit(age=self._age, court_in_view=False)
+        if not agrees:
+            return self._propagate(prediction, observed)
+        self._orientation_votes[self._orientation_of(consensus[0])] += 1
 
-        matrix, mask = robust_fit(court, image_points, self._ransac_px)
-        if matrix is None:
+        use_prior = prediction is not None
+        if prediction is not None and self._identity_gate_px is not None:
+            gated = self._agreeing_slots(slots, observed, prediction)
+            held = self._consensus(gated, observed) if gated != slots else consensus
+            if self._prediction_contradicted(consensus, held):
+                use_prior = False
+            else:
+                consensus = held
+
+        if consensus is None or not self._keeps_orientation(consensus[0]):
             return self._propagate(prediction, observed)
 
-        court_in, image_in = court[mask], image_points[mask]
+        matrix, court_in, image_in = consensus
         source_pts, target_pts = court_in, image_in
         weights = np.ones(len(court_in), dtype=np.float64)
-        if prediction is not None:
+        if use_prior:
             grid, carried = self._carried_points(prediction)
             if len(grid):
                 source_pts = np.vstack([court_in, grid])
@@ -358,6 +448,45 @@ class CourtTracker:
         self._previous_points = observed
         self._age = 0
         return self._describe(blended, court_in, image_in, "keypoints")
+
+    def _consensus(
+        self, slots: list[int], observed: dict[int, tuple[float, float]]
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray] | None:
+        """RANSAC over `slots`: the homography and its inliers, court and image side."""
+        if len(slots) < 4:
+            return None
+        court = court_points(slots, self._vertices)
+        image = np.array([observed[s] for s in slots], dtype=np.float64)
+        matrix, mask = robust_fit(court, image, self._ransac_px)
+        if matrix is None:
+            return None
+        return matrix, court[mask], image[mask]
+
+    def _prediction_contradicted(self, ungated, gated) -> bool:
+        """The frame's own landmarks agree on a court the carried estimate rules out.
+
+        The identity gate exists for a coherent mislabelling: a mirrored story
+        that outvotes the true one. A mirror shows up as a flip of the court's
+        orientation in the picture, which no camera move produces, so an
+        ungated consensus that outvotes the gated one *and* keeps the
+        orientation is not that case -- it is the carried estimate that is
+        wrong, and holding to it would reject exactly the landmarks that could
+        correct it, frame after frame.
+        """
+        if ungated is None or not self._keeps_orientation(ungated[0]):
+            return False
+        return gated is None or len(ungated[1]) > len(gated[1])
+
+    def _orientation_of(self, matrix: np.ndarray) -> tuple[int, int]:
+        return _orientation(matrix, (self._image_size[0] / 2, self._image_size[1] / 2))
+
+    def _keeps_orientation(self, matrix: np.ndarray) -> bool:
+        """True unless the video has settled on an orientation and `matrix` has another."""
+        if not self._orientation_votes:
+            return True
+        (leader, votes), = self._orientation_votes.most_common(1)
+        settled = votes >= ORIENTATION_EVIDENCE and votes > sum(self._orientation_votes.values()) / 2
+        return not settled or self._orientation_of(matrix) == leader
 
     def _propagate(
         self, prediction: np.ndarray | None, observed: dict[int, tuple[float, float]]

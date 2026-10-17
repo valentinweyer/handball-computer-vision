@@ -38,7 +38,8 @@ TABLES = {
     "tracks": (1, "One row per tracked player per frame: identity, team, jersey number, "
                   "image box and foot point, court position."),
     "players": (1, "One row per player identity after number-based linking."),
-    "court": (1, "One row per frame: the court homography and where it came from."),
+    "court": (1, "One row per frame: the court homography, where it came from, and whether "
+                 "a court was in view at all."),
     "detections": (1, "Raw detector output, every class, unfiltered above the cache threshold."),
     "reads": (1, "One row per jersey-number read that reached the vote."),
     "events": (1, "Identity events: re-identification, linking, team switches, retirement."),

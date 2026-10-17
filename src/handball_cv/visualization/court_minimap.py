@@ -57,7 +57,8 @@ class CourtMinimap:
         image = self.background.copy()
         if fit is None or not fit.usable:
             image = (image * DIM).astype(np.uint8)
-            cv2.putText(image, "no court fit", (10, image.shape[0] - 12), cv2.FONT_HERSHEY_SIMPLEX,
+            reason = "no court fit" if fit is None or fit.court_in_view else "no court in view"
+            cv2.putText(image, reason, (10, image.shape[0] - 12), cv2.FONT_HERSHEY_SIMPLEX,
                         self.font_scale * 1.2, (255, 255, 255), 2, cv2.LINE_AA)
             return image
 

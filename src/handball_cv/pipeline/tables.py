@@ -240,7 +240,8 @@ def court_table(fits: list) -> pd.DataFrame:
     """One row per frame. `h*` maps court cm -> image px, `inv*` image -> court."""
     rows = []
     for frame, fit in enumerate(fits):
-        row = {"frame": frame, "source": fit.source, "age": fit.age, "inliers": fit.inliers,
+        row = {"frame": frame, "source": fit.source, "court_in_view": fit.court_in_view,
+               "age": fit.age, "inliers": fit.inliers,
                "reprojection_px": fit.reprojection_px,
                "coverage_x_cm": fit.coverage_cm[0], "coverage_y_cm": fit.coverage_cm[1]}
         for prefix, matrix in (("h", fit.homography), ("inv", fit.inverse)):

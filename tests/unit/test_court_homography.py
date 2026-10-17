@@ -244,12 +244,41 @@ class IdentityGateTests(unittest.TestCase):
     def corner_error(self, fit):
         return float(np.abs(project(fit.homography, self.corners) - self.truth).max())
 
-    def test_without_the_gate_a_coherent_mislabelling_moves_the_court(self):
-        # Guards the guard: if RANSAC alone coped, the gate would prove nothing.
+    def test_a_coherent_mislabelling_outvotes_the_truth_in_ransac(self):
+        # Guards the guards: if RANSAC alone coped, neither would prove anything.
+        points = self.keypoints(self.MISLABELLED)
+        matrix, _ = robust_fit(
+            court_points([s for s, *_ in points], self.vertices),
+            np.array([[x, y] for _, x, y, _ in points]), 20.0,
+        )
+        self.assertGreater(float(np.abs(project(matrix, self.corners) - self.truth).max()), 500.0)
+
+    def test_without_the_gate_the_mirror_is_refused_by_its_orientation(self):
+        # The mirrored story flips the court's handedness, which no camera move
+        # does, so the frame coasts on the prediction instead of jumping to it.
         fit = self.settled_tracker(None).update(
             self.keypoints(self.MISLABELLED), motion=np.eye(3)
         )
-        self.assertGreater(self.corner_error(fit), 500.0)
+        self.assertEqual(fit.source, "propagated")
+        self.assertLess(self.corner_error(fit), 25.0)
+
+    def test_the_frame_wins_when_the_prediction_is_wrong(self):
+        # The lock-in measured on the Kiel broadcast: a carried estimate off by a
+        # few metres rejects the correct landmarks at the gate, frame after frame.
+        tracker = self.settled_tracker(400.0)
+        shift = np.array([[1.0, 0.0, 600.0], [0.0, 1.0, 200.0], [0.0, 0.0, 1.0]])
+        fit = tracker.update(self.keypoints(), motion=shift)
+        self.assertEqual(fit.source, "keypoints")
+        self.assertLess(self.corner_error(fit), 1.0)
+
+    def test_a_frame_whose_keypoints_mostly_disagree_is_not_fitted(self):
+        # A lights-off timeout: points found on silhouettes, few agreeing.
+        rng = np.random.default_rng(0)
+        good = self.keypoints()[:8]
+        noise = [(s, float(x), float(y), 0.9) for s, (x, y) in
+                 zip(range(8, 30), rng.uniform([0, 0], IMAGE_SIZE, size=(22, 2)))]
+        fit = CourtTracker(self.vertices, IMAGE_SIZE).update(good + noise)
+        self.assertFalse(fit.usable)
 
     def test_the_gate_holds_the_court_where_history_says_it_is(self):
         fit = self.settled_tracker(400.0).update(

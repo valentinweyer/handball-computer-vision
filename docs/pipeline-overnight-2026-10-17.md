@@ -53,7 +53,7 @@ One directory per video:
 |---|---|---|
 | `tracks` | player × frame | `frame`, `time_s`, `player_id`, `track_id`, `team`, `team_state`, `team_confidence`, `is_goalkeeper`, `number` (backfilled), `number_live`, box, `foot_x/y`, `court_x/y` (cm), `court_fit_source`, `mask_row` |
 | `players` | identity | team, final number, first/last frame, frames visible, re-ID count, reads, vote tally |
-| `court` | frame | court→image homography and its inverse, source, age, inliers |
+| `court` | frame | court→image homography and its inverse, source, `court_in_view`, age, inliers |
 | `detections` | detection | every class, confidence, box (detector stride is in the manifest) |
 | `reads` | jersey read | value, reader confidence, number box |
 | `events` | identity event | re-ID, link, team switch, suspected ID switch |
@@ -236,6 +236,13 @@ unchanged and still has the gap on runs with links.
 - **Court positions are raw.** They jitter a few px per frame and sometimes
   spike toward the far sideline when a player's feet are hidden. No smoothing
   was applied; that is a decision for whatever uses the positions.
+- **Court fit, fixed the morning after.** The Kiel numbers above predate it.
+  The tracker could lock onto a wrong court for seconds and fitted the
+  lights-off timeout; both are fixed (see `handball_cv/court/homography.py`),
+  and `court.court_in_view` marks stretches with no court on screen. On Kiel,
+  feet more than 5 m off court in play went from 4.7% to 1.8% of rows. The
+  bundles for Kiel and BHC-FAG were rebuilt; the others still carry the old fit
+  until their bundle stage reruns.
 - **Frame 0 has no `tracks` rows.** SAM2 uses it as the seed frame and does not
   output it, which is existing behaviour.
 - **Old runs have two empty columns.** `team_confidence` and the reader's
