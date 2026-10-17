@@ -62,8 +62,10 @@ def _segments_by_player(run: dict, ocr_every: int, fold_links: bool = False) -> 
         for player_id in ids:
             live_frames.setdefault(canonical(int(player_id)), []).append(int(frame))
     reads = [{**row, "player_id": canonical(int(row["player_id"]))} for row in run["number_reads"]]
-    events = [{**event, "player_id": canonical(int(event["player_id"]))}
-              if event.get("player_id") is not None else event
+    # Every id an event names goes through the same fold, so a link folded here
+    # already is a no-op when the label replay reaches it.
+    events = [{**event, **{key: canonical(int(event[key])) for key in ("player_id", "into_player_id")
+                           if event.get(key) is not None}}
               for event in run["identity_events"]]
     teams = {}
     for player_id, team in run["player_teams"].items():
@@ -112,8 +114,9 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
     back over the frames before it was decided -- with number links folded in
     (see `_segments_by_player`): a fragment linked into an identity carries that
     identity's number. Without links this is exactly what `--redraw` draws.
-    `number_live` is what the run's own label replay gives at that frame, links
-    not folded, as `--redraw --redraw-causal` draws it. Two invariants hold
+    `number_live` is what the render drew at that frame: the run's own label
+    replay, each number link applied from the frame it was made, as
+    `--redraw --redraw-causal` draws it. Two invariants hold
     per frame: an identity is on at most one box (`one_place_per_identity`),
     and a number is on at most one field player per team
     (`one_number_per_team`); where either would break, the number is withheld. `court_x/court_y`
@@ -153,7 +156,8 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
         numbers = one_number_per_team(numbers, teams, keepers)
         for row, track_id in enumerate(ids):
             player_id = player_ids[row]
-            live_segment = segment_at(unfolded, player_id, frame)
+            # As the render labelled it: by the tracker's own id, read through links.
+            live_segment = segment_at(unfolded, int(track_id), frame)
             color = int(colors[row])
             columns["frame"].append(frame)
             columns["time_s"].append(frame / fps)

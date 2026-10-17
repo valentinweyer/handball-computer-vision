@@ -35,7 +35,9 @@ BUNDLE_SCHEMA = 1
 # name -> (schema version, description). Bump a version whenever a column's
 # meaning or type changes, not only when columns are removed.
 TABLES = {
-    "tracks": (1, "One row per tracked player per frame: identity, team, jersey number, "
+    # 2: number_live follows number links from the frame they were made, as the
+    #    render drew it; version 1 ignored links and showed far fewer numbers.
+    "tracks": (2, "One row per tracked player per frame: identity, team, jersey number, "
                   "image box and foot point, court position."),
     "players": (1, "One row per player identity after number-based linking."),
     "court": (1, "One row per frame: the court homography, where it came from, and whether "

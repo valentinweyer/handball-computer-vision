@@ -175,8 +175,8 @@ def test_a_linked_fragment_carries_its_identitys_number(tmp_path):
     fragment = tracks[tracks.track_id == 12]
     assert (fragment.player_id == 7).all()
     assert fragment.number.tolist() == ["15", "15", "15"]
-    # The live column stays the run's own replay, in which the fragment never resolved.
-    assert fragment.number_live.isna().all()
+    # The live column is what the render drew: from the link on, through the fold.
+    assert fragment.number_live.tolist() == ["15", "15", "15"]
 
 
 def test_one_identity_is_never_on_two_boxes():

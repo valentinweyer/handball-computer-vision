@@ -713,6 +713,10 @@ def causal_labels(reads, events, live_frames, teams=None,
         retired, so a withheld duplicate stays withheld between OCR frames.
       - a `suspected_id_switch` breaks a *segment* but does not suspend, exactly
         as `NumberIdentityResolver.begin_frame` has it.
+      - a `link` folds one identity into another at the frame it was made, and
+        every label is read through the fold, as `voted_labels` draws it. Left
+        out, a fragment the run labelled through its link shows nothing: on a
+        10-minute broadcast that was 14 labelled fragments instead of 112.
 
     Only entries where the label changes are recorded; read them with
     `Segment.value_at`.
@@ -723,9 +727,22 @@ def causal_labels(reads, events, live_frames, teams=None,
             (int(row["player_id"]), row["value"])
         )
     revivals: dict = {}
+    links: dict = {}
     for event in events:
         if event.get("type") == "reid":
             revivals.setdefault(int(event["frame"]), []).append(int(event["player_id"]))
+        elif event.get("type") == "link":
+            links.setdefault(int(event["frame"]), []).append(
+                (int(event["player_id"]), int(event["into_player_id"])))
+
+    alias: dict = {}
+
+    def canonical(player_id: int) -> int:
+        seen = set()
+        while player_id in alias and player_id not in seen:
+            seen.add(player_id)
+            player_id = alias[player_id]
+        return player_id
 
     voter = NumberVoter()
     timelines: dict = {}
@@ -734,18 +751,25 @@ def causal_labels(reads, events, live_frames, teams=None,
     # `suspend` that is never applied leaves the pre-break verdict asserting
     # itself into the new segment. On a full clip somebody is always live so it
     # never shows, which is exactly why it needs stating.
-    walk = {f for frames in live_frames.values() for f in frames} | set(revivals)
+    walk = {f for frames in live_frames.values() for f in frames} | set(revivals) | set(links)
     for frame in sorted(walk):
         for player_id in revivals.get(frame, ()):
             voter.suspend(player_id)
         for player_id, value in reads_by_frame.get(frame, ()):
             voter.observe(player_id, value)
+        # The render links, then arbitrates, in one resolve step after the
+        # frame's reads (`NumberIdentityResolver.resolve`).
+        for source, target in links.get(frame, ()):
+            source, target = canonical(source), canonical(target)
+            if source != target:
+                alias[source] = target
+                voter.merge(source, target)
         if teams and frame % ocr_every == 0:
-            voter.arbitrate(teams)
+            voter.arbitrate({canonical(pid): team for pid, team in teams.items()})
         for player_id, frames in live_frames.items():
             if frame not in frames:
                 continue
-            label = voter.best(player_id)[0]
+            label = voter.best(canonical(player_id))[0]
             if label != held.get(player_id):
                 held[player_id] = label
                 timelines.setdefault(player_id, []).append((frame, label))
