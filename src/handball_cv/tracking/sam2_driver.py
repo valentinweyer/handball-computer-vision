@@ -35,12 +35,44 @@ from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
 CHECK_EVERY_DEFAULT = 10  # matches run_pipeline.py's detector-checkpoint cadence
+# Competing role scores for essentially the same person, not normal player overlap.
+ROLE_DUPLICATE_IOU_MIN = 0.95
 # How long the court must be back before a paused tracker resumes. A lights-off
 # timeout on the first broadcast was broken by three ~1 s stretches where a
 # spotlight lit enough floor for the court fit to see a court -- still the
 # huddle, not play resuming -- and restarting for each would create and revive
 # players inside it. 2 s at 25 fps clears them.
 RESUME_AFTER_FRAMES = 50
+
+
+def _deduplicate_role_detections(
+    detections: sv.Detections, goalkeeper_class_id: int,
+) -> sv.Detections:
+    """Keep the stronger role on near-identical player/keeper boxes.
+
+    The callback supplies only field players and goalkeepers. RF-DETR can emit
+    both roles for one query's box; letting both through creates a second SAM2
+    object on an established player. Raw caches stay unchanged. Same-role boxes
+    and ordinary overlaps remain untouched, and surviving rows keep their order.
+    """
+    if len(detections) < 2 or detections.class_id is None:
+        return detections
+    keeper = detections.class_id == goalkeeper_class_id
+    if keeper.all() or not keeper.any():
+        return detections
+    confidence = detections.confidence
+    if confidence is None:
+        confidence = np.ones(len(detections))
+    keep = np.ones(len(detections), dtype=bool)
+    for index in np.argsort(-confidence, kind="stable"):
+        if not keep[index]:
+            continue
+        candidates = np.flatnonzero(keep & (keeper != keeper[index]))
+        if len(candidates):
+            overlap = sv.box_iou_batch(detections.xyxy[index:index + 1],
+                                       detections.xyxy[candidates])[0]
+            keep[candidates[overlap >= ROLE_DUPLICATE_IOU_MIN]] = False
+    return detections[keep]
 
 
 def ensure_frame_cache(video: Path, frame_cache_dir: Path) -> list[Path]:
@@ -582,7 +614,7 @@ def drive_sam2(
         predictor = predictor_factory(checkpoint)
 
     frame0 = read_frame(0)
-    det0 = frame_detections_fn(0)
+    det0 = _deduplicate_role_detections(frame_detections_fn(0), goalkeeper_class_id)
     if len(det0) == 0:
         raise RuntimeError("no cached detections on frame 0")
 
@@ -701,7 +733,9 @@ def drive_sam2(
                 np.array([last_masks_by_id[oid] for oid in live_obj_ids])
                 if live_obj_ids else np.empty((0, 0, 0), dtype=bool)
             )
-            det = frame_detections_fn(chunk_end)
+            det = _deduplicate_role_detections(
+                frame_detections_fn(chunk_end), goalkeeper_class_id,
+            )
             det_is_goalkeeper = det.class_id == goalkeeper_class_id
 
             actions = track_manager.checkpoint(

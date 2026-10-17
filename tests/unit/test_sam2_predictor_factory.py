@@ -12,8 +12,36 @@ import torch
 from handball_cv.tracking import sam2_driver as driver
 
 
+@pytest.mark.parametrize("scores,winner", [([.800, .443], 2), ([.443, .800], 1)])
+def test_conflicting_roles_keep_the_stronger_detection(scores, winner):
+    # Kiel f3540: the exact same box was emitted as player (.800) and keeper (.443).
+    detections = sv.Detections(
+        xyxy=np.array([[718.429, 350.026, 808.330, 593.015]] * 2),
+        class_id=np.array([2, 1]), confidence=np.array(scores),
+        data={"source_row": np.array([10, 11])},
+    )
+    kept = driver._deduplicate_role_detections(detections, 1)
+    assert kept.class_id.tolist() == [winner]
+    assert kept.confidence.tolist() == [max(scores)]
+    assert kept.data["source_row"].tolist() == [10 if winner == 2 else 11]
+    assert len(detections) == 2  # raw input is preserved
+
+
+@pytest.mark.parametrize("classes,boxes", [
+    ([2, 2], [[10, 10, 50, 100], [10, 10, 50, 100]]),
+    ([1, 2], [[10, 10, 50, 100], [25, 10, 65, 100]]),
+])
+def test_same_role_or_ordinary_overlap_is_not_suppressed(classes, boxes):
+    detections = sv.Detections(xyxy=np.array(boxes, float),
+                              class_id=np.array(classes), confidence=np.array([.8, .9]))
+    kept = driver._deduplicate_role_detections(detections, 1)
+    np.testing.assert_array_equal(kept.xyxy, detections.xyxy)
+    np.testing.assert_array_equal(kept.class_id, detections.class_id)
+
+
 @pytest.mark.parametrize("custom", [False, True])
-def test_factory_preserves_lifecycle_and_output_order(tmp_path, monkeypatch, custom):
+@pytest.mark.parametrize("duplicate_roles", [False, True])
+def test_factory_preserves_lifecycle_and_output_order(tmp_path, monkeypatch, custom, duplicate_roles):
     for frame in range(4):
         cv2.imwrite(str(tmp_path / f"{frame:05d}.jpg"), np.zeros((8, 12, 3), np.uint8))
     memories = {}
@@ -50,13 +78,17 @@ def test_factory_preserves_lifecycle_and_output_order(tmp_path, monkeypatch, cus
         def __init__(self, *args, **kwargs):
             pass
 
-        def seed(self, *args):
+        def seed(self, frame, boxes, image, is_goalkeeper):
+            np.testing.assert_array_equal(boxes, [[1, 1, 4, 5], [5, 1, 8, 5]])
+            assert not is_goalkeeper.any()
             return [11, 22]
 
         def update_from_propagation(self, frame, ids, masks):
             assert masks.shape == (len(ids), 8, 12)
 
         def checkpoint(self, frame, *args):
+            np.testing.assert_array_equal(args[3], [[1, 1, 4, 5], [5, 1, 8, 5]])
+            assert not args[4].any()
             if frame == 1:
                 initial[11] = memories[11]
                 return [{"type": "remove", "obj_id": 22},
@@ -78,7 +110,11 @@ def test_factory_preserves_lifecycle_and_output_order(tmp_path, monkeypatch, cus
     monkeypatch.setattr(driver, "TrackManager", Manager)
     monkeypatch.setattr(driver.torch, "autocast", lambda *a, **k: nullcontext())
     det = sv.Detections(xyxy=np.array([[1, 1, 4, 5], [5, 1, 8, 5]], float),
-                        class_id=np.array([2, 2]))
+                        class_id=np.array([2, 2]), confidence=np.array([.9, .8]))
+    if duplicate_roles:
+        det = sv.Detections.merge([det, sv.Detections(
+            xyxy=det.xyxy.copy(), class_id=np.array([1, 1]), confidence=np.array([.4, .3]),
+        )])
     _, seed, frames = driver.drive_sam2(
         tmp_path / "unused.mp4", lambda fid: det, None, "weights.pt",
         check_every=1, frame_cache_dir=tmp_path,
