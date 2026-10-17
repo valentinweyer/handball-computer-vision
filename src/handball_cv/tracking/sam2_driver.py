@@ -35,10 +35,11 @@ from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
 CHECK_EVERY_DEFAULT = 10  # matches run_pipeline.py's detector-checkpoint cadence
-# How long the court must be back before a paused tracker resumes. A timeout
-# on the first broadcast was broken by three ~1 s replays of the play before it
-# -- real court, not play resuming -- and restarting for each would revive
-# players onto replayed footage. 2 s at 25 fps clears them.
+# How long the court must be back before a paused tracker resumes. A lights-off
+# timeout on the first broadcast was broken by three ~1 s stretches where a
+# spotlight lit enough floor for the court fit to see a court -- still the
+# huddle, not play resuming -- and restarting for each would create and revive
+# players inside it. 2 s at 25 fps clears them.
 RESUME_AFTER_FRAMES = 50
 
 
