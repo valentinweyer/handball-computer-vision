@@ -167,3 +167,40 @@ def run_with_court(tmp_path, monkeypatch, frames, resume_after, in_view):
     )
     list(results)
     return calls
+
+
+# ---- re-ID team gate ------------------------------------------------------
+
+def settled_retired(registry, team=0):
+    player = registry.create(0, None, team, np.array([1.0, 0.0, 0.0, 0.0]), False)
+    for _ in range(6):
+        player.record_team_vote(team, 0.9, 1.0)
+    registry.retire(player.player_id, 10)
+    return player
+
+
+def test_a_settled_team_needs_a_qualified_agreeing_read_to_be_revived():
+    registry = PlayerRegistry()
+    player = settled_retired(registry)
+    query = np.array([1.0, 0.0, 0.0, 0.0])
+    # A weak read out of a tangle: no longer enough to revive a settled player.
+    assert registry.reid_match(query, 20, set(), team_id=0, confidence=0.1, quality=0.1,
+                               is_goalkeeper=False) is None
+    assert registry.reid_log[-1]["team_unproven"] == 1
+    # A clear read of the other team: vetoed, as before.
+    assert registry.reid_match(query, 20, set(), team_id=1, confidence=0.9, quality=1.0,
+                               is_goalkeeper=False) is None
+    assert registry.reid_log[-1]["team_mismatch"] == 1
+    # A clear read of the same team revives.
+    assert registry.reid_match(query, 20, set(), team_id=0, confidence=0.9, quality=1.0,
+                               is_goalkeeper=False) is player
+    assert registry.reid_log[-1]["outcome"] == "revived"
+
+
+def test_goalkeepers_and_callers_without_team_are_not_team_gated():
+    registry = PlayerRegistry()
+    player = settled_retired(registry)
+    query = np.array([1.0, 0.0, 0.0, 0.0])
+    assert registry.reid_match(query, 20, set()) is player
+    assert registry.reid_match(query, 20, set(), team_id=1, confidence=0.1, quality=0.1,
+                               is_goalkeeper=True) is player

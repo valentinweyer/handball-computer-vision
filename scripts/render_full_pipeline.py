@@ -611,6 +611,15 @@ def identity_report(
     }
 
 
+def _json_default(value):
+    """numpy scalars and arrays in the run's event logs, as plain JSON."""
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    raise TypeError(f"not JSON serialisable: {type(value).__name__}")
+
+
 def court_in_view_fn(path: Path | None):
     """`frame -> bool` from a saved per-frame flag; frames past its end count as in view."""
     if path is None:
@@ -1065,8 +1074,13 @@ def render_sam2(args: argparse.Namespace) -> dict:
             registry.team_by_player_id(), dict(registry.alias),
         ),
         **registry.summary(),
+        # The tracker's own decisions -- reprompt, reset, remove, pause -- and
+        # every re-ID decision with what it compared: what explains a tracker
+        # failure after the fact, without re-running it.
+        "lifecycle_events": track_manager.events,
+        "reid_decisions": registry.reid_log,
     }
-    args.output.with_suffix(".json").write_text(json.dumps(result_dict, indent=2))
+    args.output.with_suffix(".json").write_text(json.dumps(result_dict, indent=2, default=_json_default))
     return result_dict
 
 

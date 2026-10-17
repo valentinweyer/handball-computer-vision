@@ -307,6 +307,10 @@ class PlayerRegistry:
         # [start, end) frame ranges with no play on screen (a timeout huddle):
         # the re-ID gallery does not age through them. See `pause`.
         self.paused: list[tuple[int, int]] = []
+        # One entry per `reid_match` call: what came in, what it was compared
+        # with, and why it did or did not revive. Kept so a wrong revival can be
+        # traced after the run instead of re-run to be understood.
+        self.reid_log: list[dict] = []
 
     def pause(self, start: int, end: int) -> None:
         """Record that frames `[start, end)` showed no play.
@@ -338,12 +342,22 @@ class PlayerRegistry:
     ):
         """Best retired player, or None when no candidate is clearly the best.
 
-        Team and goalkeeper role may both veto a match, but only from a position
-        of evidence: the incoming observation must itself be qualified, and the
-        candidate's own label must be settled. One flickered detector class or
-        one weak colour read must not permanently forbid the correct match --
-        and a label whose team is currently contested has stopped being a
-        trustworthy veto, which falling `team_confidence` now expresses.
+        Goalkeeper role may veto a match only from a position of evidence: the
+        candidate's role must be settled, so one flickered detector class does
+        not forbid the correct match.
+
+        Team works the other way round. A candidate whose team is settled may
+        only be revived by a detection whose own team read is qualified *and*
+        agrees -- positive evidence, not merely no contrary evidence. Re-ID fires
+        when someone reappears, which is mostly out of a tangle of players, and
+        there the read is usually too weak to qualify: on the first 10-minute
+        broadcast, 15 of the 18 team flips came within 5 s of a revival that
+        had put an identity on a player of the other team. Abstaining here costs
+        a fragment, which a number link can fold later; a wrong revival carries
+        the wrong team and number until the classifier catches up. A candidate
+        whose team is contested has stopped being trustworthy either way and
+        is not gated, which falling `team_confidence` expresses. A caller that
+        passes no `team_id` gets no team gate.
 
         Surviving the vetoes is not enough. The winner must also beat the
         runner-up by `reid_margin_min`, because within a team the similarity
@@ -353,7 +367,8 @@ class PlayerRegistry:
         number evidence still has to arbitrate downstream.
         """
         incoming_qualified = is_qualified(confidence, quality)
-        ranked = []
+        field_player = not is_goalkeeper
+        ranked, gated = [], {"team_mismatch": 0, "team_unproven": 0}
         for cand in self.retired:
             if cand.player_id in taken:
                 continue
@@ -367,26 +382,43 @@ class PlayerRegistry:
                 continue
             if (
                 team_id is not None
-                and incoming_qualified
+                and field_player
+                and not cand.is_goalkeeper
                 and not cand.team_is_provisional
                 and cand.team_confidence >= MIN_STABLE_TEAM_CONFIDENCE
-                and cand.voted_team_id != team_id
             ):
-                continue
+                if not incoming_qualified:
+                    gated["team_unproven"] += 1
+                    continue
+                if cand.voted_team_id != team_id:
+                    gated["team_mismatch"] += 1
+                    continue
             sim = float(
                 np.dot(embedding, cand.embedding)
                 / (np.linalg.norm(embedding) * np.linalg.norm(cand.embedding) + 1e-8)
             )
             ranked.append((sim, cand))
-        if not ranked:
-            return None
         ranked.sort(key=lambda item: -item[0])
-        best_sim, best = ranked[0]
-        if best_sim < self.reid_cos_sim_min:
-            return None
-        if len(ranked) > 1 and best_sim - ranked[1][0] < self.reid_margin_min:
-            return None
-        return best
+        match, outcome = None, "no candidate"
+        if ranked:
+            best_sim, best = ranked[0]
+            if best_sim < self.reid_cos_sim_min:
+                outcome = "below floor"
+            elif len(ranked) > 1 and best_sim - ranked[1][0] < self.reid_margin_min:
+                outcome = "no margin"
+            else:
+                match, outcome = best, "revived"
+        self.reid_log.append({
+            "frame": frame_idx, "outcome": outcome,
+            "player_id": None if match is None else match.player_id,
+            "team": team_id, "confidence": round(float(confidence), 3),
+            "quality": round(float(quality), 3), "qualified": incoming_qualified,
+            "goalkeeper": is_goalkeeper, "candidates": len(ranked), **gated,
+            "best": [ranked[0][1].player_id, round(ranked[0][0], 4), ranked[0][1].voted_team_id]
+            if ranked else None,
+            "runner_up": round(ranked[1][0], 4) if len(ranked) > 1 else None,
+        })
+        return match
 
     def create(
         self, frame_idx: int, fragment_id: int | None, team: int,
