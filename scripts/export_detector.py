@@ -24,8 +24,8 @@ from scripts.export_court_keypoints import trace
 
 ROOT = Path(__file__).resolve().parents[1]
 FINETUNE_ROOT = Path(os.getenv("RFDETR_FINETUNE_DIR", ROOT.parent / "rfdetr-handball-finetune"))
-DEFAULT_CHECKPOINT = FINETUNE_ROOT / "runs/large-handball-v4-w-numbers-no-ball/checkpoint_best_ema.pth"
-DEFAULT_OUTPUT = FINETUNE_ROOT / "exports/detector-local/rfdetr-large-handball.ts"
+DEFAULT_CHECKPOINT = FINETUNE_ROOT / "runs/detector-retrain-2026-10-17/expanded/checkpoint_best_ema.pth"
+DEFAULT_OUTPUT = FINETUNE_ROOT / "exports/detector-expanded-v1/rfdetr-large-handball.ts"
 RESOLUTION = 704  # the checkpoint's training resolution, as cache_number_detections runs it
 
 
