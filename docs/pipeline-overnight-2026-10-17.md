@@ -1,6 +1,6 @@
 # Overnight 2026-10-17: the full pipeline, from any video to a result bundle
 
-Branch `feat/video-frame-source`, eight commits on top of `f44956b`, nothing on
+Branch `feat/video-frame-source`, commits on top of `f44956b`, nothing on
 `main`. All six planned steps are done and verified, plus one fix that the first
 10-minute run exposed. Each section below gives
 the check it passed and the numbers behind it.
