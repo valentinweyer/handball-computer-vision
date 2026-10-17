@@ -9,6 +9,16 @@ detail lives in `docs/team-classification-handoff.md`.
 
 ## 1. Chunked SAM2 propagation, without resetting identity at the seam
 
+**Resolved 2026-10-17 without chunking -- the memory cap no longer exists.**
+Both terms below are gone: `LazyFrames` (2026-10-16) replaced the whole-clip
+preload, and `drive_sam2` now drops each object's stored per-frame outputs once
+they fall out of the window propagation reads (`prune_frame_outputs`,
+`d4b79f2`). Output is byte-identical on all three references and on Melsungen;
+GPU memory on Melsungen stays at 2.3-2.4 GiB instead of growing ~5 MB/frame to
+a 10.4 GiB peak (`runs/sam2_memory_prune/`). A seamless chunk boundary is only
+worth building now if something other than memory asks for it. The analysis
+below is kept for the record.
+
 **This is the hard cap on clip length, and it is a memory cap, not a compute
 one.** `SAM2VideoPredictor.init_state` allocates the whole video up front:
 
@@ -568,7 +578,11 @@ patch (~1.03x, `experiments/sam2_profile/patches/cpu_overlap.py`), which is only
 correct while predictor state changes between chunks -- revisit once the
 lifecycle work settles.
 
-**Open, found during that round: PARSeq runs in BF16 in SAM2 renders.**
+**Fixed 2026-10-17 (`3c7055f`) for new reads; cached reads replay unchanged.** The
+reader call in the SAM2 render now runs under `torch.autocast(..., enabled=False)`.
+Original entry:
+
+**Found during that round: PARSeq runs in BF16 in SAM2 renders.**
 `drive_sam2` yields from inside its BF16 autocast block, which stays active in
 the consumer, so the render's reader calls and every `*_reads.json` from a SAM2
 render are BF16 while the 0.858 accuracy was measured in FP32. Fixing it (run

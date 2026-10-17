@@ -27,7 +27,8 @@ another.
 
 ## Package boundaries
 
-- `handball_cv.detection`: detector adapters and cached inference.
+- `handball_cv.detection`: detector adapters and cached inference, including the
+  TorchScript runner for the fine-tuned RF-DETR detector.
 - `handball_cv.teams`: crop geometry, features, per-video discovery, masks,
   calibration, dataset contracts, and evaluation.
 - `handball_cv.tracking`: tracker-independent identity management, mask caching,
@@ -36,6 +37,12 @@ another.
   with temporal continuity, and inter-frame camera motion.
 - `handball_cv.embeddings`: optional appearance-model adapters.
 - `handball_cv.jersey`: jersey-number evidence.
+- `handball_cv.pipeline`: the result bundle (`result`: write/load, per-table
+  versions), the tables it holds (`tables`), and the one-decode per-frame scan
+  (`scan`).
+- `handball_cv.video`: frames decoded straight from a video file.
+- `handball_cv.visualization`: the shared palette, the court minimap, the x264
+  writer.
 - `scripts`: thin labeling, evaluation, rendering, and comparison tools.
 - `experiments`: non-default baselines and rejected/uncertain approaches.
 
@@ -46,6 +53,8 @@ another.
 - Reproducible caches: `data/cache/` and ignored.
 - Checkpoints: `models/` and ignored.
 - Generated results: `runs/` and ignored.
+- Result bundles: `runs/bundles/<video>/`; their resumable stage outputs:
+  `data/interim/<video>/`. Both ignored.
 
 The old `notebooks/*.py`, `outputs/`, and `source/` layouts remain intact until
 the new package and commands have been verified. They are compatibility copies,

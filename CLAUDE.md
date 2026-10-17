@@ -89,6 +89,18 @@ Do not run bare `pytest` from the repository root — vendored `onnxruntime` and
 other upstream trees contain unrelated test entry points that break global
 collection.
 
+Process any video into a result bundle, then render it (one venv; nothing
+pre-cached; stages resume, `--force STAGE` reruns one and everything after):
+
+```bash
+python -m scripts.process_video data/raw/<video>.mp4   # -> runs/bundles/<video>
+python -m scripts.render_result runs/bundles/<video>    # overlay + court minimap
+```
+
+The detector runs from a TorchScript export made once in the sibling finetune
+venv (`scripts/export_detector.py`). The bundle format and what each table
+holds: `handball_cv/pipeline/result.py`, `docs/pipeline-overnight-2026-10-17.md`.
+
 ## Repository-state warning
 
 **~20 GB of untracked, gitignored artifacts sit in the working tree, and most
@@ -104,6 +116,9 @@ ignored does not mean disposable here:
   against ~80 s to redraw from it).
 - `outputs/` (2.5 GB) -- detection and team-model caches, plus the migration
   fallbacks.
+- `runs/bundles/` and `data/interim/` -- result bundles and the resumable
+  stage outputs of `scripts.process_video` (detections, keypoints, tracking).
+  A bundle's `video.mp4` and `masks.npz` are what renders read.
 
 So: do not run `git clean`, and do not run destructive cleanup, reset, or
 checkout commands. Work only on the requested files and preserve unrelated
