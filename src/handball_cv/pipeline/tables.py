@@ -8,6 +8,7 @@ a bundle can be rebuilt in seconds when only the assembly changes.
 """
 from __future__ import annotations
 
+from collections import Counter
 import json
 
 import numpy as np
@@ -40,21 +41,67 @@ def canonical_resolver(aliases: dict):
     return canonical
 
 
-def _segments_by_player(run: dict, ocr_every: int) -> dict:
-    """The per-identity number segments the redraw uses, keyed by canonical id."""
+def _segments_by_player(run: dict, ocr_every: int, fold_links: bool = False) -> dict:
+    """Per-identity number segments, keyed by player id.
+
+    Unfolded, these are exactly the segments `--redraw` uses: live frames keyed
+    by the tracker's own ids, reads by the identity they were filed under.
+
+    `fold_links` first maps every id through the run's number links, so a
+    fragment linked into an identity contributes its frames, reads and re-ID
+    breaks to that identity. A link asserts the two are one person who was never
+    on screen twice at once -- same team, same resolved number, never co-live --
+    so the settled number describes the fragment's frames too. Unfolded, those
+    frames belong to an id with no reads of its own after the link and are never
+    labelled: on a 10-minute Kiel-Lemgo window, 81% of the frames of identities
+    that resolved a number were such fragments, and none of them carried it.
+    """
+    canonical = canonical_resolver(run.get("player_aliases", {}) if fold_links else {})
     live_frames: dict = {}
     for frame, ids in run["frame_players"].items():
         for player_id in ids:
-            live_frames.setdefault(int(player_id), []).append(int(frame))
-    segments = segment_verdicts(
-        run["number_reads"], run["identity_events"], live_frames,
-        teams={int(k): v for k, v in run["player_teams"].items()},
-        ocr_every=ocr_every,
-    )
+            live_frames.setdefault(canonical(int(player_id)), []).append(int(frame))
+    reads = [{**row, "player_id": canonical(int(row["player_id"]))} for row in run["number_reads"]]
+    events = [{**event, "player_id": canonical(int(event["player_id"]))}
+              if event.get("player_id") is not None else event
+              for event in run["identity_events"]]
+    teams = {}
+    for player_id, team in run["player_teams"].items():
+        root = canonical(int(player_id))
+        teams[root] = run["player_teams"].get(str(root), team)  # a fold takes its root's team
+    segments = segment_verdicts(reads, events, live_frames, teams=teams, ocr_every=ocr_every)
     by_player: dict = {}
     for segment in segments:
         by_player.setdefault(segment.player_id, []).append(segment)
     return by_player
+
+
+def one_place_per_identity(track_ids: list[int], canonical) -> list[int]:
+    """Each row's identity, never the same identity on two boxes in one frame.
+
+    A number link is checked when it is made -- the two ids had never been on
+    screen together -- but nothing undoes it if they are later. Folding through
+    the final aliases would then put one identity in two places at once (690
+    frames on a 10-minute Kiel-Lemgo window). Where that happens, the box that
+    is the identity's own tracker id keeps it and the others fall back to their
+    own ids, which carry no folded number.
+    """
+    roots = [canonical(t) for t in track_ids]
+    counts = Counter(roots)
+    return [t if counts[root] > 1 and t != root else root for t, root in zip(track_ids, roots)]
+
+
+def one_number_per_team(numbers: list, teams, goalkeepers) -> list:
+    """Withhold a number shown on two field players of one team in the same frame.
+
+    One of them is wrong and nothing here says which, so neither is shown --
+    abstaining beats a confident wrong label. The run's own arbitration does
+    this live; a backfilled verdict reaches back over frames it never saw.
+    """
+    seen = Counter((int(team), number) for number, team, keeper in zip(numbers, teams, goalkeepers)
+                   if number is not None and not keeper)
+    return [None if number is not None and not keeper and seen[(int(team), number)] > 1 else number
+            for number, team, keeper in zip(numbers, teams, goalkeepers)]
 
 
 def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
@@ -62,16 +109,23 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
     """One row per tracked player per frame.
 
     `number` is the backfilled verdict -- the segment's settled number, reaching
-    back over the frames before it was decided, exactly as `--redraw` draws it.
-    `number_live` is what the run itself knew at that frame. `court_x/court_y`
+    back over the frames before it was decided -- with number links folded in
+    (see `_segments_by_player`): a fragment linked into an identity carries that
+    identity's number. Without links this is exactly what `--redraw` draws.
+    `number_live` is what the run's own label replay gives at that frame, links
+    not folded, as `--redraw --redraw-causal` draws it. Two invariants hold
+    per frame: an identity is on at most one box (`one_place_per_identity`),
+    and a number is on at most one field player per team
+    (`one_number_per_team`); where either would break, the number is withheld. `court_x/court_y`
     are the box's bottom-centre through that frame's court fit, NaN where the
     fit abstained. `team_confidence`, when the tracking pass recorded it, is
     one value per geometry row; without it the column is NaN.
     """
     canonical = canonical_resolver(run.get("player_aliases", {}))
-    by_player = _segments_by_player(run, ocr_every)
+    folded = _segments_by_player(run, ocr_every, fold_links=True)
+    unfolded = _segments_by_player(run, ocr_every)
 
-    def segment_at(player_id: int, frame: int):
+    def segment_at(by_player: dict, player_id: int, frame: int):
         return next((s for s in by_player.get(player_id, ())
                      if s.start <= frame <= s.end), None)
 
@@ -90,9 +144,16 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
             court = fit.to_court(feet)
         else:
             court = np.full((len(ids), 2), np.nan, dtype=np.float32)
+        player_ids = one_place_per_identity([int(t) for t in ids], canonical)
+        keepers = [int(c) == GOALKEEPER for c in colors]
+        numbers = []
+        for player_id in player_ids:
+            segment = segment_at(folded, player_id, frame)
+            numbers.append(segment.value_at(frame) if segment else None)
+        numbers = one_number_per_team(numbers, teams, keepers)
         for row, track_id in enumerate(ids):
-            player_id = canonical(int(track_id))
-            segment = segment_at(player_id, frame)
+            player_id = player_ids[row]
+            live_segment = segment_at(unfolded, player_id, frame)
             color = int(colors[row])
             columns["frame"].append(frame)
             columns["time_s"].append(frame / fps)
@@ -103,8 +164,8 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
             columns["team_confidence"].append(
                 np.nan if team_confidence is None else float(team_confidence[lo + row]))
             columns["is_goalkeeper"].append(color == GOALKEEPER)
-            columns["number"].append(segment.value_at(frame) if segment else None)
-            columns["number_live"].append(segment.live_at(frame) if segment else None)
+            columns["number"].append(numbers[row])
+            columns["number_live"].append(live_segment.live_at(frame) if live_segment else None)
             for name, value in zip(("x1", "y1", "x2", "y2"), boxes[row]):
                 columns[name].append(float(value))
             columns["foot_x"].append(float(feet[row, 0]))

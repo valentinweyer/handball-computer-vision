@@ -152,3 +152,41 @@ def test_keypoints_and_detections_tables():
     detections = tables.detections_table(cache)
     assert detections.frame.tolist() == [0, 0, 2]
     assert detections.class_name.tolist() == ["player", "number", "referee"]
+
+
+def test_a_linked_fragment_carries_its_identitys_number(tmp_path):
+    """Number linking folds fragment 12 into 7: one person, never on screen twice at once."""
+    cache = GeometryCache(width=40, height=30, total_frames=8)
+    mask = np.zeros((30, 40), dtype=bool)
+    mask[5:20, 10:20] = True
+    for frame in range(1, 7):
+        player = 7 if frame <= 3 else 12
+        cache.add(frame, [player], [[10, 5, 20, 20]], [mask], color_index=[TEAM_A], team_id=[0])
+    geometry = GeometryCache.load(cache.save(tmp_path / "geometry.npz"))
+    run = {
+        "frame_players": {str(f): [7 if f <= 3 else 12] for f in range(1, 7)},
+        "number_reads": [{"frame": f, "player_id": 7, "value": "15", "number_row": 0,
+                          "box": [1, 2, 3, 4]} for f in (1, 2, 3)],
+        "identity_events": [{"frame": 4, "type": "link", "player_id": 12, "into_player_id": 7}],
+        "player_teams": {"7": 0, "12": 0},
+        "player_aliases": {"12": 7},
+    }
+    tracks = tables.tracks_table(run, geometry, [scaled_fit(1.0)] * 8, fps=25.0, ocr_every=1)
+    fragment = tracks[tracks.track_id == 12]
+    assert (fragment.player_id == 7).all()
+    assert fragment.number.tolist() == ["15", "15", "15"]
+    # The live column stays the run's own replay, in which the fragment never resolved.
+    assert fragment.number_live.isna().all()
+
+
+def test_one_identity_is_never_on_two_boxes():
+    canonical = tables.canonical_resolver({"12": 7, "13": 7})
+    assert tables.one_place_per_identity([7, 12, 3], canonical) == [7, 12, 3]
+    assert tables.one_place_per_identity([12, 13], canonical) == [12, 13]
+    assert tables.one_place_per_identity([12, 3], canonical) == [7, 3]
+
+
+def test_a_number_twice_in_one_team_is_withheld_from_both():
+    numbers = tables.one_number_per_team(["4", "4", "4", "9", "9"], [0, 0, 1, 0, 0],
+                                         [False, False, False, False, True])
+    assert numbers == [None, None, "4", "9", "9"]
