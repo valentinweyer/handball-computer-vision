@@ -124,7 +124,7 @@ Clip length is no longer capped by memory (TODO §1 resolved).
 | Video | Frames at 25 fps | prepare | scan | teams | track | bundle | render | identities | labelled player-frames | on court |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | BHC-FAG (91 s, 50 fps) | 2270 | 10 s | 74 s | 24 s | 728 s | 2 s | 95 s | 24 | 72.4% | 96.9% |
-| Kiel–Lemgo 10 min (50 fps) | 15000 | 66 s | 477 s | 40 s | 4898 s | 24 s | 653 s | 136 | 62.1% | 89.7% |
+| Kiel–Lemgo 10 min (50 fps) | 15000 | 66 s | 477 s | 40 s | 4898 s | 24 s | 653 s | 138 | 62.1% | 89.7% |
 
 Tracking runs at 0.32–0.33 s per frame on both videos. The 10-minute run held
 GPU memory steady:
@@ -137,9 +137,10 @@ GPU memory steady:
 Without pruning, SAM2's stored outputs alone would have grown by ~5 MB per
 frame, about 75 GB over this clip (`runs/pipeline_e2e/gpu_memory.log`).
 
-**136 identities in 10 minutes is fragmentation**, the failure the handoff
-already calls dominant. It is just more visible over a long clip: the 17
-identities visible for at least 1000 frames carry 80% of all player-frames, and
+**138 identities in 10 minutes is fragmentation**, the failure the handoff
+already calls dominant. It is just more visible over a long clip: the 39
+identities visible for at least 1000 frames (17 of them for over 3000) carry
+80% of all player-frames, and
 the run logged 136 re-IDs and 79 number links. Nothing tonight changes
 tracking or re-ID; the re-ID spatial gate from the review targets exactly this.
 
