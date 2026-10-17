@@ -304,6 +304,27 @@ class PlayerRegistry:
         # anything. See `link`.
         self.alias: dict[int, int] = {}
         self._next_id = next_id_start
+        # [start, end) frame ranges with no play on screen (a timeout huddle):
+        # the re-ID gallery does not age through them. See `pause`.
+        self.paused: list[tuple[int, int]] = []
+
+    def pause(self, start: int, end: int) -> None:
+        """Record that frames `[start, end)` showed no play.
+
+        The re-ID gap is there because appearance goes stale: a player gone
+        for minutes may have changed position, lighting or shirt. A timeout
+        is not that -- everyone leaves the picture at once and comes back
+        unchanged -- and at 50 s it outlasts the whole gap, so without this
+        every player after it would be a new identity.
+        """
+        if end > start:
+            self.paused.append((start, end))
+            self.events.append({"frame": start, "type": "pause", "until": end})
+
+    def play_frames(self, since: int, until: int) -> int:
+        """Frames from `since` to `until` that were not inside a pause."""
+        overlap = sum(max(0, min(until, end) - max(since, start)) for start, end in self.paused)
+        return until - since - overlap
 
     def alloc_id(self) -> int:
         i = self._next_id
@@ -336,7 +357,7 @@ class PlayerRegistry:
         for cand in self.retired:
             if cand.player_id in taken:
                 continue
-            if frame_idx - cand.last_seen > self.reid_max_gap_frames:
+            if self.play_frames(cand.last_seen, frame_idx) > self.reid_max_gap_frames:
                 continue
             if (
                 is_goalkeeper is not None

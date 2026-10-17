@@ -159,6 +159,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-tokens", type=int, default=1024,
                          help="--reader qwen only")
     parser.add_argument("--frame-cache-dir", type=Path, default=None, help="sam2 only")
+    parser.add_argument("--court-in-view", type=Path, default=None,
+                        help="sam2 only: .npy of one bool per frame (CourtFit.court_in_view); "
+                             "tracking pauses where it is False and restarts after")
     parser.add_argument("--no-masks", action="store_true",
                          help="mcbyte only; sam2 always has masks")
     parser.add_argument(
@@ -603,9 +606,17 @@ def identity_report(
         # its frame and player_id, so the events themselves travel with the run.
         "identity_events": [
             e for e in events
-            if e["type"] in ("suspected_id_switch", "team_switch", "reid", "link")
+            if e["type"] in ("suspected_id_switch", "team_switch", "reid", "link", "pause")
         ],
     }
+
+
+def court_in_view_fn(path: Path | None):
+    """`frame -> bool` from a saved per-frame flag; frames past its end count as in view."""
+    if path is None:
+        return None
+    flags = np.load(path).astype(bool)
+    return lambda frame: bool(flags[frame]) if frame < len(flags) else True
 
 
 def render(args: argparse.Namespace) -> dict:
@@ -871,6 +882,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         reid_encoder=build_reid_encoder(args),
         prefetch_frames=4,
         frame_source=args.frame_source,
+        court_in_view=court_in_view_fn(args.court_in_view),
     )
     registry = track_manager.registry
 

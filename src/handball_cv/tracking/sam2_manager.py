@@ -253,6 +253,36 @@ class TrackManager:
         # spatial slot (no Track object exists for these yet)
         # [box, consecutive_checkpoint_count] per unconfirmed candidate
         self._pending_new_boxes: list = []
+        # Frame the current no-play stretch began at, while tracking is paused.
+        self.paused_since: int | None = None
+
+    def pause(self, frame_idx: int, live_obj_ids) -> list[dict]:
+        """No court in view: retire every live player and stop until play returns.
+
+        A timeout huddle is the case: close-ups of a crowd of players, lights
+        often off. Tracking through it creates identities by the dozen (42 of
+        138 on the first 10-minute broadcast began inside one 50 s timeout)
+        and feeds team and number evidence from frames that show nothing
+        reliable. Retiring rather than deleting keeps everyone in the re-ID
+        gallery, so play resuming is ordinary re-entry -- and `resume` makes
+        sure the pause itself does not age that gallery.
+        """
+        actions = []
+        for oid in live_obj_ids:
+            actions.append({"type": "remove", "obj_id": int(oid)})
+            self.registry.retire(int(oid), frame_idx)
+        self._pending_new_boxes.clear()
+        self.paused_since = frame_idx
+        self.events.append({"frame": frame_idx, "type": "pause", "retired": len(actions)})
+        return actions
+
+    def resume(self, frame_idx: int) -> None:
+        """Play is back; the checkpoints that follow add players as usual."""
+        if self.paused_since is None:
+            return
+        self.registry.pause(self.paused_since, frame_idx)
+        self.events.append({"frame": frame_idx, "type": "resume", "since": self.paused_since})
+        self.paused_since = None
 
     def _appearance(self, frame: np.ndarray, boxes_xyxy: np.ndarray, fallback):
         """Identity vectors for these boxes: the re-ID encoder's, or `fallback`.

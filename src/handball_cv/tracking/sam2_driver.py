@@ -35,6 +35,11 @@ from handball_cv.tracking.sam2_manager import TrackManager
 
 SAM2_CONFIG = "configs/sam2.1/sam2.1_hiera_l.yaml"
 CHECK_EVERY_DEFAULT = 10  # matches run_pipeline.py's detector-checkpoint cadence
+# How long the court must be back before a paused tracker resumes. A timeout
+# on the first broadcast was broken by three ~1 s replays of the play before it
+# -- real court, not play resuming -- and restarting for each would revive
+# players onto replayed footage. 2 s at 25 fps clears them.
+RESUME_AFTER_FRAMES = 50
 
 
 def ensure_frame_cache(video: Path, frame_cache_dir: Path) -> list[Path]:
@@ -456,6 +461,7 @@ def drive_sam2(
     prefetch_frames: int = 0,
     frame_source: str = "jpeg",
     prune_memory: bool = True,
+    court_in_view: Callable[[int], bool] | None = None,
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -501,6 +507,13 @@ def drive_sam2(
     `prune_memory` drops each object's stored per-frame outputs once they fall
     out of the window forward propagation reads (`prune_frame_outputs`), so
     memory stays flat however long the clip. Output is unchanged by it.
+
+    `court_in_view(frame)` says whether a court is on screen at all
+    (`CourtFit.court_in_view`). A checkpoint without one pauses tracking:
+    every live player is retired (`TrackManager.pause`) and SAM2 runs empty,
+    as it already does after a crowd pan. Tracking resumes once the court has
+    been back for `RESUME_AFTER_FRAMES`, and players re-enter through the
+    usual confirmation and re-ID. None, the default, never pauses.
 
     `checkpoint_policy` selects how `TrackManager`'s decisions reach the
     predictor. It does not change what those decisions are.
@@ -621,6 +634,7 @@ def drive_sam2(
 
     def frames() -> Iterator[Sam2FrameResult]:
         next_new_fid = 1
+        in_view_since: int | None = 0
         last_masks_by_id: dict[int, np.ndarray] = {}
         last_frame = frame0
 
@@ -668,6 +682,20 @@ def drive_sam2(
 
             # ── detector checkpoint: decide add / remove / reprompt ──
             live_obj_ids = list(last_masks_by_id.keys())
+            if court_in_view is not None:
+                in_view_since = (in_view_since if in_view_since is not None else chunk_end) \
+                    if court_in_view(chunk_end) else None
+                if in_view_since is None:
+                    if track_manager.paused_since is None:
+                        with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
+                            for action in track_manager.pause(chunk_end, live_obj_ids):
+                                predictor.remove_object(state, obj_id=action["obj_id"])
+                        last_masks_by_id = {}
+                    continue
+                if (track_manager.paused_since is not None
+                        and chunk_end - in_view_since < RESUME_AFTER_FRAMES):
+                    continue
+                track_manager.resume(chunk_end)
             live_masks = (
                 np.array([last_masks_by_id[oid] for oid in live_obj_ids])
                 if live_obj_ids else np.empty((0, 0, 0), dtype=bool)

@@ -15,7 +15,8 @@ after it.
             court keypoints and camera motion on every frame
   teams     per-video two-team model, from crops spread over the whole video
   track     SAM2 + periodic reprompting, re-ID, jersey numbers -- reading the
-            video directly, writing no frames and no video
+            video directly, writing no frames and no video. Paused wherever
+            the court fit sees no court (a timeout huddle), restarted after
   bundle    join it all into Parquet tables under `--out`
 
 No frames are written to disk at any stage.
@@ -57,7 +58,7 @@ def stage_outputs(work: Path) -> dict:
         # The reads cache is listed so a forced track pass reads again instead of
         # replaying the previous pass's reads.
         "track": [work / "track.json", work / "track_reads.json", work / "track_geometry.npz",
-                  work / "track_extras.npz"],
+                  work / "track_extras.npz", work / "court_in_view.npy"],
         "bundle": [],  # always rebuilt: seconds, and the inputs may have changed
     }
 
@@ -86,6 +87,18 @@ def prepare(source: Path, work: Path) -> dict:
 
 def save_detections(path: Path, cache: dict) -> None:
     np.savez_compressed(path, **cache)
+
+
+def save_court_in_view(work: Path, meta: dict) -> Path:
+    """Per frame, whether the court fit sees a court at all -- what pauses tracking."""
+    from handball_cv.court.sequence import fit_court
+
+    keypoints = json.loads((work / "keypoints.json").read_text())["keypoints"]
+    motion = json.loads((work / "motion.json").read_text())
+    fits = fit_court(keypoints, motion, (meta["width"], meta["height"]))
+    path = work / "court_in_view.npy"
+    np.save(path, np.array([fit.court_in_view for fit in fits], dtype=bool))
+    return path
 
 
 def main() -> None:
@@ -185,6 +198,7 @@ def main() -> None:
                    "--number-detections", str(work / "detections.npz"),
                    "--team-model", str(work / "team.pkl"), "--output", str(work / "track.mp4"),
                    "--frame-source", "video", "--no-video", "--device", args.device,
+                   "--court-in-view", str(save_court_in_view(work, meta)),
                    "--check-every", str(args.check_every), "--ocr-every", str(args.ocr_every)]
         env = {**os.environ, "SAM2_UPSTREAM_DIR": os.environ.get("SAM2_UPSTREAM_DIR", str(ROOT / "sam2-upstream"))}
         with (work / "track.log").open("w") as log_file:
