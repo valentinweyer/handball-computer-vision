@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-from handball_cv.jersey.identity import NumberVoter
+from handball_cv.jersey.identity import NumberVoter, causal_labels
 from handball_cv.tracking.identity import PlayerRegistry, REID_MARGIN_MIN
 from scripts.render_full_pipeline import NumberIdentityResolver
 
@@ -112,6 +112,32 @@ class LinkingTests(unittest.TestCase):
         voter = NumberVoter()
         registry = _Registry(teams)
         return registry, voter, NumberIdentityResolver(registry, voter)
+
+    def test_offscreen_holder_releases_number_between_ocr_frames(self):
+        registry, voter, resolver = self._resolver({4: 1, 13: 1})
+        resolver.begin_frame([4, 13])
+        vote(voter, 4, "41", 77)
+        vote(voter, 13, "41", 35)
+        resolver.resolve(3300)
+        self.assertIsNone(voter.best(13)[0])
+
+        # No new read or resolve call: visibility alone releases the claim.
+        resolver.begin_frame([13])
+        self.assertEqual(voter.best(13)[0], "41")
+        self.assertEqual(registry.canonical(13), 13)  # past overlap still bars linking
+
+        resolver.begin_frame([4, 13])
+        self.assertIsNone(voter.best(13)[0])
+        self.assertEqual(voter.best(4)[0], "41")
+
+    def test_replay_arbitrates_only_currently_visible_holders(self):
+        reads = ([{"frame": 0, "player_id": 4, "value": "41"}] * 77
+                 + [{"frame": 0, "player_id": 13, "value": "41"}] * 35)
+        timeline = causal_labels(
+            reads, [], {4: {0, 6}, 13: set(range(7))}, teams={4: 1, 13: 1},
+        )
+        # Track 4 leaves at frame 1 and returns at 6, between OCR ticks.
+        self.assertEqual(timeline[13], ((1, "41"), (6, None)))
 
     def test_two_halves_of_one_player_are_folded(self):
         registry, voter, resolver = self._resolver({1: 0, 2: 0})

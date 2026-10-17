@@ -709,8 +709,8 @@ def causal_labels(reads, events, live_frames, teams=None,
         `min_votes` reads every time -- measured at 765 player-frames on the 60s
         Melsungen clip (p1 and p12 for 475 frames each, p16 for 10), which is a
         regression dressed up as caution.
-      - arbitration runs every `ocr_every` frames over every identity, live and
-        retired, so a withheld duplicate stays withheld between OCR frames.
+      - arbitration considers only identities visible in the current frame,
+        including between OCR frames when a competing holder leaves or returns.
       - a `suspected_id_switch` breaks a *segment* but does not suspend, exactly
         as `NumberIdentityResolver.begin_frame` has it.
       - a `link` folds one identity into another at the frame it was made, and
@@ -764,8 +764,10 @@ def causal_labels(reads, events, live_frames, teams=None,
             if source != target:
                 alias[source] = target
                 voter.merge(source, target)
-        if teams and frame % ocr_every == 0:
-            voter.arbitrate({canonical(pid): team for pid, team in teams.items()})
+        if teams:
+            live = {canonical(pid) for pid, frames in live_frames.items() if frame in frames}
+            voter.arbitrate({canonical(pid): team for pid, team in teams.items()
+                             if canonical(pid) in live})
         for player_id, frames in live_frames.items():
             if frame not in frames:
                 continue
@@ -798,7 +800,8 @@ def segment_verdicts(reads, events, live_frames, teams=None,
         events: a run's `identity_events`.
         live_frames: {player_id: frames the identity was on screen}.
         teams: {player_id: team_id} for arbitration; omitted, none is applied.
-        ocr_every: arbitration cadence, matching the render's `--ocr-every`.
+        ocr_every: retained for caller compatibility; arbitration follows visibility
+            every frame, independently of the cadence of the recorded reads.
 
     Returns segments in (player_id, start) order, including those that never
     resolved -- a caller measuring coverage needs the denominator too.

@@ -445,7 +445,7 @@ class NumberIdentityResolver:
 
       1. `link`: same team, same resolved number, never simultaneously live.
          That is one player the tracker split in two, and the halves are folded.
-      2. `arbitrate`: same team, same resolved number, but they *were* on screen
+      2. `arbitrate`: same team, same resolved number, currently on screen
          together. That cannot be one player, so the weaker claim is withheld
          rather than displayed as a second copy of someone else's number.
 
@@ -458,6 +458,7 @@ class NumberIdentityResolver:
         self.registry = registry
         self.voter = voter
         self.co_live: dict[int, set] = {}
+        self._live_ids: set[int] = set()
         self._events_seen = 0
 
     def begin_frame(self, player_ids) -> None:
@@ -474,8 +475,20 @@ class NumberIdentityResolver:
         self._events_seen = len(self.registry.events)
 
         ids = {int(p) for p in player_ids}
+        self._live_ids = ids
         for player_id in ids:
             self.co_live.setdefault(player_id, set()).update(ids - {player_id})
+        # Visibility changes between OCR frames too. A retired holder must not
+        # reserve a number against a visible, independently read fragment.
+        self._arbitrate_live()
+
+    def _arbitrate_live(self) -> None:
+        canonical = self.registry.canonical
+        live = {canonical(pid) for pid in self._live_ids}
+        self.voter.arbitrate({
+            canonical(pid): team for pid, team in self.registry.team_by_player_id().items()
+            if canonical(pid) in live
+        })
 
     def _ever_together(self, a: int, b: int) -> bool:
         """True if any identity folded into `a` shared a frame with one in `b`."""
@@ -505,9 +518,7 @@ class NumberIdentityResolver:
                 if self.registry.link(other, keeper, frame_idx):
                     self.voter.merge(other, keeper)
 
-        self.voter.arbitrate({
-            self.registry.canonical(pid): team for pid, team in teams.items()
-        })
+        self._arbitrate_live()
 
 
 def build_ocr_model(args):
