@@ -1,8 +1,43 @@
 # Missing jersey numbers: investigation, 2026-10-18
 
-The first fix should target offline number-label replay. Separately, the OCR
-size gate discards useful small numbers, but removing it outright would admit
-confident errors. No production behavior was changed in this investigation.
+The offline number-label replay fix is now implemented on
+`investigate/missing-jersey-numbers`. The OCR size gate remains unchanged;
+removing it outright would admit confident errors.
+
+## Implementation and validation
+
+Offline table assembly now prefers a stable source-track verdict only when
+that track's own recorded OCR reads independently earn the same number under
+the existing vote rules. Support is scoped to the track's identity-break
+segment. A partial trailing digit cannot replace the full family number.
+Unresolved/revised local segments retain the previous family backfill, and
+legacy runs without explicit `track_id` read provenance retain prior behavior.
+The duplicate-number guard still runs after selecting these labels.
+
+On the complete saved v4 run:
+
+- **1,284 additional labelled player-frame observations**, with **zero
+  previously displayed labels removed** on this run.
+- **1,574 existing numbers changed**: track 71's earlier incorrect `4` becomes
+  `3`, and track 161's incorrect `3` becomes `4`. Representative crops confirm
+  the printed jersey numbers; this is not a new whole-video accuracy benchmark.
+- Both #3 and #4 are labelled throughout the 520-frame collision episode.
+- All other track columns, including `number_live`, IDs, teams, boxes, court
+  positions, and mask references, compare identically to the original.
+- No same-team duplicate field-player numbers are introduced. All original
+  bundle files retain their SHA-256 hashes.
+- **549 tests pass**. Seven new regressions cover later links, absent legacy
+  provenance, genuine duplicates, trailing digits, revised early reads,
+  revival boundaries, and insufficient source evidence. The main regression
+  fails against the pre-fix implementation.
+
+The corrected bundle is saved separately at
+`runs/bundles/Kiel_Lemgo_66m00_10min_expanded_validation_v4_backfill_fix`.
+Validation metrics and a 22-second preview of the #3/#4 case are under
+`runs/number-backfill-fix-2026-10-18/`. The original ten-minute video is
+preserved. Detection, tracking, OCR inference, and their caches were reused.
+
+The initial investigation below describes the unmodified v4 result.
 
 ## Evidence and limits
 
@@ -69,13 +104,13 @@ bundle, 1,280 rows lose otherwise proposed numbers at the final duplicate
 guard; that total is **not** a proven recoverable gain. The guard also handles
 real conflicts and should remain enabled.
 
-Relevant code:
+Relevant code at investigation commit `8d9ee56`:
 
 - `src/handball_cv/pipeline/tables.py:44` — final-alias folded replay.
 - `src/handball_cv/pipeline/tables.py:96` and `:156` — duplicate suppression.
 - `src/handball_cv/jersey/identity.py:694` — segment backfill behavior.
 
-Next patch: preserve the timing and source-fragment ownership of number
+Identified patch target: preserve the timing and source-fragment ownership of number
 evidence when assembling offline labels. Backfill within a supported physical
 track/revival segment; a later link must not transplant an older fragment's
 verdict onto an earlier, independently readable different shirt. Preserve
@@ -146,7 +181,8 @@ against detections it never emitted.
 
 ## Order of work
 
-1. Correct offline replay ownership/timing, keeping the existing safeguards.
+1. Correct offline replay ownership/timing, keeping the existing safeguards
+   (implemented and validated above).
 2. Test a number-specific crop gate in shadow mode with correct and incorrect
    small-crop controls before changing runtime defaults.
 3. Investigate duplicated tracks and measure visible-number detector misses.
