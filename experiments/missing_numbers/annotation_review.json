@@ -1,0 +1,24 @@
+{
+  "reviewer": "Codex visual review of original source frames",
+  "canonical_labels_modified": false,
+  "status": "Proposed corrections for review; excluded in a separate sensitivity analysis only",
+  "excluded_indices": [168, 415],
+  "cases": [
+    {
+      "index": 168,
+      "source_video": "data/raw/2026-06-04_1284774_Melsungen_Berlin.mp4",
+      "frame": 142200,
+      "recorded_label": {"status": "readable", "value": "10", "box_status": "too_loose"},
+      "proposed_label": {"status": "readable", "value": "11"},
+      "reason": "The source-frame context appears to show a green player wearing 11; the stored label says 10."
+    },
+    {
+      "index": 415,
+      "source_video": "data/raw/2026-06-04_1284774_Melsungen_Berlin.mp4",
+      "frame": 133300,
+      "recorded_label": {"status": "unsure", "value": null, "box_status": "not_number"},
+      "proposed_label": {"status": "readable", "value": "10", "box_status": "ok"},
+      "reason": "The source-frame context appears to show a red goalkeeper wearing 10; the stored annotation marks the crop as not a number."
+    }
+  ]
+}

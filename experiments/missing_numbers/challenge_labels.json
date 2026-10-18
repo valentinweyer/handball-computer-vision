@@ -1,0 +1,171 @@
+{
+  "schema": 1,
+  "reviewer": "Codex visual review of source video frames",
+  "purpose": "Targeted challenge set; selected from known failures and controls, not a random or independent holdout",
+  "source_video_sha256": "38c9e932a8ca3955750bec587ee54e987fe8c52b0c38a0b6bc8ead8c08f20e21",
+  "source_fps": 25,
+  "review_sheet_directory": "runs/number-crop-shadow-2026-10-18",
+  "visibility_filter": {
+    "minimum_box_width": 20,
+    "minimum_box_height": 70
+  },
+  "label_scope": "Numbers verified in sampled source frames; constant identities inferred between samples within the recorded track segment. Not exhaustive per-frame human ground truth.",
+  "sequences": [
+    {
+      "track_id": 162,
+      "first": 11441,
+      "last": 13830,
+      "number": "91",
+      "review_frames": [
+        11441,
+        12034,
+        12627,
+        13219,
+        13812
+      ]
+    },
+    {
+      "track_id": 94,
+      "first": 7011,
+      "last": 7470,
+      "number": "91",
+      "review_frames": [
+        7011,
+        7124,
+        7237,
+        7350,
+        7463
+      ]
+    },
+    {
+      "track_id": 182,
+      "first": 12881,
+      "last": 13870,
+      "number": "28",
+      "review_frames": [
+        12881,
+        13125,
+        13369,
+        13614,
+        13870
+      ]
+    },
+    {
+      "track_id": 175,
+      "first": 12641,
+      "last": 13810,
+      "number": "4",
+      "review_frames": [
+        12641,
+        12931,
+        13221,
+        13511,
+        13801
+      ]
+    },
+    {
+      "track_id": 50,
+      "first": 3801,
+      "last": 5200,
+      "number": "91",
+      "review_frames": [
+        3801,
+        4149,
+        4497,
+        4844,
+        5192
+      ]
+    },
+    {
+      "track_id": 36,
+      "first": 2681,
+      "last": 3610,
+      "number": "91",
+      "review_frames": [
+        2681,
+        2909,
+        3137,
+        3365,
+        3593
+      ]
+    },
+    {
+      "track_id": 57,
+      "first": 4331,
+      "last": 4779,
+      "number": "23",
+      "review_frames": [
+        4331,
+        4443,
+        4555,
+        4667,
+        4779
+      ]
+    },
+    {
+      "track_id": 40,
+      "first": 2851,
+      "last": 3460,
+      "number": "21",
+      "review_frames": [
+        2851,
+        2999,
+        3147,
+        3296,
+        3444
+      ]
+    },
+    {
+      "track_id": 80,
+      "first": 6401,
+      "last": 6630,
+      "number": "23",
+      "review_frames": [
+        6401,
+        6456,
+        6511,
+        6566,
+        6621
+      ]
+    },
+    {
+      "track_id": 171,
+      "first": 12181,
+      "last": 13530,
+      "number": "1",
+      "review_frames": [
+        12181,
+        12515,
+        12849,
+        13182,
+        13516
+      ]
+    },
+    {
+      "track_id": 113,
+      "first": 8471,
+      "last": 9120,
+      "number": "3",
+      "review_frames": [
+        8471,
+        8633,
+        8795,
+        8958,
+        9120
+      ]
+    },
+    {
+      "track_id": 166,
+      "first": 12111,
+      "last": 13270,
+      "number": "53",
+      "review_frames": [
+        12111,
+        12397,
+        12683,
+        12970,
+        13256
+      ]
+    }
+  ]
+}
