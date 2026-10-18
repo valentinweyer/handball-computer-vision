@@ -1,5 +1,43 @@
 # Cleanup plan
 
+## 2026-10-18: retired experiment worktrees archived
+
+The five extra project directories were archived and removed with
+`git worktree remove`, leaving only the primary checkout. No active processes,
+open files, or primary-project symlinks depended on them. Uncommitted CamelTrack
+code and two research notes were first committed on their existing experiment
+branches; none was merged into the pipeline.
+
+Recovery material is at `runs/archived-worktrees-2026-10-18/`:
+
+- A complete `.tar` per checkout, including ignored outputs, local environments
+  and dependency trees. Symlinks are preserved without copying shared targets.
+- Per-file SHA-256 manifests, symlink targets, branch names and commit IDs.
+  Every archived regular file and link was checked against its source before
+  checkout removal. The top-level worktree `.git` pointer is excluded.
+- `experiment-history.bundle`, verified by Git, contains all five branches and
+  their complete history. The branches also remain in the main repository.
+- `index.json` and `README.md` explain the archive contents and restoration.
+
+Archived branches: `experiment/cameltrack`,
+`investigate/sam2-gpu-bottleneck-20261016`, `experiment/sam31-multiplex`,
+`research/quality-tracker-alternatives-20261016`, and
+`research/post-cutie-20261016`.
+
+To restore one checkout, use its original path and branch from `index.json`:
+
+```bash
+git worktree add <original_path> <branch>
+tar -xf <archive.tar> -C <original_path> --no-same-owner
+```
+
+Restoring at the original path preserves environment scripts and absolute links.
+No primary videos, models, datasets, result bundles or training-repository files
+were changed. The sections below are the historical 2026-08-25 inventory, not a
+new deletion list.
+
+---
+
 Inventory date: 2026-08-25. Batch A was completed after explicit approval;
 later batches have not been deleted.
 
