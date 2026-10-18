@@ -1,0 +1,55 @@
+{
+  "locked_at": "2026-10-18T20:17:16",
+  "source": "/home/valentinweyer/projects/handball-computer-vision/runs/smart-reid-prototype-2026-10-18/results/benchmark.json",
+  "source_sha256": "60d3eab57e7127b5e7330d46f2698d36d54a52adbafd264bb1b9cea0a7c82319",
+  "selection": "two-gate P90 point of fold A (Kiel-Lemgo test rows): an in-sample oracle on Kiel, frozen here before any held-out window was mined",
+  "primary": "digits/frozen_global|gallery_agg",
+  "points": {
+    "digits/frozen_global|gallery_agg": {
+      "tau": 0.9429023861885071,
+      "margin": 0.011521518230438232,
+      "kiel_fold_a": {
+        "coverage": 0.3108108108108108,
+        "precision": 0.92,
+        "accepted": 25,
+        "unknown_false_match_rate": 0.023809523809523808
+      }
+    },
+    "digits/frozen_stripes|gallery_agg": {
+      "tau": 0.8452881971995035,
+      "margin": 0.015055576960245768,
+      "kiel_fold_a": {
+        "coverage": 0.5405405405405406,
+        "precision": 0.9090909090909091,
+        "accepted": 44,
+        "unknown_false_match_rate": 0.03571428571428571
+      }
+    },
+    "strict/frozen_global|gallery_agg": {
+      "tau": 0.9540749291578928,
+      "margin": 0.008319010337193804,
+      "kiel_fold_a": {
+        "coverage": 0.28378378378378377,
+        "precision": 0.9130434782608695,
+        "accepted": 23,
+        "unknown_false_match_rate": 0.023809523809523808
+      }
+    },
+    "strict/frozen_stripes|gallery_agg": {
+      "tau": 0.8919797539710999,
+      "margin": 0.010245129466056824,
+      "kiel_fold_a": {
+        "coverage": 0.44594594594594594,
+        "precision": 0.9166666666666666,
+        "accepted": 36,
+        "unknown_false_match_rate": 0.03571428571428571
+      }
+    }
+  },
+  "criterion": {
+    "precision_min": 0.9,
+    "unknown_false_match_rate_max": 0.05,
+    "coverage_min": 0.2,
+    "scope": "pooled over held-out matches, primary method; every bound must hold"
+  }
+}
