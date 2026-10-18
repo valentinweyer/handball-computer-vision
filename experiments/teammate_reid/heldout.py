@@ -38,24 +38,29 @@ WINDOWS = [
      "eval/2026-06-07_1284788_Eisenach_Hamburg.mp4", "detector-unseen"),
     ("VfL_GM_Loewen_66m00_10min", "Gummersbach-Loewen",
      "eval/2026-06-07_1284786_VfL_GM_Loewen.mp4", "detector-unseen"),
-    # Only if the pooled sample from the two above is too thin. Note that RNL-SGF
-    # shares the Loewen (RNL) players with the match above.
-    ("Ludwigshafen_Wetzlar_66m00_10min", "Ludwigshafen-Wetzlar",
+    # Fresh test for rules locked after Stage 1 (the two above are development data
+    # now). RNL-SGF shares the Loewen (RNL) players with the match above.
+    ("Ludwigshafen_Wetzlar_67m00_10min", "Ludwigshafen-Wetzlar",
      "train/Ludwigshafen-Wetzlar.mp4", "detector-train"),
     ("RNL_SGF_66m00_10min", "RNL-SGF", "train/RNL-SGF.mp4", "detector-train"),
 ]
+# The rule's one allowed nudge: step forward in whole minutes to the first live play.
+# Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off
+# is at 67:00 (checked 66:00-70:30 for live play only).
+START_OVERRIDE_S = {"Ludwigshafen_Wetzlar_67m00_10min": 67 * 60}
 MANIFEST = REPO / "runs/smart-reid-shadow/heldout_windows.json"
 
 
 def cut(name: str, source: Path, out: Path) -> dict:
+    start = START_OVERRIDE_S.get(name, START_S)
     if not out.is_file():
-        subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", str(START_S), "-i", str(source),
+        subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", str(start), "-i", str(source),
                         "-t", str(MINUTES * 60), "-vf", f"fps={FPS}", "-c:v", "libx264",
                         "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-an", str(out)],
                        check=True)
     frames = VideoFrames(out)
     return {"window": name, "video": str(out), "source": str(source),
-            "source_bytes": source.stat().st_size, "start_s": START_S, "minutes": MINUTES,
+            "source_bytes": source.stat().st_size, "start_s": start, "minutes": MINUTES,
             "frames": len(frames), "fps": frames.fps}
 
 
