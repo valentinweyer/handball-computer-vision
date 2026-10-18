@@ -156,6 +156,51 @@ precision 0.96. Results are in `runs/smart-reid-shadow/calibration/lomo.json`.
 PYTHONPATH=src:. $PY -m experiments.teammate_reid.calibration
 ```
 
+## Follow-up: per-candidate calibration, and the rule locked for fresh windows (2026-10-19)
+
+**Per-candidate calibration fails as a gate and is not locked.**
+`experiments/teammate_reid/candidate_calibration.py` implements the
+gallery-relative idea from the 2026-10-19 research note. It is gallery-only:
+the query's own label and score never enter, and this is tested.
+
+- **How it works.** Each candidate's raw score becomes a z-value against that
+  candidate's impostor profile: the other gallery players' fragments that exist
+  at the query's time, scored against the candidate's gallery. The profile is
+  shrunk toward the query's pooled profile with weight 5.
+- **It ranks better.** Rank-1 by z is 0.829 for full-crop stripes and 0.796 for
+  shirt-hidden stripes, pooled over the three development matches. Raw-score
+  ranking gives about 0.78 for full-crop stripes on the held-out pair.
+- **Its gates do not transfer.** The gates chosen on two matches range over
+  z 0.64–3.17 and gap 0.38–7.03 across rotations. Each feature set passes at
+  most 1 of 3 rotations, and Löwen falls to 0.43 precision.
+- **Likely cause.** Small, early-match impostor samples make z unstable, even
+  with shrinkage.
+- **A lead, not tested.** Ranking by z while gating on raw stripe scores is
+  recorded for a later cycle. Testing it now would be one more selection on
+  the same three matches.
+
+Results are in `runs/smart-reid-shadow/calibration/lomo_candidate.json`.
+
+**Locked before the fresh windows were mined**
+(`9f0689f`, `experiments/teammate_reid/locked/thresholds_fresh_stripes.json`):
+
+- **Primary:** full-crop stripes + global, gallery + 8-crop aggregation,
+  score ≥ 0.860, margin ≥ 0.020. This is the pooled development point at
+  training precision ≥ 0.95, with in-sample coverage 0.38 and precision 0.96.
+- **Reported companion:** shirt+shorts-hidden stripes, score ≥ 0.882,
+  margin ≥ 0.017. This is the realistic estimate for segments whose back is
+  unreadable.
+- **Pass mark:** unchanged.
+
+**Fresh windows** (`heldout.py`, processing started 2026-10-19):
+
+- **Ludwigshafen–Wetzlar, from 67:00.** 66:00 falls in the half-time break,
+  and the rule's one allowed nudge moves the start to the second-half
+  throw-off.
+- **RNL–SGF, from 66:00.**
+- **Caveats.** Both are detector-training matches, and RNL–SGF shares the
+  Löwen players.
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |

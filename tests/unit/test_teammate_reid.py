@@ -311,3 +311,28 @@ def test_selected_point_respects_both_bounds_on_training_rows():
     assert p["wrong_links_known"] == 0 and p["false_matches_unknown"] == 0
     # nothing meets an impossible bound: abstain rather than return a point
     assert select_point([_row("w", True, False, 0.99, 0.05)], target=0.9, grid=10) is None
+
+
+def test_candidate_z_uses_gallery_only_never_the_query_label():
+    from experiments.teammate_reid.candidate_calibration import query_row
+    from experiments.teammate_reid.evaluation import Query
+    rng = np.random.default_rng(0)
+    emb = rng.normal(size=(40, 16))
+    emb /= np.linalg.norm(emb, axis=1, keepdims=True)
+    sim = emb @ emb.T
+    # three gallery players (A, B, C), two fragments each, all ending before the query at frame 1000
+    frags, crops = {}, {}
+    for n, ident in enumerate("AABBCC"):
+        key = f"g{n}"
+        frags[key] = {"key": key, "identity": ident, "team": 0, "start": 100 * n, "end": 100 * n + 50}
+        crops[key] = list(range(5 * n, 5 * n + 5))
+    galleries = {i: [c for k, f in frags.items() if f["identity"] == i for c in crops[k]] for i in "ABC"}
+    q = Query("v", 0, "A", "q", 1000, 1100, list(range(30, 38)), galleries, {}, True, True)
+    decision = query_row(q, frags, crops, sim)
+    relabelled = query_row(Query(**{**q.__dict__, "identity": "C", "known": False}), frags, crops, sim)
+    assert decision == relabelled                          # the query's label never enters
+    assert decision["candidates"] == 3 and np.isfinite(decision["score"])
+    # a later fragment is not yet in the gallery and must not join the impostor profile
+    frags["late"] = {"key": "late", "identity": "B", "team": 0, "start": 1050, "end": 1200}
+    crops["late"] = list(range(38, 40))
+    assert query_row(q, frags, crops, sim) == decision
