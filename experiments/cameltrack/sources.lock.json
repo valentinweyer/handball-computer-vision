@@ -1,0 +1,32 @@
+{
+  "sources": {
+    "upstream": {
+      "url": "https://github.com/TrackingLaboratory/CAMELTrack.git",
+      "revision": "46a74bb22a28d2d699b4c5c5e317a26d3b87f1e2"
+    },
+    "tracklab": {
+      "url": "https://github.com/TrackingLaboratory/tracklab.git",
+      "revision": "5767e86c32a6d6c68e2fc8ae7311f558fff6c7b2"
+    },
+    "kpr": {
+      "url": "https://github.com/victorjoos/keypoint_promptable_reidentification.git",
+      "revision": "9ebbb5c39a22ae1500f9b2ab1d92264950575d3b"
+    }
+  },
+  "checkpoints": {
+    "camel_bbox_app_kps_sportsmot.ckpt": {
+      "repo": "trackinglaboratory/CAMELTrack",
+      "revision": "6759b7c27b99d8f2b8d8a13be69c6dbbb9cc40ff",
+      "sha256": "99db5f9b480146dd45a4015daeef3c90494822bb793b0000400c9e839658652e"
+    },
+    "kpr_dancetrack_sportsmot_posetrack21_occludedduke_market_split0.pth.tar": {
+      "repo": "trackinglaboratory/keypoint_promptable_reid",
+      "revision": "8b062e905989609060c700e7eb526950e220628b",
+      "sha256": "c7f3a74d86a0bb56940b2703508a50f1d3dbee4d755049272ef5caa18457db3f"
+    },
+    "rtmpose-m.onnx": {
+      "url": "https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/onnx_sdk/rtmpose-m_simcc-body7_pt-body7_420e-256x192-e48f03d0_20230504.zip",
+      "sha256": "5c0a4bf67953e6d2ac43ce15e77dc9d5d354ae18430a47d2c5963a7bc5683e3c"
+    }
+  }
+}

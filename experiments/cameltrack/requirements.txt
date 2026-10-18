@@ -1,0 +1,34 @@
+# Overlay on this machine's existing CUDA PyTorch environment; use --no-deps.
+# See README before installing. Never install into the main checkout environment.
+absl-py==2.3.1
+albumentations==1.3.1
+deepdiff==8.6.1
+distinctipy==1.3.4
+docker-pycreds==0.4.0
+filterpy==1.4.5
+gdown==5.2.0
+gitdb==4.0.12
+GitPython==3.1.45
+grpcio==1.75.1
+lap==0.5.12
+lightning==2.5.5
+Markdown==3.9
+matplotlib==3.9.4
+monai==1.5.2
+onnxruntime-gpu==1.31.0
+ordered-set==4.1.0
+orderly-set==5.5.0
+overrides==7.7.0
+protobuf==5.29.5
+pytorch-metric-learning==2.9.0
+qudida==0.0.4
+rtmlib==0.0.14
+sentry-sdk==2.42.0
+setproctitle==1.3.7
+smmap==5.0.2
+tabulate==0.9.0
+tensorboard==2.20.0
+tensorboard-data-server==0.7.2
+wandb==0.19.11
+Werkzeug==3.1.3
+cosine-annealing-warmup @ git+https://github.com/katsura-jp/pytorch-cosine-annealing-with-warmup@12d03c07553aedd3d9e9155e2b3e31ce8c64081a
