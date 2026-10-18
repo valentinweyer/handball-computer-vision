@@ -283,3 +283,31 @@ def test_held_out_windows_share_no_team_with_development_data():
     for name, match, source, _ in WINDOWS:
         assert not any(team.lower() in (name + match + source).lower() for team in development), name
     assert not {s.name for s in HELDOUT} & {s.name for s in VIDEOS}
+
+
+# --- leave-one-match-out calibration check ----------------------------------
+
+def test_calibration_stats_read_scores_only_never_labels():
+    from experiments.teammate_reid.calibration import calibrate, video_stats
+    rows = [{**_row("a", True, True, 0.9, 0.05), "video": "v", "others": [0.80, 0.70]},
+            {**_row("b", False, False, 0.85, 0.02), "video": "v", "others": [0.75, 0.72]},
+            {**_row("a", False, False, 0.9, 0.01, synthetic=True), "video": "v", "others": [9.0]}]
+    stats = video_stats(rows)
+    relabelled = [{**r, "identity": "zz", "known": not r["known"], "correct": False} for r in rows]
+    assert video_stats(relabelled) == stats                 # labels cannot move the baseline
+    assert stats["v"][0] == pytest.approx(0.735)            # synthetic duplicates are left out
+    cal = calibrate(rows, stats)
+    assert cal[0]["score"] > cal[1]["score"] and cal[0]["identity"] == "a"
+
+
+def test_selected_point_respects_both_bounds_on_training_rows():
+    from experiments.teammate_reid.calibration import select_point
+    rows = [_row(f"k{i}", True, i >= 2, 0.80 + 0.02 * i, 0.05) for i in range(10)] + \
+           [_row(f"u{i}", False, False, 0.95, 0.05) for i in range(2)] + \
+           [_row(f"n{i}", False, False, 0.70, 0.05) for i in range(40)]
+    p = select_point(rows, target=0.9, grid=40)
+    assert p is not None and p["precision"] >= 0.9 and p["unknown_false_match_rate"] <= 0.05
+    # the two low-scoring wrong links and both confident unknowns are gated out
+    assert p["wrong_links_known"] == 0 and p["false_matches_unknown"] == 0
+    # nothing meets an impossible bound: abstain rather than return a point
+    assert select_point([_row("w", True, False, 0.99, 0.05)], target=0.9, grid=10) is None

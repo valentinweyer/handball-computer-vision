@@ -97,6 +97,65 @@ Kiel. A credible follow-up has four steps:
    to evaluate.
 4. **Stage 2** only if that test passes.
 
+## Follow-up: leave-one-match-out check on development data (2026-10-19)
+
+Kiel, Eisenach and Löwen are all development data now. Before spending GPU
+time on fresh windows, `experiments/teammate_reid/calibration.py` checks
+whether a rule set on two matches holds on the third. Each match takes a turn
+as the test match. The setup:
+
+- **Configurations:** five feature/calibration combinations. The full-crop
+  configuration is unmasked: jersey text is legitimate evidence for telling
+  teammates apart.
+- **Threshold choice:** the highest-coverage gate on the two training matches
+  that keeps precision ≥ target and false matches ≤ 5%, at targets 0.90 and
+  0.95.
+- **Pass mark:** the same three bounds as Stage 1, checked on each test match.
+
+Folds that pass all three bounds, out of 3:
+
+| features | threshold | train precision ≥ 0.90 | train precision ≥ 0.95 |
+| --- | --- | ---: | ---: |
+| number box hidden, global (Stage 1 primary) | absolute | 0 | 0 |
+| full crop, stripes + global | absolute | 0 | **3** |
+| full crop, stripes + global | per-broadcast calibrated | 1 | 1 |
+| shirt+shorts hidden, stripes + global | absolute | 0 | 1 |
+| shirt+shorts hidden, stripes + global | per-broadcast calibrated | 1 | 1 |
+
+**Full crop, absolute, train ≥ 0.95, per test match:**
+
+| test match | gate chosen on the other two | coverage | precision | false matches (natural) | wrong s / correct s |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Eisenach–Hamburg | 0.856 / 0.023 | 0.41 | 0.93 | 2.7% (8.3%) | 16 / 546 |
+| Gummersbach–Löwen | 0.855 / 0.020 | 0.34 | 0.94 | 1.9% (10.0%) | 55 / 514 |
+| Kiel–Lemgo | 0.858 / 0.020 | 0.42 | 0.97 | 1.2% (0.0%) | 22 / 1085 |
+
+**What this shows:**
+
+- **The gate is stable across rotations:** score 0.855–0.858, margin
+  0.020–0.023. A floor set on two broadcasts transferred to the third, where
+  a floor set on Kiel alone did not.
+- **Every error at this rule is an unknown player matched to a teammate.** No
+  known player was linked to the wrong teammate. The natural-unknown rate is
+  above 5% in two folds, but that is 1 of 12 and 1 of 10 players, so it is
+  the risk to watch.
+
+**Calibration did not help.** Label-free per-broadcast normalisation (median
+and MAD of non-top candidate scores) made transfer worse. The impostor
+baseline does move between broadcasts (median 0.797 on Eisenach against
+0.84 on Kiel and Löwen), but correct-match scores do not move with it, so
+normalising by it misplaces the gate. It is dropped.
+
+**This is still selection on development data.** One rule out of ten passed.
+That rule now has to be locked and tested on fresh matches before it means
+anything. Set on all three matches pooled (training precision ≥ 0.95), it
+is score ≥ 0.860 and margin ≥ 0.020, with in-sample coverage 0.38 and
+precision 0.96. Results are in `runs/smart-reid-shadow/calibration/lomo.json`.
+
+```bash
+PYTHONPATH=src:. $PY -m experiments.teammate_reid.calibration
+```
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |
