@@ -336,3 +336,12 @@ def test_candidate_z_uses_gallery_only_never_the_query_label():
     frags["late"] = {"key": "late", "identity": "B", "team": 0, "start": 1050, "end": 1200}
     crops["late"] = list(range(38, 40))
     assert query_row(q, frags, crops, sim) == decision
+
+
+def test_sealed_windows_share_no_team_with_any_development_or_test_window():
+    from experiments.teammate_reid.heldout import DEV_WINDOWS, SEALED_WINDOWS, WINDOWS
+    teams = lambda windows: {t.lower() for _, match, _, _ in windows for t in match.split("-")}
+    development = teams(DEV_WINDOWS) | teams(WINDOWS) | {"kiel", "lemgo", "bhc", "fag", "melsungen", "berlin"}
+    assert not teams(SEALED_WINDOWS) & development
+    names = [w[0] for w in DEV_WINDOWS + SEALED_WINDOWS + WINDOWS]
+    assert len(names) == len(set(names))

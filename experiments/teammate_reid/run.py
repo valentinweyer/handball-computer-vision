@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from experiments.teammate_reid.heldout import WINDOWS
+from experiments.teammate_reid.heldout import DEV_WINDOWS, SEALED_WINDOWS, WINDOWS
 from experiments.teammate_reid.masking import MODES, apply_mask, crop_with_digits
 from experiments.teammate_reid.mining import VideoSpec, load_video, mine_video, sample_crops
 
@@ -46,11 +46,14 @@ VIDEOS = [
 # Held-out windows (experiments.teammate_reid.heldout): production `process_video`
 # bundles of matches whose teams the prototype never saw. Mined with exactly the
 # rules above; scored only by `transfer.evaluate` at the locked thresholds.
-HELDOUT = [
-    VideoSpec(name.lower(), match, REPO / "runs/bundles" / name, REPO / "data/interim" / name / "track.json")
-    for name, match, _source, _exposure in WINDOWS
-]
-VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT}
+def _specs(windows: list) -> list:
+    return [VideoSpec(name.lower(), match, REPO / "runs/bundles" / name, REPO / "data/interim" / name / "track.json")
+            for name, match, _source, _exposure in windows]
+
+
+HELDOUT = _specs(WINDOWS)
+VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT, "dev": _specs(DEV_WINDOWS),
+              "sealed": _specs(SEALED_WINDOWS)}
 
 
 def cmd_mine(args) -> None:

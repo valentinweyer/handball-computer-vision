@@ -44,6 +44,25 @@ WINDOWS = [
      "train/Ludwigshafen-Wetzlar.mp4", "detector-train"),
     ("RNL_SGF_66m00_10min", "RNL-SGF", "train/RNL-SGF.mp4", "detector-train"),
 ]
+# Development bank (2026-10-19): `train/` matches, only the detector trained on them.
+# Their teams overlap earlier development data only, never the test or sealed sets.
+# Tuning and leave-one-match-out checks run here in seconds once processed.
+DEV_WINDOWS = [
+    ("BAL_THW_66m00_10min", "Balingen-Kiel", "train/BAL-THW.mp4", "detector-train"),
+    ("BER_BHC_66m00_10min", "Berlin-BHC", "train/BER-BHC.mp4", "detector-train"),
+    ("TBV_SCM_66m00_10min", "Lemgo-Magdeburg", "train/TBV-SCM.mp4", "detector-train"),
+    ("FAG_LEI_66m00_10min", "Goeppingen-Leipzig", "train/FAG-LEI.mp4", "detector-train"),
+    ("DRE_MTM_66m00_10min", "Dresden-Melsungen", "train/DRE-MTM.mp4", "detector-train"),
+    ("Vinnhorst_Potsdam_66m00_10min", "Vinnhorst-Potsdam",
+     "train/sl_1435862_2026-08-21_1435862_tus_vinnhorst-1__vfl_potsdam_720p24_4001kbps.mp4", "detector-train"),
+]
+# Sealed test bank: every team is new to all development data. Processed now, mined
+# only after a rule is locked; nothing in them may inform a method or threshold choice.
+SEALED_WINDOWS = [
+    ("Altenholz_Luebeck_66m00_10min", "Altenholz-Luebeck", "train/Altenholz-Lübeck.mp4", "detector-train"),
+    ("Pforzheim_Bietigheim_66m00_10min", "Pforzheim-Bietigheim", "train/Pfortzheim-BBM.mp4", "detector-train"),
+]
+WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS}
 # The rule's one allowed nudge: step forward in whole minutes to the first live play.
 # Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off
 # is at 67:00 (checked 66:00-70:30 for live play only).
@@ -67,15 +86,16 @@ def cut(name: str, source: Path, out: Path) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("command", choices=("cut",))
-    parser.add_argument("--count", type=int, default=2, help="how many windows from the top of WINDOWS")
+    parser.add_argument("--count", type=int, default=None, help="how many windows from the top of the set")
+    parser.add_argument("--set", dest="window_set", choices=tuple(WINDOW_SETS), default="test")
     args = parser.parse_args()
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.is_file() else {"windows": {}}
     manifest["rule"] = f"{MINUTES} min from {START_S // 60}:00 of the broadcast, {FPS} fps (fixed before processing)"
-    for name, match, rel, exposure in WINDOWS[:args.count]:
+    for name, match, rel, exposure in WINDOW_SETS[args.window_set][:args.count]:
         started = time.monotonic()
         entry = cut(name, SOURCES / rel, REPO / "data/raw" / f"{name}.mp4")
-        entry.update(match=match, detector_exposure=exposure, cut_s=round(time.monotonic() - started, 1))
+        entry.update(match=match, detector_exposure=exposure, role=args.window_set, cut_s=round(time.monotonic() - started, 1))
         manifest["windows"][name] = entry
         MANIFEST.write_text(json.dumps(manifest, indent=2))
         print(json.dumps(entry), flush=True)
