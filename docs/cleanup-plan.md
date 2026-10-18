@@ -1,5 +1,26 @@
 # Cleanup plan
 
+## 2026-10-18: retired branches archived
+
+Only `main` and `feat/detector-expanded-validation` remain locally and on
+origin. Ten retired branch tips are retained as annotated, remotely verified
+tags named `archive/2026-10-18/<old-branch-name>`. This includes the three
+unmerged CamelTrack/research branches; their work was archived, not merged.
+The court-keypoint branch's local commit ahead of its remote is preserved too.
+
+`runs/archived-branches-2026-10-18/` contains a verified full Git bundle,
+`index.json` with original branch hashes and the bundle SHA-256, and recovery
+instructions. To recreate a retired branch:
+
+```bash
+git fetch origin --tags
+git branch <old-branch-name> archive/2026-10-18/<old-branch-name>
+```
+
+`main` remains at its previous commit. The active pipeline branch contains the
+reviewed identity changes and minimap smoothing. No pipeline code, videos,
+models, datasets, or training-repository files changed during branch cleanup.
+
 ## 2026-10-18: retired experiment worktrees archived
 
 The five extra project directories were archived and removed with
@@ -16,7 +37,7 @@ Recovery material is at `runs/archived-worktrees-2026-10-18/`:
   Every archived regular file and link was checked against its source before
   checkout removal. The top-level worktree `.git` pointer is excluded.
 - `experiment-history.bundle`, verified by Git, contains all five branches and
-  their complete history. The branches also remain in the main repository.
+  their complete history. Their tips are preserved by archive tags; see the branch-cleanup section below.
 - `index.json` and `README.md` explain the archive contents and restoration.
 
 Archived branches: `experiment/cameltrack`,
