@@ -26,6 +26,7 @@ from handball_cv.court.homography import CourtFit
 from handball_cv.pipeline.result import load
 from handball_cv.tracking.geometry_cache import GeometryCache
 from handball_cv.visualization.court_minimap import CourtMinimap
+from handball_cv.visualization.minimap_positions import smooth_minimap_positions
 from handball_cv.visualization.palette import PALETTE_HEX, color_index_for
 from handball_cv.visualization.video_writer import FfmpegWriter
 from scripts.render_full_pipeline import (
@@ -58,6 +59,8 @@ def main() -> None:
     parser.add_argument("--start", type=float, default=None, help="seconds")
     parser.add_argument("--end", type=float, default=None, help="seconds, exclusive")
     parser.add_argument("--no-minimap", action="store_true")
+    parser.add_argument("--raw-minimap", action="store_true",
+                        help="draw original court positions without display smoothing")
     parser.add_argument("--minimap-corner", default="top-right",
                         choices=("top-right", "top-left", "bottom-right", "bottom-left"),
                         help="move it off whatever the broadcast already shows there")
@@ -77,6 +80,14 @@ def main() -> None:
     output = args.output or args.bundle / "render.mp4"
 
     tracks = result.tracks
+    positions = tracks[["court_x", "court_y"]].to_numpy(dtype=float)
+    if not args.no_minimap and not args.raw_minimap and "court" in result.tables:
+        positions = smooth_minimap_positions(
+            tracks, result.events if "events" in result.tables else None, fps,
+        )
+    # Derived display values only: leave the loaded measurements and video
+    # annotations untouched, and smooth before selecting a clip range.
+    tracks = tracks.assign(minimap_x=positions[:, 0], minimap_y=positions[:, 1])
     tracks = tracks[(tracks.frame >= first) & (tracks.frame < last)]
     by_frame = {int(f): rows for f, rows in tracks.groupby("frame", sort=True)}
     masks = GeometryCache.load(args.bundle / result.manifest["files"]["masks"])
@@ -112,7 +123,7 @@ def main() -> None:
                     rows.player_id.to_numpy(), colors, frame_masks, labels,
                     mask_annotator, label_annotator,
                 )
-                players = list(zip(rows.court_x, rows.court_y, colors, numbers))
+                players = list(zip(rows.minimap_x, rows.minimap_y, colors, numbers))
             draw_legend(frame_bgr, palette)
             if minimap is not None:
                 fit = fits[frame] if frame < len(fits) else None
