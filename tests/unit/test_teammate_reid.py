@@ -205,3 +205,81 @@ def test_review_exclusions_remove_fragments_and_their_crops(tmp_path):
     (tmp_path / "review.json").write_text(json.dumps({"excluded": {"v:t2:0-9": "two people"}}))
     kept_crops, kept, _ = load_reviewed(tmp_path)
     assert [f["key"] for f in kept] == ["v:t1:0-9"] and [c["crop_id"] for c in kept_crops] == [0]
+
+
+# --- stage 1: transfer to held-out matches at locked thresholds -------------
+
+def _row(identity, known, correct, score, margin, synthetic=False, match="M1", duration=2.0):
+    return {"fragment": f"{identity}:{score}", "identity": identity, "known": known,
+            "synthetic_unknown": synthetic, "reentry": False, "best": "x", "score": score,
+            "margin": margin, "correct": correct, "candidates": 3, "duration_s": duration,
+            "match": match}
+
+
+def test_locked_thresholds_are_never_rewritten(tmp_path, monkeypatch):
+    from experiments.teammate_reid import transfer
+    monkeypatch.setattr(transfer, "THRESHOLDS", tmp_path / "thresholds.json")
+    (tmp_path / "thresholds.json").write_text('{"points": {}}')
+    with pytest.raises(SystemExit, match="locked"):
+        transfer.lock()
+    loaded = transfer.load_thresholds()
+    assert loaded["points"] == {} and len(loaded["file_sha256"]) == 64
+
+
+def test_natural_and_synthetic_unknown_rates_are_reported_apart():
+    from experiments.teammate_reid.transfer import point_with_parts
+    rows = [_row("a", True, True, 0.95, 0.05),          # accepted, correct
+            _row("b", True, False, 0.95, 0.05),         # accepted, wrong known
+            _row("c", True, True, 0.80, 0.05),          # below the score floor
+            _row("d", False, False, 0.95, 0.05),        # natural unknown, false match
+            _row("e", False, False, 0.50, 0.00),        # natural unknown, abstained
+            _row("a", False, False, 0.95, 0.001, synthetic=True)]  # synthetic, margin gate holds
+    p = point_with_parts(rows, tau=0.9, margin=0.01)
+    assert p["coverage"] == pytest.approx(1 / 3)
+    assert p["precision"] == pytest.approx(1 / 3)       # 1 correct of 3 accepted
+    assert p["unknown_false_match_rate"] == pytest.approx(1 / 3)
+    assert p["unknown_false_match_rate_natural"] == pytest.approx(1 / 2)
+    assert p["unknown_false_match_rate_synthetic"] == 0.0
+    assert (p["known_queries"], p["unknown_natural_queries"], p["unknown_synthetic_queries"]) == (3, 2, 1)
+
+
+def test_verdict_needs_every_bound_and_flags_natural_unknowns():
+    from experiments.teammate_reid.transfer import CRITERION, verdict
+    good = {"precision": 0.93, "unknown_false_match_rate": 0.03, "coverage": 0.25,
+            "unknown_false_match_rate_natural": 0.10}
+    v = verdict(good, CRITERION)
+    assert v["pass"] and v["natural_unknown_rate_above_bound"]
+    assert not verdict({**good, "coverage": 0.19}, CRITERION)["pass"]
+    assert not verdict({**good, "precision": float("nan")}, CRITERION)["pass"]
+
+
+def test_clustered_ci_resamples_whole_identities_within_matches():
+    from experiments.teammate_reid.transfer import clustered_ci
+    # one identity always right, one always wrong: a clustered resample can only
+    # draw precision 0, 0.5 or 1 -- never a value from splitting an identity's rows
+    rows = [_row("good", True, True, 0.95, 0.05) for _ in range(5)] + \
+           [_row("bad", True, False, 0.95, 0.05) for _ in range(5)]
+    ci = clustered_ci(rows, 0.9, 0.01, reps=300)
+    assert ci["precision"][0] == 0.0 and ci["precision"][1] == 1.0
+
+
+def test_held_out_evaluation_refuses_development_matches(tmp_path, monkeypatch):
+    import json
+    from experiments.teammate_reid import transfer
+    monkeypatch.setattr(transfer, "THRESHOLDS", tmp_path / "thresholds.json")
+    (tmp_path / "thresholds.json").write_text('{"points": {}, "primary": "p", "criterion": {}}')
+    frag = {"key": "k", "status": "accepted", "identity": "Kiel-Lemgo|v|team0|#1", "match": "Kiel-Lemgo",
+            "video": "v", "team": 0}
+    (tmp_path / "fragments.json").write_text(json.dumps([frag]))
+    (tmp_path / "crops.json").write_text("[]")
+    with pytest.raises(SystemExit, match="development matches"):
+        transfer.evaluate(tmp_path)
+
+
+def test_held_out_windows_share_no_team_with_development_data():
+    from experiments.teammate_reid.heldout import WINDOWS
+    from experiments.teammate_reid.run import HELDOUT, VIDEOS
+    development = ("Kiel", "Lemgo", "BHC", "FAG", "Melsungen", "Berlin", "Ber")
+    for name, match, source, _ in WINDOWS:
+        assert not any(team.lower() in (name + match + source).lower() for team in development), name
+    assert not {s.name for s in HELDOUT} & {s.name for s in VIDEOS}

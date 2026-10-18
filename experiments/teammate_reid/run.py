@@ -19,6 +19,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
+from experiments.teammate_reid.heldout import WINDOWS
 from experiments.teammate_reid.masking import MODES, apply_mask, crop_with_digits
 from experiments.teammate_reid.mining import VideoSpec, load_video, mine_video, sample_crops
 
@@ -42,11 +43,23 @@ VIDEOS = [
               REPO / "data/interim/score_Han-Ber4_cached/track.json"),
 ]
 
+# Held-out windows (experiments.teammate_reid.heldout): production `process_video`
+# bundles of matches whose teams the prototype never saw. Mined with exactly the
+# rules above; scored only by `transfer.evaluate` at the locked thresholds.
+HELDOUT = [
+    VideoSpec(name.lower(), match, REPO / "runs/bundles" / name, REPO / "data/interim" / name / "track.json")
+    for name, match, _source, _exposure in WINDOWS
+]
+VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT}
+
 
 def cmd_mine(args) -> None:
     args.out.mkdir(parents=True, exist_ok=True)
     fragments, crops, summaries, inputs = [], [], [], {}
-    for spec in VIDEOS:
+    for spec in args.videos:
+        if not spec.bundle.is_dir():
+            print(f"skipped (no bundle): {spec.name}")
+            continue
         loaded = load_video(spec)
         frags, summary = mine_video(loaded)
         tracks, numbers = loaded["tracks"], loaded["numbers"]
@@ -118,7 +131,7 @@ def cmd_extract(args) -> None:
                  "stripes": np.zeros((len(crops), 4, 1920), np.float16)} for m in MODES}
     mask_info = []
     started = time.time()
-    for spec in VIDEOS:
+    for spec in args.videos:
         rows = sorted(by_video.get(spec.name, ()), key=lambda r: r["frame"])
         if not rows:
             continue
@@ -154,6 +167,8 @@ def cmd_extract(args) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
+    parser.add_argument("--set", dest="video_set", choices=tuple(VIDEO_SETS), default="prototype",
+                        help="which videos mine/extract read")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("mine")
     p.add_argument("--every", type=int, default=10, help="min frames between sampled crops")
@@ -164,6 +179,7 @@ def main() -> None:
     p = sub.add_parser("evaluate")
     p.add_argument("--device", default="cuda")
     args = parser.parse_args()
+    args.videos = VIDEO_SETS[args.video_set]
     if args.cmd == "sheets":
         from experiments.teammate_reid.sheets import render_sheets
         render_sheets(args.out)
