@@ -7,6 +7,24 @@ detail lives in `docs/team-classification-handoff.md`.
 
 ---
 
+## Detection backfill after confirmation (planned 2026-10-18)
+
+- [ ] Once a new player is confirmed, backfill the short confirmation delay to
+  their first reliable appearance, initially only for clear, isolated entries.
+  Earlier boxes/masks must come from actual cached detections or validated
+  backward tracking, not a copy of the later position.
+- [ ] Abstain where overlaps, occlusion, competing detections or ambiguous
+  ownership make the earlier association uncertain. Never cross a camera cut
+  or an identity break. Overlap recovery is deferred.
+- [ ] Validate on isolated entries and negative overlap examples: earlier
+  player visibility with no extra false tracks, duplicate identities, or changes
+  to the already-confirmed portion of the track. Keep raw and backfilled
+  observations distinguishable.
+
+This is a TODO only; the user has not requested implementation yet.
+
+---
+
 ## 1. Chunked SAM2 propagation, without resetting identity at the seam
 
 **Resolved 2026-10-17 without chunking -- the memory cap no longer exists.**
