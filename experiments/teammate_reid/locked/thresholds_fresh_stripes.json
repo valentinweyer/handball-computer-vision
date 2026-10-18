@@ -1,0 +1,39 @@
+{
+  "locked_at": "2026-10-19T00:25:52",
+  "selection": "absolute two-gate point, highest coverage on Kiel+Eisenach+Loewen pooled with precision >= 0.95 and unknown false-match rate <= 5%; chosen because it alone passed every leave-one-match-out rotation (calibration/lomo.json) -- development selection",
+  "primary": "raw/frozen_stripes|gallery_agg",
+  "points": {
+    "raw/frozen_stripes|gallery_agg": {
+      "tau": 0.8602383460028696,
+      "margin": 0.020048427379737468,
+      "dev_pooled": {
+        "coverage": 0.3812154696132597,
+        "precision": 0.9583333333333334,
+        "accepted": 72,
+        "unknown_false_match_rate": 0.014084507042253521
+      }
+    },
+    "strict/frozen_stripes|gallery_agg": {
+      "tau": 0.8824859281717721,
+      "margin": 0.01746698961419574,
+      "dev_pooled": {
+        "coverage": 0.3259668508287293,
+        "precision": 0.9516129032258065,
+        "accepted": 62,
+        "unknown_false_match_rate": 0.014084507042253521
+      }
+    }
+  },
+  "criterion": {
+    "precision_min": 0.9,
+    "unknown_false_match_rate_max": 0.05,
+    "coverage_min": 0.2,
+    "scope": "pooled over held-out matches, primary method; every bound must hold"
+  },
+  "development_matches": [
+    "Eisenach-Hamburg",
+    "Gummersbach-Loewen",
+    "Kiel-Lemgo"
+  ],
+  "lomo_sha256": "3f420805aee3a4a71dd9a5088b58b0fb8e118696cf700cecb4eeebcac42a0c05"
+}

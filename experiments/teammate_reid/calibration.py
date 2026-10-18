@@ -20,7 +20,8 @@ highest coverage that keeps precision >= target and pooled unknown
 false-match rate <= 5%, at targets 0.90 (the criterion) and 0.95 (a safety
 margin). Both are reported; neither is tuned on a test match.
 
-    python -m experiments.teammate_reid.calibration
+    python -m experiments.teammate_reid.calibration            # leave-one-match-out table
+    python -m experiments.teammate_reid.calibration lock-stripes
 """
 from __future__ import annotations
 
@@ -147,7 +148,45 @@ def lomo() -> dict:
     return report
 
 
+FRESH_LOCK = REPO / "runs/smart-reid-shadow/thresholds_fresh_stripes.json"
+
+
+def lock_stripes() -> dict:
+    """Lock the rule that passed every rotation, set on all three development matches pooled.
+
+    Primary: full-crop stripes, absolute gate, training precision >= 0.95. The
+    shirt-and-shorts-hidden stripes are locked the same way as the reported
+    companion (the realistic estimate for unreadable backs). Written once,
+    before the fresh windows are mined.
+    """
+    import datetime
+    from experiments.teammate_reid.transfer import sha256
+    if FRESH_LOCK.is_file():
+        raise SystemExit(f"{FRESH_LOCK} already exists; locked rules are never rewritten")
+    points = {}
+    for feature in ("raw/frozen_stripes", "strict/frozen_stripes"):
+        rows = [r for results, matches in SOURCES.items() for r in scored_rows(results, matches, feature)]
+        p = select_point(rows, 0.95)
+        points[f"{feature}|gallery_agg"] = {"tau": p["tau"], "margin": p["margin"], "dev_pooled": {
+            k: p[k] for k in ("coverage", "precision", "accepted", "unknown_false_match_rate")}}
+    locked = {
+        "locked_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "selection": "absolute two-gate point, highest coverage on Kiel+Eisenach+Loewen pooled with precision "
+                     ">= 0.95 and unknown false-match rate <= 5%; chosen because it alone passed every "
+                     "leave-one-match-out rotation (calibration/lomo.json) -- development selection",
+        "primary": "raw/frozen_stripes|gallery_agg", "points": points, "criterion": CRITERION,
+        "development_matches": sorted({m for ms in SOURCES.values() for m in ms}),
+        "lomo_sha256": sha256(OUT / "lomo.json"),
+    }
+    FRESH_LOCK.write_text(json.dumps(locked, indent=2))
+    return locked
+
+
 def main() -> None:
+    import sys
+    if sys.argv[1:] == ["lock-stripes"]:
+        print(json.dumps(lock_stripes(), indent=2, default=float))
+        return
     report = lomo()
     print(f"{'config':52s} {'test match':20s} {'cov':>5s} {'prec':>5s} {'acc':>4s} {'fmr':>5s} {'natf':>5s}  pass")
     for key, folds in report["folds"].items():
