@@ -1,0 +1,15 @@
+{
+  "reviewer": "assistant visual review (Claude), 2026-10-18 -- not an independent human annotator",
+  "method": "All 34 held-out identity contact sheets (sheets/*_team*_n*.jpg; one row per accepted fragment, up to 8 unmasked crops across its life, number-detector boxes in red) were inspected before any matcher was scored on them. A fragment passes when the printed number, where visible, matches the mined label and the person is consistent with the identity's other fragments; a fragment whose crops are dominated by another person is excluded. Mixed fragments were the specific concern, since crops come from source tracks.",
+  "reviewed_identities": 34,
+  "reviewed_fragments": 147,
+  "excluded": {
+    "vfl_gm_loewen_66m00_10min:t46:2201-2370": "Gummersbach #8 F1: 2 of 5 crops (2275, 2335) are dominated by another person -- a man in black (staff/referee missed by the overlap filter) and a foreground head; ownership of the crop content is doubtful"
+  },
+  "excluded_identities": {},
+  "notes": [
+    "Track 182 (Eisenach) holds #6 then #74, track 205 holds #4 then #33, and tracks 102/109 (Loewen) swap #77/#78 -- each change sits at a reid break and mining cut the fragments there, as designed.",
+    "Eisenach #22 F15 crop 14495 may show a #27; the other 7 crops and 15 of 17 own reads are #22. Kept.",
+    "Eisenach #51 F0/F1 early crops are taken in front of the bench before the player enters; same person. Kept."
+  ]
+}
