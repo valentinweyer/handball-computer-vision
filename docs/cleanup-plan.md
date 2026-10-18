@@ -2,8 +2,8 @@
 
 ## 2026-10-18: retired branches archived
 
-Only `main` and `feat/detector-expanded-validation` remain locally and on
-origin. Ten retired branch tips are retained as annotated, remotely verified
+At the initial cleanup, `main` and `feat/detector-expanded-validation` were
+the two retained branches. Ten retired branch tips are retained as annotated, remotely verified
 tags named `archive/2026-10-18/<old-branch-name>`. This includes the three
 unmerged CamelTrack/research branches; their work was archived, not merged.
 The court-keypoint branch's local commit ahead of its remote is preserved too.
@@ -17,9 +17,12 @@ git fetch origin --tags
 git branch <old-branch-name> archive/2026-10-18/<old-branch-name>
 ```
 
-`main` remains at its previous commit. The active pipeline branch contains the
-reviewed identity changes and minimap smoothing. No pipeline code, videos,
-models, datasets, or training-repository files changed during branch cleanup.
+The validated pipeline was subsequently fast-forwarded into `main` at
+`6208726`, including the reviewed identity changes and minimap smoothing.
+The merged `feat/detector-expanded-validation` branch was then removed locally
+and on origin, leaving only `main`. Its full history remains in `main`.
+No pipeline code, videos, models, datasets, or training-repository files were
+changed by these Git cleanup operations.
 
 ## 2026-10-18: retired experiment worktrees archived
 
