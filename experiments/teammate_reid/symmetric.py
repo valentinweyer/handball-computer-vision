@@ -18,12 +18,16 @@ with >= 3 crops is one slot in a fixed universe, so correct names and correct se
 compare across variants whose galleries differ. The split-v1 test matches are never
 loaded (asserted).
 
-    python -m experiments.teammate_reid.symmetric
+    python -m experiments.teammate_reid.symmetric          # compare variants (tuning LOMO)
+    python -m experiments.teammate_reid.symmetric lock     # write locked/split_v2.json once
 """
 from __future__ import annotations
 
+import datetime
 import itertools
 import json
+import sys
+from pathlib import Path
 
 import numpy as np
 
@@ -37,6 +41,11 @@ GALLERIES = {"before": (False, False), "before_notrack": (False, True), "both_no
 QUERY_MODES = ("first8", "spread8")
 M = 8
 OUT = RUNS / "symmetric"
+LOCK = Path(__file__).parent / "locked/split_v2.json"
+# chosen 2026-10-19 from the tuning LOMO (`main`): most correct names at the split-v1
+# precision; the half-split check is applied as a guard on top of the gate, not tuned
+CHOICE = {"gallery": "both_notrack", "query_crops": "spread8", "rule": "absolute",
+          "target": "tight", "halves_guard": True}
 
 
 def _pick(crops: list, mode: str) -> list:
@@ -167,7 +176,34 @@ def lomo(rows: list, halves: bool, target: str, universe: list) -> dict:
             "wrong_seconds": tot["wrong_seconds"], "per_fold": folds}
 
 
+def lock() -> dict:
+    """Write the v2 choice with its gate chosen on all tuning matches. Refuses to overwrite."""
+    if LOCK.is_file():
+        raise SystemExit(f"{LOCK} exists; a lock is never rewritten")
+    rows, universe = rows_for(CHOICE["gallery"], CHOICE["query_crops"])
+    a = Arrays(rows, False)
+    everything = np.ones(len(rows), bool)
+    gate = a.choose(everything, *TARGETS[CHOICE["target"]])
+    in_sample = {k: (float(v[0]) if isinstance(v, np.ndarray) else v)
+                 for k, v in a.stats(everything, np.array([gate])).items()}
+    locked = {
+        "locked_at": datetime.datetime.now().isoformat(timespec="seconds"),
+        "encoder": "sportsreid_vitb16", "mask": "raw", "aggregation": "top-3 mean per query crop, mean over 8",
+        **CHOICE, "gate": [float(g) for g in gate], "min_sep_frames": 50, "tuning": TUNING,
+        "never_used": {"split_v1_test": TEST, "note": "new footage is scored once against this file"},
+        "criterion": CRITERION,
+        "tuning_lomo": {k: v for k, v in lomo(rows, False, CHOICE["target"], universe).items() if k != "per_fold"},
+        "tuning_in_sample": in_sample,
+    }
+    LOCK.write_text(json.dumps(locked, indent=2, default=float))
+    return locked
+
+
 def main() -> None:
+    if sys.argv[1:] == ["lock"]:
+        r = lock()
+        print(json.dumps({k: r[k] for k in ("gate", "tuning_lomo")}, indent=1, default=float))
+        return
     OUT.mkdir(parents=True, exist_ok=True)
     report = {"criterion": CRITERION, "tuning": TUNING, "variants": {}}
     print(f"{'variant':44s} {'folds':>5s} {'prec':>6s} {'right':>6s} {'wrong':>5s} {'unkFMR':>7s} "

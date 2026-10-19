@@ -1,0 +1,74 @@
+{
+  "locked_at": "2026-10-19T22:48:43",
+  "encoder": "sportsreid_vitb16",
+  "mask": "raw",
+  "aggregation": "top-3 mean per query crop, mean over 8",
+  "gallery": "both_notrack",
+  "query_crops": "spread8",
+  "rule": "absolute",
+  "target": "tight",
+  "halves_guard": true,
+  "gate": [
+    0.7839630554462301,
+    0.02255046162112006
+  ],
+  "min_sep_frames": 50,
+  "tuning": [
+    "Ludwigshafen-Wetzlar",
+    "RNL-SGF",
+    "Balingen-Kiel",
+    "Berlin-BHC",
+    "Lemgo-Magdeburg",
+    "Goeppingen-Leipzig",
+    "Altenholz-Luebeck",
+    "Pforzheim-Bietigheim"
+  ],
+  "never_used": {
+    "split_v1_test": [
+      "Kiel-Lemgo",
+      "Eisenach-Hamburg",
+      "Gummersbach-Loewen"
+    ],
+    "note": "new footage is scored once against this file"
+  },
+  "criterion": {
+    "fixed_at": "2026-10-19, before any next-cycle tuning on the development bank",
+    "chosen_by": "user, after the fresh test of the stripe rule failed pooled precision by 0.002 with every error an unknown player",
+    "known_precision_min": 0.95,
+    "unknown_false_match_rate_max": 0.03,
+    "coverage_min": 0.2,
+    "definitions": {
+      "known_precision": "correct links / accepted links among queries whose player has a gallery (wrong known links count against it; unknown queries do not enter)",
+      "unknown_false_match_rate": "accepted links / unknown queries, natural (no gallery yet) and synthetic (own gallery removed) pooled; the natural rate is also reported and flagged if above the bound",
+      "coverage": "correct links / known queries"
+    },
+    "scope": "pooled over the test matches of the locked rule; every bound must hold; per-match results reported"
+  },
+  "tuning_lomo": {
+    "folds_passed": 5,
+    "folds": 8,
+    "precision": 0.9966329966329966,
+    "correct": 296,
+    "wrong_known": 1,
+    "unknown_fmr": 0.022336769759450172,
+    "unknown_queries": 582,
+    "coverage_known": 0.5323741007194245,
+    "known_queries": 556,
+    "coverage_universe": 0.5085910652920962,
+    "universe": 582,
+    "correct_seconds": 9259.48,
+    "correct_seconds_share": 0.5110043178426684,
+    "wrong_seconds": 416.36
+  },
+  "tuning_in_sample": {
+    "accepted_known": 292.0,
+    "correct": 290.0,
+    "precision": 0.9931506849315068,
+    "coverage": 0.5215827338129496,
+    "fmr": 0.015463917525773196,
+    "correct_seconds": 8938.68,
+    "wrong_seconds": 260.36,
+    "known_queries": 556,
+    "unknown_queries": 582
+  }
+}
