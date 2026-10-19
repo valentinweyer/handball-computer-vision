@@ -345,3 +345,21 @@ def test_sealed_windows_share_no_team_with_any_development_or_test_window():
     assert not teams(SEALED_WINDOWS) & development
     names = [w[0] for w in DEV_WINDOWS + SEALED_WINDOWS + WINDOWS]
     assert len(names) == len(set(names))
+
+
+def test_sealed_errors_and_development_guard(tmp_path):
+    import json
+    from experiments.teammate_reid import sealed
+    gate = (0.9, 0.01, 0)
+    base = {"score": 0.95, "margin": 0.05, "best": "a", "identity": "a", "known": True}
+    assert not sealed.is_error(base, gate)                                 # correct link
+    assert sealed.is_error({**base, "best": "b"}, gate)                    # wrong teammate
+    assert sealed.is_error({**base, "known": False}, gate)                 # any link for an unknown
+    assert not sealed.is_error({**base, "known": False, "score": 0.5}, gate)   # abstained
+    lock = json.loads(sealed.LOCK.read_text())
+    frag = {"key": "k", "status": "accepted", "identity": "x", "match": lock["development_matches"][0],
+            "video": "v", "team": 0}
+    (tmp_path / "fragments.json").write_text(json.dumps([frag]))
+    (tmp_path / "crops.json").write_text("[]")
+    with pytest.raises(SystemExit, match="development matches"):
+        sealed.evaluate(tmp_path, "t")
