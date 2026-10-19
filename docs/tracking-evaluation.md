@@ -806,3 +806,10 @@ not represented by a persistent oracle failure on these clips, so this does
 not show box trackers handle it. One hard clip, one event: too little to
 generalise. Artifacts: `runs/tracker_eval/oracle_2026-10-20/` (per-clip JSON
 for both arms).
+
+**Follow-up: `docs/box-tracker-oracle-2026-10-20.md`.** Appearance cues,
+a break-don't-swap SORT, filled-in misses and fragment stitching on the same
+clips. In brief: with perfect boxes a strict SORT matches SAM2's identity
+accuracy at 2-3.5x the fragments; with real detections the swaps come from
+one box covering two players in contact, not from missed players, and
+neither kit colour nor PRTReID fixes the hard FelixClaar contacts.

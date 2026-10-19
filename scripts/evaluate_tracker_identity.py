@@ -230,9 +230,12 @@ def run_tracker(factory, reference: dict, video: Path, detections: Path | dict,
                 device: str) -> list:
     """-> [(frame_index, tracker_id, reference_id_or_None), ...].
 
-    `detections` is a detection-cache path, or {frame: {id: xyxy}} oracle boxes.
+    `detections` is a detection-cache path, {frame: {id: xyxy}} oracle boxes,
+    or a callable frame_index -> sv.Detections.
     """
-    if isinstance(detections, dict):
+    if callable(detections):
+        detections_for = detections
+    elif isinstance(detections, dict):
         detections_for = lambda f: oracle_frame_detections(detections, f)
     else:
         cache = load_detection_cache(detections)
