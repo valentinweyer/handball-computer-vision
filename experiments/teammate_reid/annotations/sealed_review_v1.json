@@ -1,0 +1,12 @@
+{
+  "reviewer": "assistant visual review (Claude), 2026-10-19 -- not an independent human annotator",
+  "method": "All 27 sealed identity contact sheets inspected before the locked rule was scored on them (once).",
+  "reviewed_identities": 27,
+  "reviewed_fragments": 109,
+  "excluded": {},
+  "excluded_identities": {},
+  "notes": [
+    "No fragment is dominated by another person. Kept: single blurred, rope-occluded or tackle crops (Altenholz #29, #55, #8; Pforzheim #20 F4 two light-blue crops at 6525/6565, #15 F1 crops hard to resolve at 720p).",
+    "Visually close pairs present (relevant to errors, not exclusions): Pforzheim white #10/#36 and #18/#23; Bietigheim #20/#25."
+  ]
+}
