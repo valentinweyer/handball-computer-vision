@@ -20,9 +20,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import shutil
 import subprocess
+import sys
 import time
 from pathlib import Path
+
+import numpy as np
 
 from handball_cv.video import VideoFrames, ffmpeg_exe
 
@@ -88,12 +93,55 @@ def cut(name: str, source: Path, out: Path) -> dict:
             "frames": len(frames), "fps": frames.fps}
 
 
+NO_PAUSE_SUFFIX = "_nocourtpause"
+
+
+def run_without_court_pause(name: str, check_every: int = 10, ocr_every: int = 10) -> Path:
+    """Track one window with the court pause disabled, then bundle it (experiment only).
+
+    The court model does not recognise lower-league halls: on the sealed previews it
+    saw a court on 4% and 24% of live-play frames, so production `process_video`
+    paused SAM2 almost throughout. This reuses that run's prepare/scan/teams outputs,
+    tracks with an all-True court-in-view flag and the same tracker flags
+    `process_video` passes, and bundles into `runs/bundles/<name>_nocourtpause`.
+    Production code is not changed.
+    """
+    source_work = REPO / "data/interim" / name
+    work = REPO / "data/interim" / (name + NO_PAUSE_SUFFIX)
+    work.mkdir(parents=True, exist_ok=True)
+    for f in ("meta.json", "detections.npz", "keypoints.json", "motion.json", "team.pkl"):
+        if not (work / f).is_file():
+            shutil.copy2(source_work / f, work / f)
+    meta = json.loads((work / "meta.json").read_text())
+    np.save(work / "court_in_view.npy", np.ones(meta["frames"], dtype=bool))
+    if not (work / "track.json").is_file():
+        command = [sys.executable, "-m", "scripts.render_full_pipeline", meta["video"],
+                   "--tracker", "sam2", "--detections", str(work / "detections.npz"),
+                   "--number-detections", str(work / "detections.npz"),
+                   "--team-model", str(work / "team.pkl"), "--output", str(work / "track.mp4"),
+                   "--frame-source", "video", "--no-video", "--device", "cuda",
+                   "--court-in-view", str(work / "court_in_view.npy"),
+                   "--check-every", str(check_every), "--ocr-every", str(ocr_every)]
+        env = {**os.environ, "SAM2_UPSTREAM_DIR": os.environ.get("SAM2_UPSTREAM_DIR", str(REPO / "sam2-upstream"))}
+        with (work / "track.log").open("w") as log:
+            subprocess.run(command, cwd=REPO, env=env, stdout=log, stderr=subprocess.STDOUT, check=True)
+    bundle = REPO / "runs/bundles" / (name + NO_PAUSE_SUFFIX)
+    # every stage output now exists, so process_video only builds the bundle
+    subprocess.run([sys.executable, "-m", "scripts.process_video", meta["video"], "--work", str(work),
+                    "--out", str(bundle)], cwd=REPO, check=True)
+    return bundle
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=("cut",))
+    parser.add_argument("command", choices=("cut", "nopause"))
+    parser.add_argument("--window", help="nopause: window name")
     parser.add_argument("--count", type=int, default=None, help="how many windows from the top of the set")
     parser.add_argument("--set", dest="window_set", choices=tuple(WINDOW_SETS), default="test")
     args = parser.parse_args()
+    if args.command == "nopause":
+        print(run_without_court_pause(args.window))
+        return
     MANIFEST.parent.mkdir(parents=True, exist_ok=True)
     manifest = json.loads(MANIFEST.read_text()) if MANIFEST.is_file() else {"windows": {}}
     manifest["rule"] = f"{MINUTES} min from {START_S // 60}:00 of the broadcast, {FPS} fps (fixed before processing)"
