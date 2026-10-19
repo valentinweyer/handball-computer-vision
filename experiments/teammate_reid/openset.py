@@ -10,6 +10,8 @@ and gallery + 8-crop aggregation; only the acceptance decision changes.
 - R1 `support`: R0, plus the chosen player's gallery holds >= k trusted fragments.
 - R2 `agreement`: R0, plus at least a share `a` of the query's crops pick the same
   player on their own (an unknown player tends to scatter over teammates).
+- R1b `min_crops`: R0, plus the query holds the full 8 aggregated crops (a 3-crop back
+  view is too little evidence; the 3-crop floor was inherited from the benchmark).
 - R3 `z_rank`: pick by candidate-relative z (`candidate_calibration`), gate on that
   player's raw score and on the z gap to the runner-up.
 
@@ -39,6 +41,8 @@ DEV_SOURCES = {
     RUNS / "fresh": ("Ludwigshafen-Wetzlar", "RNL-SGF"),
     RUNS / "dev": ("Balingen-Kiel", "Berlin-BHC"),
     RUNS / "dev_b": ("Lemgo-Magdeburg", "Goeppingen-Leipzig"),
+    # the failed sealed test's matches, development data from 2026-10-19 on
+    RUNS / "sealed": ("Altenholz-Luebeck", "Pforzheim-Bietigheim"),
 }
 CRITERION = json.loads((Path(__file__).parent / "locked/criterion_v2.json").read_text())
 TARGETS = {"at_bounds": (CRITERION["known_precision_min"], CRITERION["unknown_false_match_rate_max"]),
@@ -46,6 +50,7 @@ TARGETS = {"at_bounds": (CRITERION["known_precision_min"], CRITERION["unknown_fa
 FEATURE = "raw/frozen_stripes"
 M_CROPS = 8
 GRID = 30
+RULES = ("absolute", "min_crops", "support", "agreement", "z_rank")
 
 
 def query_rows(results: Path, matches: tuple, feature: str = FEATURE) -> list[dict]:
@@ -101,6 +106,8 @@ def decide(row: dict, rule: str, gate: tuple) -> str | None:
         ok = ok and row["support"] >= extra
     elif rule == "agreement":
         ok = ok and row["agreement"] >= extra
+    elif rule == "min_crops":
+        ok = ok and row["query_crops"] >= extra
     return row["best"] if ok else None
 
 
@@ -135,7 +142,8 @@ def gates(rows: list, rule: str) -> list:
     q = lambda key: np.unique(np.quantile([r[key] for r in rows if np.isfinite(r[key])], np.linspace(0, 1, GRID)))
     if rule == "z_rank":
         return list(itertools.product(q("z_raw"), q("z_gap")))
-    extra = {"absolute": [0], "support": [1, 2, 3], "agreement": [0.5, 0.625, 0.75, 0.875, 1.0]}[rule]
+    extra = {"absolute": [0], "support": [1, 2, 3], "agreement": [0.5, 0.625, 0.75, 0.875, 1.0],
+             "min_crops": [M_CROPS]}[rule]
     return list(itertools.product(q("score"), q("margin"), extra))
 
 
@@ -153,7 +161,7 @@ def choose(rows: list, rule: str, kp_min: float, fmr_max: float) -> tuple | None
 def lomo(rows: list) -> dict:
     report = {"criterion": CRITERION, "targets": TARGETS, "rules": {}}
     matches = sorted({r["match"] for r in rows})
-    for rule in ("absolute", "support", "agreement", "z_rank"):
+    for rule in RULES:
         for tname, (kp, fmr) in TARGETS.items():
             folds, held = {}, []
             for test in matches:
@@ -186,9 +194,9 @@ def lomo(rows: list) -> dict:
     return report
 
 
-def main() -> None:
-    rows = [r for results, matches in DEV_SOURCES.items() for r in query_rows(results, matches)]
-    out = RUNS / "openset"
+def main(feature: str = FEATURE, tag: str = "openset") -> None:
+    rows = [r for results, matches in DEV_SOURCES.items() for r in query_rows(results, matches, feature)]
+    out = RUNS / tag
     out.mkdir(parents=True, exist_ok=True)
     (out / "rows.json").write_text(json.dumps(rows, default=float))
     report = lomo(rows)
