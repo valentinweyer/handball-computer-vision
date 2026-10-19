@@ -1,0 +1,15 @@
+{
+  "reviewer": "assistant visual review (Claude), 2026-10-19 -- not an independent human annotator",
+  "method": "All 34 development identity contact sheets were inspected before any rule was tuned on them; a fragment whose crops are dominated by, or may show, another person is excluded. Development data: labels tune rules, they never test one.",
+  "reviewed_identities": 34,
+  "reviewed_fragments": 151,
+  "excluded": {
+    "bal_thw_66m00_10min:t170:9131-10030": "Balingen #21 F4: 2 of 7 crops are extreme close-ups of the back of a head; cannot confirm they show this player",
+    "ber_bhc_66m00_10min:t33:1881-2520": "BHC #2 F2: 2 of 8 crops are close-ups of a dark shirt with a logo, probably staff"
+  },
+  "excluded_identities": {},
+  "notes": [
+    "Single stray crops kept: Kiel #23 F1 (goalkeeper), Berlin #15 F0 and #17 F2, Balingen #30 F7 (referee).",
+    "Close-ups of the labelled player kept where the number is visible (Kiel #20 F2, Balingen #6 F3, BHC #49 F2 on the bench)."
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "reviewer": "assistant visual review (Claude), 2026-10-19 -- not an independent human annotator",
+  "method": "All 31 development identity contact sheets (Lemgo-Magdeburg, Goeppingen-Leipzig) inspected before any rule was tuned on them. Development data: labels tune rules, they never test one.",
+  "reviewed_identities": 31,
+  "reviewed_fragments": 146,
+  "excluded": {
+    "tbv_scm_66m00_10min:t92:5721-5830": "Lemgo #28 F0: all 4 crops show a grey shirt unlike every other #28 fragment (white kit); may be another person"
+  },
+  "excluded_identities": {},
+  "notes": [
+    "Single stray crops kept: Magdeburg #17 F2/F3 (TV camera operator), Lemgo #25 F2 (one grey-shirt crop), Lemgo #21 F7 (staff)."
+  ]
+}

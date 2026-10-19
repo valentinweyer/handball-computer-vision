@@ -172,6 +172,7 @@ def main() -> None:
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
     parser.add_argument("--set", dest="video_set", choices=tuple(VIDEO_SETS), default="prototype",
                         help="which videos mine/extract read")
+    parser.add_argument("--only", nargs="*", default=None, help="restrict the set to these video names")
     sub = parser.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("mine")
     p.add_argument("--every", type=int, default=10, help="min frames between sampled crops")
@@ -182,7 +183,7 @@ def main() -> None:
     p = sub.add_parser("evaluate")
     p.add_argument("--device", default="cuda")
     args = parser.parse_args()
-    args.videos = VIDEO_SETS[args.video_set]
+    args.videos = [s for s in VIDEO_SETS[args.video_set] if args.only is None or s.name in args.only]
     if args.cmd == "sheets":
         from experiments.teammate_reid.sheets import render_sheets
         render_sheets(args.out)

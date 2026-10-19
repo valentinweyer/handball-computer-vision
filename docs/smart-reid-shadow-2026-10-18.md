@@ -265,6 +265,64 @@ broadcasts for the next cycle, which should target unknown-player rejection.
 The sealed bank (Altenholz–Lübeck, Pforzheim–Bietigheim) stays unmined until
 a rule is locked. Results are in `runs/smart-reid-shadow/fresh/`.
 
+## Open-set rejection cycle on nine development matches (2026-10-19)
+
+**Criterion v2** was fixed by the user before any tuning
+(`locked/criterion_v2.json`). Three bounds are checked separately:
+
+- known-player precision ≥ 0.95
+- unknown false-match rate ≤ 3%
+- coverage ≥ 0.20
+
+**Development bank.** Four new `train/` matches were processed overnight:
+Balingen–Kiel, Berlin–BHC, Lemgo–Magdeburg and Göppingen–Leipzig. With the
+earlier five, that makes nine development matches: 1,205 queries, of which
+556 known, 98 natural unknowns and 551 synthetic unknowns.
+
+The assistant reviewed the new contact sheets before tuning
+(`annotations/dev_review_v1.json`, `dev_b_review_v1.json`). Three fragments
+were excluded. Input hashes are unchanged.
+
+**What was compared.** `experiments/teammate_reid/openset.py` runs a
+leave-one-match-out over 9 folds. Full-crop stripes are fixed throughout; only
+the acceptance rule changes. Gates are chosen on the 8 training matches and
+applied unchanged to the held-out one.
+
+| rule | target on training | folds passed | known precision | coverage | unknown FMR |
+| --- | --- | ---: | ---: | ---: | ---: |
+| absolute score + margin | at bounds | 4/9 | 0.982 | 0.30 | 2.9% |
+| **absolute score + margin** | **tight (0.97 / 2%)** | **6/9** | **0.982** | **0.29** | **2.2%** |
+| + gallery support ≥ k | tight | 5/9 | 0.981 | 0.28 | 2.3% |
+| + query-crop agreement ≥ a | tight | 5/9 | 0.987 | 0.28 | 2.5% |
+| candidate-z rank, raw gate | tight | 3/9 | 0.992 | 0.22 | 1.8% |
+
+(The last three columns are pooled over the held-out folds.)
+
+**Findings:**
+
+- **The plain absolute rule with a tight training target is the best.** None
+  of the add-ons the research note proposed improves on it. Agreement helps a
+  single match (Eisenach: 12 wrong seconds against 152) and costs others.
+- **Known-player precision holds on every held-out match** with a gate:
+  0.955–1.000. Real unknowns are falsely matched in 1 of 98 cases.
+- **The gate is very stable across nine broadcasts:** score 0.845–0.857,
+  margin 0.026–0.028.
+- **The three failures are not precision failures:**
+  - Berlin–BHC and Lemgo–Magdeburg collapse to coverage 0.00 and 0.09. Their
+    footage has a strong blue colour cast that compresses every score toward
+    the top: correct-match median 0.94, unknown top median 0.93, against
+    about 0.86 / 0.83 elsewhere. The margin gate therefore abstains on almost
+    everything. That failure is safe, not harmful.
+  - Göppingen–Leipzig fails on unknown FMR at 4.7%, against the 3% bound.
+- **Pooled over all nine** (the rule to lock next): score ≥ 0.859 and
+  margin ≥ 0.023. In-sample this gives known precision 0.988, coverage 0.29
+  and unknown FMR 1.8%, with 327 wrong seconds against 4,807 correct.
+- **Expectation for a fresh test:** roughly 6 in 9 single matches pass. The
+  likely failure is coverage collapse on colour-cast footage, not wrong
+  identities.
+
+Rows and folds are in `runs/smart-reid-shadow/openset/`.
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |
