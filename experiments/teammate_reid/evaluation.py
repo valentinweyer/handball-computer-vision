@@ -63,8 +63,15 @@ class Query:
 
 
 def build_queries(fragments: list, crops_by_fragment: dict, fps: float = 25.0,
-                  min_sep: int = 50, min_query_crops: int = 3) -> list[Query]:
-    """Queries for one video's accepted fragments (dicts with key/identity/team/start/end/track_id)."""
+                  min_sep: int = 50, min_query_crops: int = 3, after: bool = False,
+                  exclude_track: bool = False) -> list[Query]:
+    """Queries for one video's accepted fragments (dicts with key/identity/team/start/end/track_id).
+
+    Gallery fragments end >= `min_sep` frames before the query; with `after`, fragments
+    starting >= `min_sep` frames after it count too (a completed-video pass). With
+    `exclude_track`, no fragment of the query's own track is gallery: a production
+    track that is vouched anywhere is already named, so unresolved segments never have
+    their own track's continuation to match against."""
     frags = sorted((f for f in fragments if crops_by_fragment.get(f["key"])), key=lambda f: f["start"])
     first = {}
     for f in frags:
@@ -76,7 +83,10 @@ def build_queries(fragments: list, crops_by_fragment: dict, fps: float = 25.0,
             continue
         galleries, owners = {}, {}
         for g in frags:
-            if g["key"] == q["key"] or g["team"] != q["team"] or g["end"] + min_sep > q["start"]:
+            before, later = g["end"] + min_sep <= q["start"], after and g["start"] >= q["end"] + min_sep
+            if g["key"] == q["key"] or g["team"] != q["team"] or not (before or later):
+                continue
+            if exclude_track and g["track_id"] == q["track_id"]:
                 continue
             galleries.setdefault(g["identity"], []).extend(crops_by_fragment[g["key"]])
             owners.setdefault(g["identity"], []).append(g)

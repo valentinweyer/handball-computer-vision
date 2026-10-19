@@ -157,6 +157,24 @@ def test_queries_are_time_separated_and_never_see_themselves():
     assert "A" not in synth.galleries and not synth.known
 
 
+def test_after_galleries_keep_the_gap_and_drop_the_query_track():
+    frags = [_frag("q", "A", 0, 200, 300, 7), _frag("b0", "B", 0, 0, 100, 2),
+             _frag("a_soon", "A", 0, 320, 400, 4),   # starts within min_sep after the query
+             _frag("a_same", "A", 0, 500, 600, 7),   # the query's own track continuing
+             _frag("a_late", "A", 0, 700, 800, 5)]
+    crops = {k: [i * 10 + j for j in range(4)] for i, k in enumerate(["q", "b0", "a_soon", "a_same", "a_late"])}
+
+    def query(**kw):
+        return next(x for x in build_queries(frags, crops, min_sep=50, **kw)
+                    if x.fragment == "q" and not x.synthetic_unknown)
+
+    assert not query().known                                     # default: earlier fragments only
+    both = query(after=True)
+    assert set(both.galleries["A"]) == set(crops["a_same"]) | set(crops["a_late"])
+    strict = query(after=True, exclude_track=True)
+    assert set(strict.galleries["A"]) == set(crops["a_late"]) and strict.known
+
+
 def test_abstention_single_candidate_and_unknown_false_matches():
     assert decide({"A": 0.9})[2] == -np.inf               # nothing to beat: margin gate abstains
     rows = [{"known": True, "correct": True, "score": 0.9, "margin": 0.1, "candidates": 2, "duration_s": 4.0},
