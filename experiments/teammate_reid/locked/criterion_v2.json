@@ -1,0 +1,13 @@
+{
+  "fixed_at": "2026-10-19, before any next-cycle tuning on the development bank",
+  "chosen_by": "user, after the fresh test of the stripe rule failed pooled precision by 0.002 with every error an unknown player",
+  "known_precision_min": 0.95,
+  "unknown_false_match_rate_max": 0.03,
+  "coverage_min": 0.20,
+  "definitions": {
+    "known_precision": "correct links / accepted links among queries whose player has a gallery (wrong known links count against it; unknown queries do not enter)",
+    "unknown_false_match_rate": "accepted links / unknown queries, natural (no gallery yet) and synthetic (own gallery removed) pooled; the natural rate is also reported and flagged if above the bound",
+    "coverage": "correct links / known queries"
+  },
+  "scope": "pooled over the test matches of the locked rule; every bound must hold; per-match results reported"
+}
