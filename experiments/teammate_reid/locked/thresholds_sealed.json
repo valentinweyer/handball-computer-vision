@@ -1,0 +1,36 @@
+{
+  "locked_at": "2026-10-19T10:34:34",
+  "primary": "raw/frozen_stripes|gallery_agg",
+  "rule": "absolute",
+  "tau": 0.859244626143883,
+  "margin": 0.023340547906941397,
+  "selection": "absolute score+margin gate with the highest coverage on all nine development matches pooled at known precision >= 0.97 and unknown FMR <= 2% (the 'tight' target that passed 6/9 leave-one-match-out folds)",
+  "dev_pooled": {
+    "known_queries": 556,
+    "unknown_queries": 649,
+    "accepted_known": 164,
+    "correct": 162,
+    "known_precision": 0.9878048780487805,
+    "coverage": 0.29136690647482016,
+    "unknown_false_match_rate": 0.01848998459167951,
+    "natural_unknowns": 98,
+    "natural_false_matches": 2,
+    "wrong_seconds": 326.8,
+    "correct_seconds": 4806.800000000001
+  },
+  "development_matches": [
+    "Balingen-Kiel",
+    "Berlin-BHC",
+    "Eisenach-Hamburg",
+    "Goeppingen-Leipzig",
+    "Gummersbach-Loewen",
+    "Kiel-Lemgo",
+    "Lemgo-Magdeburg",
+    "Ludwigshafen-Wetzlar",
+    "RNL-SGF"
+  ],
+  "criterion_file": "experiments/teammate_reid/locked/criterion_v2.json",
+  "criterion_sha256": "2d90cb3e19fa2d47c8979279933b1a9f6be689554ce3ca917575de3c580a3fb3",
+  "openset_rows_sha256": "42c51b0be1557b9b2a18ae83bd8361e07d96ff990071dc0c190dcb0ce809d08f",
+  "note": "a 2-minute preview of each sealed match is evaluated first; the verdict is the full 10-minute windows; the rule is not changed in between"
+}
