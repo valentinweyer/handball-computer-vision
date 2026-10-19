@@ -70,12 +70,36 @@ SEALED_WINDOWS = [
 # 2-minute previews of the sealed matches (same 66:00 start), for an early look at
 # the locked rule. Indicative only: the verdict is the full sealed windows.
 PREVIEW_WINDOWS = [(n.replace("10min", "2min"), m, src, e) for n, m, src, e in SEALED_WINDOWS]
-WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS}
+# Final test bank (2026-10-19): new lower-league matches the user downloaded for the
+# one-shot test of `locked/split_v2.json` (locked before any of them was processed).
+# Detector-unseen, every team new to all tuning and test data. TV floors with only
+# handball lines.
+FINAL_WINDOWS = [
+    ("Saarlouis_Muenster_66m00_10min", "Saarlouis-Muenster",
+     "eval/smart-id-eval/sl_1444078_2026-10-10_1444078_hg_saarlouis-tsg_muenster_720p24_3054kbps.mp4",
+     "detector-unseen"),
+    ("Bielefeld_Aurich_86m00_10min", "Bielefeld-Aurich",
+     "eval/smart-id-eval/sl_1444091_2026-10-16_1444091_tsg_a-h_bielefeld-ohv_aurich_1080p50_7059kbps.mp4",
+     "detector-unseen"),
+    ("BalingenII_Erlangen_66m00_10min", "BalingenII-Erlangen",
+     "eval/smart-id-eval/sl_1444115_2026-10-18_1444115_hbw_balingen-weilstetten_ii-tv_1861_erlangen-bruck_720p24_2996kbps.mp4",
+     "detector-unseen"),
+    ("Wuerzburg_Regensburg_66m00_10min", "Wuerzburg-Regensburg",
+     "eval/smart-id-eval/sl_1478998_2026-10-17_1478998_woelfe_wuerzburg-sg_regensburg_adler_1080p30_3990kbps.mp4",
+     "detector-unseen"),
+]
+WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS,
+               "final": FINAL_WINDOWS}
 MINUTES_OVERRIDE = {n: 2 for n, *_ in PREVIEW_WINDOWS}
 # The rule's one allowed nudge: step forward in whole minutes to the first live play.
 # Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off
 # is at 67:00 (checked 66:00-70:30 for live play only).
-START_OVERRIDE_S = {"Ludwigshafen_Wetzlar_67m00_10min": 67 * 60}
+START_OVERRIDE_S = {"Ludwigshafen_Wetzlar_67m00_10min": 67 * 60,
+                    # the stream opens with ~30 min of drone footage: at 66:00 the first
+                    # half ends ~6.5 min in and half-time ads follow, so the window moves
+                    # to the second half (live from ~84.5 min; signal lost at ~108 min).
+                    # Checked on a 4-minute timeline for live play only.
+                    "Bielefeld_Aurich_86m00_10min": 86 * 60}
 MANIFEST = REPO / "runs/smart-reid-shadow/heldout_windows.json"
 
 
