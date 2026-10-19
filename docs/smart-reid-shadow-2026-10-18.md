@@ -383,6 +383,66 @@ Results are in `runs/smart-reid-shadow/sealed/`. The preview is in
 `sealed_preview_np/`, with the wrong-link sheet and a rendered 2-minute
 overlay under `review_video/`.
 
+## Encoder comparison on eleven development matches (2026-10-19)
+
+**Setup.** All eleven matches are development data now, the two failed sealed
+matches included. Two frozen candidates from the research note were tested,
+each loaded strictly (no missing or unexpected tensors):
+
+- **PersonViT ViT-B/16**: LUPerson pretraining, ReID fine-tuned on MSMT17,
+  256×128 (`lakeAGI/PersonViTReID`).
+- **SportsReID ViT-B/16**: torchvision ViT trained on SoccerNet-v3 ReID,
+  224×224 (author's Google Drive checkpoint).
+
+Everything else stayed fixed:
+
+- the same saved crops
+- the gallery and the 8-crop aggregation
+- each encoder's own gates, chosen leave-one-match-out on 10 matches and
+  applied to the 11th
+- criterion v2
+
+`strict` hides shirt and shorts with the same masks and seeds as before. The
+8-crop query minimum was also tested and changes little; this table shows the
+best rule per encoder.
+
+| encoder (rule) | rank-1 pooled / worst match | folds passed | known precision | coverage | unknown FMR |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| PRTReID stripes (absolute, at bounds) | 0.781 / 0.64 | 5/11 | 0.972 | 0.28 | 3.1% |
+| PersonViT-B (absolute, at bounds) | 0.898 / 0.84 | 8/11 | **1.000** | 0.43 | 2.9% |
+| SportsReID ViT-B (absolute, tight) | 0.896 / 0.84 | 8/11 | 0.997 | 0.46 | **2.0%** |
+| fused PersonViT + SportsReID (absolute, tight) | **0.909 / 0.86** | 8/11 | 0.997 | **0.47** | 2.4% |
+| PersonViT-B, `strict` | 0.863 / 0.78 | 6/11 | 0.995 | 0.32 | 3.5% |
+| SportsReID ViT-B, `strict` (at bounds) | 0.871 / 0.81 | **9/11** | 0.991 | 0.36 | 3.7% |
+
+**Findings:**
+
+- **Both encoders beat PRTReID by about 0.12 rank-1.** The worst match goes
+  from 0.64 to 0.84.
+- **The gain is appearance, not jersey text.** With shirt and shorts hidden,
+  both still beat full-crop PRTReID.
+- **Known-player precision holds in every held-out fold** (≥ 0.958, mostly
+  1.000). Every remaining failed fold fails on the 3% unknown false-match
+  bound. That happens on the matches with look-alike teammates: Altenholz,
+  Pforzheim, Göppingen–Leipzig, Berlin, Kiel, RNL.
+- **Gates stay stable within each encoder.** PersonViT varies by 0.001 in
+  score; SportsReID ranges 0.745–0.770.
+- **Fusion helps only marginally** over either single encoder.
+
+**Not yet a result.** These are development folds, and the encoder,
+threshold and rule were all chosen on them. Before any claim, a locked
+choice needs a sealed test on matches not used so far. No unused HBF match
+with new clubs is on disk.
+
+```bash
+PYTHONPATH=src:. $PY -m experiments.teammate_reid.encoders personvit_b_msmt --modes raw strict
+PYTHONPATH=src:. $PY -m experiments.teammate_reid.encoders sportsreid_vitb16 --modes raw strict
+PYTHONPATH=src:. $PY -c "from experiments.teammate_reid import openset as o; o.main(feature='sportsreid_vitb16', tag='openset_11_sportsreid_vitb16')"
+```
+
+Results are in `runs/smart-reid-shadow/openset_11*/`. Weights are under
+`models/personvit/` and `models/sportsreid/` (gitignored).
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |

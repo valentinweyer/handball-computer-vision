@@ -57,8 +57,14 @@ def query_rows(results: Path, matches: tuple, feature: str = FEATURE) -> list[di
     """One row per query with every quantity any rule gates on."""
     from experiments.teammate_reid.benchmark import fold_queries, load_reviewed
     crops, fragments, _ = load_reviewed(results)
-    data = np.load(results / "features.npz")
-    emb = embeddings({k: data[k] for k in data.files})[feature]
+    encoder, _, mode = feature.partition(":")        # an `encoders.py` model: "<name>[:<mask mode>]"
+    alt = results / f"features_{encoder}.npz"
+    if alt.is_file():
+        emb = np.load(alt)[mode or "raw"]
+        emb = emb / np.clip(np.linalg.norm(emb, axis=1, keepdims=True), 1e-8, None)
+    else:
+        data = np.load(results / "features.npz")
+        emb = embeddings({k: data[k] for k in data.files})[feature]
     by_fragment: dict = {}
     for c in sorted(crops, key=lambda c: c["frame"]):
         by_fragment.setdefault(c["fragment"], []).append(c["crop_id"])
