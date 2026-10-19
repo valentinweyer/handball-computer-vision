@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from experiments.teammate_reid.heldout import DEV_WINDOWS, SEALED_WINDOWS, WINDOWS
+from experiments.teammate_reid.heldout import DEV_WINDOWS, PREVIEW_WINDOWS, SEALED_WINDOWS, WINDOWS
 from experiments.teammate_reid.masking import MODES, apply_mask, crop_with_digits
 from experiments.teammate_reid.mining import VideoSpec, load_video, mine_video, sample_crops
 
@@ -53,7 +53,7 @@ def _specs(windows: list) -> list:
 
 HELDOUT = _specs(WINDOWS)
 VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT, "fresh": _specs(WINDOWS[2:]), "dev": _specs(DEV_WINDOWS),
-              "sealed": _specs(SEALED_WINDOWS)}
+              "sealed": _specs(SEALED_WINDOWS), "preview": _specs(PREVIEW_WINDOWS)}
 
 
 def cmd_mine(args) -> None:

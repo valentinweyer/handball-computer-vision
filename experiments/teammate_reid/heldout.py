@@ -62,7 +62,11 @@ SEALED_WINDOWS = [
     ("Altenholz_Luebeck_66m00_10min", "Altenholz-Luebeck", "train/Altenholz-Lübeck.mp4", "detector-train"),
     ("Pforzheim_Bietigheim_66m00_10min", "Pforzheim-Bietigheim", "train/Pfortzheim-BBM.mp4", "detector-train"),
 ]
-WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS}
+# 2-minute previews of the sealed matches (same 66:00 start), for an early look at
+# the locked rule. Indicative only: the verdict is the full sealed windows.
+PREVIEW_WINDOWS = [(n.replace("10min", "2min"), m, src, e) for n, m, src, e in SEALED_WINDOWS]
+WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS}
+MINUTES_OVERRIDE = {n: 2 for n, *_ in PREVIEW_WINDOWS}
 # The rule's one allowed nudge: step forward in whole minutes to the first live play.
 # Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off
 # is at 67:00 (checked 66:00-70:30 for live play only).
@@ -72,14 +76,15 @@ MANIFEST = REPO / "runs/smart-reid-shadow/heldout_windows.json"
 
 def cut(name: str, source: Path, out: Path) -> dict:
     start = START_OVERRIDE_S.get(name, START_S)
+    minutes = MINUTES_OVERRIDE.get(name, MINUTES)
     if not out.is_file():
         subprocess.run([ffmpeg_exe(), "-y", "-loglevel", "error", "-ss", str(start), "-i", str(source),
-                        "-t", str(MINUTES * 60), "-vf", f"fps={FPS}", "-c:v", "libx264",
+                        "-t", str(minutes * 60), "-vf", f"fps={FPS}", "-c:v", "libx264",
                         "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p", "-an", str(out)],
                        check=True)
     frames = VideoFrames(out)
     return {"window": name, "video": str(out), "source": str(source),
-            "source_bytes": source.stat().st_size, "start_s": start, "minutes": MINUTES,
+            "source_bytes": source.stat().st_size, "start_s": start, "minutes": minutes,
             "frames": len(frames), "fps": frames.fps}
 
 
