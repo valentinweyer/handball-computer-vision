@@ -65,6 +65,20 @@ class GeometryCacheTests(unittest.TestCase):
         self.assertEqual(got.masks.shape, (1, 48, 64))
         self.assertFalse(got.masks[0].any())
 
+    def test_a_row_crop_is_the_mask_at_its_place(self):
+        """What the renderer draws from: the same pixels, without the full frame."""
+        a = mask(self.shape, 4, 30, 8, 28)
+        a[10, 12] = False  # a hole, so the crop is not just its rectangle
+        cache = GeometryCache(64, 48, 10)
+        cache.add(3, [1, 2], [[8, 4, 28, 30], [0, 0, 1, 1]], [a, np.zeros(self.shape, bool)], [0, 1], [0, 1])
+        loaded = self.roundtrip(cache)
+        crop = loaded.row_crop(loaded.row_offset(3))
+        self.assertEqual((crop.x, crop.y, crop.mask.shape), (8, 4, (26, 20)))
+        rebuilt = np.zeros(self.shape, bool)
+        rebuilt[crop.y:crop.y + 26, crop.x:crop.x + 20] = crop.mask
+        np.testing.assert_array_equal(rebuilt, a)
+        self.assertIsNone(loaded.row_crop(loaded.row_offset(3) + 1))
+
     def test_a_visited_frame_with_no_players_is_still_a_frame(self):
         """A redraw that skipped it would come out short and shift the rest."""
         cache = GeometryCache(64, 48, 10)

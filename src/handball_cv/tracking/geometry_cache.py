@@ -24,6 +24,7 @@ Layout is the flat-array-plus-offsets form `load_detection_cache` already uses:
 """
 from dataclasses import dataclass
 from pathlib import Path
+from typing import NamedTuple
 
 import numpy as np
 
@@ -55,6 +56,24 @@ def _crop_rect(mask: np.ndarray) -> tuple:
     y0, y1 = np.argmax(rows), len(rows) - np.argmax(rows[::-1])
     x0, x1 = np.argmax(cols), len(cols) - np.argmax(cols[::-1])
     return int(x0), int(y0), int(x1 - x0), int(y1 - y0)
+
+
+class MaskCrop(NamedTuple):
+    """One player's mask as its tight crop, placed at `(x, y)` in the frame.
+
+    What drawing needs, without the full-frame array: an overlay touches only a
+    mask's own pixels, and at 1080p a full-frame mask is ~2 MB to fill and scan
+    for a player who covers a few thousand pixels of it.
+    """
+    x: int
+    y: int
+    mask: np.ndarray  # (h, w) bool
+
+
+def crop_mask(mask: np.ndarray) -> MaskCrop | None:
+    """`mask` as a `MaskCrop` (a view, not a copy), or None if it is empty."""
+    x0, y0, w, h = _crop_rect(mask)
+    return MaskCrop(x0, y0, mask[y0:y0 + h, x0:x0 + w]) if w and h else None
 
 
 class GeometryCache:
@@ -175,14 +194,22 @@ class _LoadedGeometry:
         self._paint(int(index), mask)
         return mask
 
-    def _paint(self, index: int, out: np.ndarray) -> None:
+    def row_crop(self, index: int) -> MaskCrop | None:
+        """One player-frame's mask as its crop, by global row index; None if empty."""
         s = self._s
+        index = int(index)
         x0, y0, w, h = (int(v) for v in s["crop_rect"][index])
         if not (w and h):
-            return
+            return None
         start, stop = int(s["mask_offsets"][index]), int(s["mask_offsets"][index + 1])
-        crop = np.unpackbits(s["mask_bits"][start:stop], count=h * w)
-        out[y0:y0 + h, x0:x0 + w] = crop.reshape(h, w).astype(bool)
+        bits = np.unpackbits(s["mask_bits"][start:stop], count=h * w)
+        return MaskCrop(x0, y0, bits.reshape(h, w).view(bool))
+
+    def _paint(self, index: int, out: np.ndarray) -> None:
+        crop = self.row_crop(index)
+        if crop is not None:
+            h, w = crop.mask.shape
+            out[crop.y:crop.y + h, crop.x:crop.x + w] = crop.mask
 
     def frame(self, frame_idx: int) -> FrameGeometry:
         s = self._s

@@ -54,9 +54,10 @@ from handball_cv.jersey.identity import (
     read_numbers,
 )
 from handball_cv.teams.model import TeamModel, crop_quality
-from handball_cv.tracking.geometry_cache import GeometryCache
+from handball_cv.tracking.geometry_cache import GeometryCache, MaskCrop, crop_mask
 from handball_cv.tracking.sam2_driver import ensure_frame_cache
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
+from handball_cv.visualization.mask_overlay import tint_masks
 from handball_cv.visualization.palette import (
     LEGEND, PALETTE_HEX, TEAM_A, TEAM_B, color_index,
 )
@@ -72,6 +73,7 @@ PLAYER_MODEL_ID = "player-and-handball-detection-3z9xf/3"
 GOALKEEPER_CLASS_ID = 1
 
 DEFAULT_FONT = ROOT / "notebooks" / "fonts" / "ConcertOne-Regular.ttf"
+MASK_OPACITY = 0.5
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -393,9 +395,9 @@ def annotate_frame(
     boxes_xyxy: np.ndarray,
     player_ids,
     color_lookup,
-    masks: list,
+    masks,
     labels: list,
-    mask_annotator,
+    palette: sv.ColorPalette,
     label_annotator,
 ) -> np.ndarray:
     """Team-tinted mask fill plus one already-decided label per player.
@@ -406,30 +408,25 @@ def annotate_frame(
     only draws it, which is what lets the redraw pass reuse it with verdicts
     replayed from a cache and no live tracker state at all.
 
-    `masks` entries may be None (McByte's mask manager has no mask for that
-    tracklet this frame); SAM2 never leaves one None.
+    `masks` holds one entry per player: a `MaskCrop` (what the geometry cache
+    stores, and the cheap form to draw), a full-frame boolean mask (SAM2's
+    `(N, H, W)` stack, McByte's mask manager), or None where McByte's mask
+    manager has no mask for that tracklet this frame.
     """
     annotated = frame_bgr.copy()
     if not len(boxes_xyxy):
         return annotated
 
     lookup = np.asarray(color_lookup, dtype=int)
+    crops = [mask if mask is None or isinstance(mask, MaskCrop) else crop_mask(mask)
+             for mask in masks]
+    tint_masks(annotated, crops, [palette.by_idx(int(c)).as_bgr() for c in lookup],
+               opacity=MASK_OPACITY)
     drawn = sv.Detections(
         xyxy=np.asarray(boxes_xyxy, dtype=float).copy(),
         class_id=lookup.copy(),
         tracker_id=np.asarray(player_ids, dtype=int),
     )
-    if isinstance(masks, np.ndarray):
-        drawn.mask = masks  # SAM2's (N, H, W) stack; nothing to fill in or restack
-        annotated = mask_annotator.annotate(
-            scene=annotated, detections=drawn, custom_color_lookup=lookup
-        )
-    elif any(mask is not None for mask in masks):
-        blank = np.zeros(frame_bgr.shape[:2], dtype=bool)
-        drawn.mask = np.stack([blank if mask is None else mask for mask in masks])
-        annotated = mask_annotator.annotate(
-            scene=annotated, detections=drawn, custom_color_lookup=lookup
-        )
     return label_annotator.annotate(
         scene=annotated, detections=drawn, labels=labels,
         custom_color_lookup=lookup,
@@ -659,9 +656,6 @@ def render(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    mask_annotator = sv.MaskAnnotator(
-        color=palette, opacity=0.5, color_lookup=sv.ColorLookup.INDEX
-    )
     label_annotator = sv.RichLabelAnnotator(
         font_path=str(args.font),
         font_size=round(34 * max(info.width / 1920.0, 1.0)),
@@ -792,7 +786,7 @@ def render(args: argparse.Namespace) -> dict:
             frame_bgr, tracked.xyxy, player_ids, color_lookup, masks,
             voted_labels(player_ids, color_lookup, voter, roster,
                          canonical=identity.registry.canonical),
-            mask_annotator, label_annotator,
+            palette, label_annotator,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -871,9 +865,6 @@ def render_sam2(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    mask_annotator = sv.MaskAnnotator(
-        color=palette, opacity=0.5, color_lookup=sv.ColorLookup.INDEX
-    )
     label_annotator = sv.RichLabelAnnotator(
         font_path=str(args.font),
         font_size=round(34 * max(info.width / 1920.0, 1.0)),
@@ -948,7 +939,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             return
         annotated = annotate_frame(
             frame_bgr, boxes, player_ids, color_lookup, masks, labels,
-            mask_annotator, label_annotator,
+            palette, label_annotator,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -1179,9 +1170,6 @@ def redraw(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    mask_annotator = sv.MaskAnnotator(
-        color=palette, opacity=0.5, color_lookup=sv.ColorLookup.INDEX
-    )
     label_annotator = sv.RichLabelAnnotator(
         font_path=str(args.font),
         font_size=round(34 * max(info.width / 1920.0, 1.0)),
@@ -1217,15 +1205,17 @@ def redraw(args: argparse.Namespace) -> dict:
     frames_written = labelled = 0
     for frame_idx in tqdm(wanted, desc=f"redraw {source.stem}"):
         frame_bgr = cv2.imread(str(frame_files[frame_idx]))
-        geo = cache.frame(frame_idx)
+        player_ids, boxes, color_index, _team_id = cache.rows(frame_idx)
+        first_row = cache.row_offset(frame_idx)
+        crops = [cache.row_crop(first_row + row) for row in range(len(player_ids))]
         labels = backfilled_labels(
-            by_player, frame_idx, geo.player_ids, geo.color_index,
+            by_player, frame_idx, player_ids, color_index,
             roster, canonical, causal=args.redraw_causal,
         )
         labelled += sum(1 for label in labels if label.startswith("#"))
         annotated = annotate_frame(
-            frame_bgr, geo.boxes, geo.player_ids, geo.color_index,
-            list(geo.masks), labels, mask_annotator, label_annotator,
+            frame_bgr, boxes, player_ids, color_index,
+            crops, labels, palette, label_annotator,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)

@@ -96,7 +96,6 @@ def main() -> None:
     roster = load_roster(args.roster)
 
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    mask_annotator = sv.MaskAnnotator(color=palette, opacity=0.5, color_lookup=sv.ColorLookup.INDEX)
     label_annotator = sv.RichLabelAnnotator(
         font_path=str(args.font), font_size=round(34 * max(width / 1920.0, 1.0)),
         color=palette, text_color=sv.Color.WHITE, text_position=sv.Position.BOTTOM_CENTER,
@@ -116,12 +115,11 @@ def main() -> None:
                 numbers = [n if isinstance(n, str) else None for n in rows[number_column]]
                 labels = [number_label(n, c, roster, int(p))
                           for n, c, p in zip(numbers, colors, rows.player_id)]
-                offset = masks.row_offset(frame)
-                frame_masks = masks.frame(frame).masks[(rows.mask_row.to_numpy() - offset)]
+                crops = [masks.row_crop(row) for row in rows.mask_row]
                 frame_bgr = annotate_frame(
                     frame_bgr, rows[["x1", "y1", "x2", "y2"]].to_numpy(dtype=float),
-                    rows.player_id.to_numpy(), colors, frame_masks, labels,
-                    mask_annotator, label_annotator,
+                    rows.player_id.to_numpy(), colors, crops, labels,
+                    palette, label_annotator,
                 )
                 players = list(zip(rows.minimap_x, rows.minimap_y, colors, numbers))
             draw_legend(frame_bgr, palette)
