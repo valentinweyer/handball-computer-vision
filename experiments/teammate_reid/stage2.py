@@ -544,7 +544,14 @@ def _identity(match: str, team, number: str, gallery_ids: set) -> tuple:
     return ((teams.pop(), number), True) if len(teams) == 1 else (None, False)
 
 
-def score() -> dict:
+def _frozen_labels(path: Path) -> tuple:
+    frozen = path.with_suffix(".sha256").read_text().split()[0]
+    if sha256(path) != frozen:
+        raise SystemExit(f"{path.name} changed after freezing")
+    return json.loads(path.read_text())["labels"], frozen
+
+
+def score(version: str = "v1") -> dict:
     """Unseal: compare the frozen human labels with the sealed proposals.
 
     Accepted segment -> correct (same team and number), wrong (a different named
@@ -553,11 +560,11 @@ def score() -> dict:
     vouched gallery before the segment (else no proposal could have been correct).
     Nothing is re-tuned: the gate is the split-v1 lock.
     """
-    labels_path = OUT / "annotations_human_v1.json"
-    frozen = FROZEN.read_text().split()[0]
-    if sha256(labels_path) != frozen:
-        raise SystemExit("labels changed after freezing")
-    labels = json.loads(labels_path.read_text())["labels"]
+    labels, frozen = _frozen_labels(LABELS)
+    if version == "v2":   # v1 with the blind re-check replacing the items it covered
+        rechecked, frozen_re = _frozen_labels(RECHECK)
+        labels = {**labels, **rechecked}
+        frozen = {"v1": frozen, "recheck": frozen_re}
     proposals = {r["review_id"]: r for r in json.loads((OUT / "proposals_SEALED.json").read_text())["rows"]}
     membership = json.loads((OUT / "queue_membership_SEALED.json").read_text())
     pop = json.loads((OUT / "population.json").read_text())["population"]
@@ -628,7 +635,9 @@ def score() -> dict:
         },
         "items": items,
     }
-    (OUT / "score.json").write_text(json.dumps(report, indent=1, default=float))
+    report["labels"] = version
+    (OUT / ("score.json" if version == "v1" else f"score_{version}.json")).write_text(
+        json.dumps(report, indent=1, default=float))
     return report
 
 
@@ -636,6 +645,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score", "recheck"))
     parser.add_argument("--number", help="recheck: the label value to look at again")
+    parser.add_argument("--labels", default="v1", choices=("v1", "v2"), help="score: v2 = v1 + re-check")
     parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
@@ -650,7 +660,7 @@ def main() -> None:
     elif args.command == "recheck":
         print(json.dumps(recheck(args.number), indent=1))
     elif args.command == "score":
-        r = score()
+        r = score(args.labels)
         print(json.dumps({k: v for k, v in r.items() if k != "items"}, indent=1, default=float))
     else:
         print(json.dumps(queue(), indent=1))
