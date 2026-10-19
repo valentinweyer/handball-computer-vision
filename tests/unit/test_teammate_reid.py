@@ -363,3 +363,11 @@ def test_sealed_errors_and_development_guard(tmp_path):
     (tmp_path / "crops.json").write_text("[]")
     with pytest.raises(SystemExit, match="development matches"):
         sealed.evaluate(tmp_path, "t")
+
+
+def test_split_is_disjoint_and_selection_never_sees_test_rows():
+    from experiments.teammate_reid import split_test as st
+    assert not set(st.TUNING) & set(st.TEST)
+    rows = {"f": [{"match": m} for m in st.TUNING + st.TEST]}
+    kept = st.tuning_rows(rows)["f"]
+    assert {r["match"] for r in kept} == set(st.TUNING)
