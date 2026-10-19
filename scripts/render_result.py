@@ -15,9 +15,9 @@ knew at each frame instead.
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 from pathlib import Path
 
-import cv2
 import numpy as np
 import supervision as sv
 from tqdm import tqdm
@@ -102,9 +102,8 @@ def main() -> None:
     minimap = None if args.no_minimap or not fits else CourtMinimap(
         round(width * 0.27), [palette.by_idx(i).as_bgr() for i in range(len(PALETTE_HEX))])
 
-    with FfmpegWriter(output, width, height, fps) as writer:
-        decoded = prefetch(cv2.cvtColor(result.frame(frame), cv2.COLOR_RGB2BGR)
-                           for frame in range(first, last))
+    with FfmpegWriter(output, width, height, fps) as writer, \
+            closing(prefetch(result.frame_bgr(frame) for frame in range(first, last))) as decoded:
         for frame, frame_bgr in tqdm(zip(range(first, last), decoded), total=last - first,
                                      desc=f"render {args.bundle.name}"):
             rows = by_frame.get(frame)

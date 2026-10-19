@@ -8,6 +8,8 @@ active opposition is the interesting failure, and should stand out.
 """
 from __future__ import annotations
 
+from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE
+
 TEAM_A, TEAM_B, NEW_UNCERTAIN, CONTESTED, GOALKEEPER = 0, 1, 2, 3, 4
 PALETTE_HEX = [
     "#00BEFF",  # A
@@ -37,11 +39,6 @@ TEAM_STATE = {
 
 def color_index(player) -> int:
     """Palette entry for a live `PlayerRecord`."""
-    # Imported here, not at the top: the team model brings umap and torch
-    # (~4 s), and only the live paths that already hold one call this. A
-    # finished bundle's render imports the palette and nothing else of it.
-    from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE
-
     if player.is_goalkeeper:
         return GOALKEEPER
     if player.team_is_provisional:

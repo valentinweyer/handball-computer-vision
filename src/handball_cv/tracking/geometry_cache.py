@@ -70,8 +70,16 @@ class MaskCrop(NamedTuple):
     mask: np.ndarray  # (h, w) bool
 
 
-def crop_mask(mask: np.ndarray) -> MaskCrop | None:
-    """`mask` as a `MaskCrop` (a view, not a copy), or None if it is empty."""
+def as_crop(mask) -> MaskCrop | None:
+    """Any per-player mask as what drawing and the cache take: a `MaskCrop`, or None.
+
+    Accepts a `MaskCrop` (returned as is), None or an empty mask (None), or a
+    full-frame mask of any dtype -- nonzero is foreground, as `sv.MaskAnnotator`
+    read it -- cropped tight as a view, not a copy.
+    """
+    if mask is None or isinstance(mask, MaskCrop):
+        return mask
+    mask = np.asarray(mask, dtype=bool)
     x0, y0, w, h = _crop_rect(mask)
     return MaskCrop(x0, y0, mask[y0:y0 + h, x0:x0 + w]) if w and h else None
 
@@ -86,16 +94,21 @@ class GeometryCache:
         self._rows: dict = {}
 
     def add(self, frame_idx: int, player_ids, boxes, masks, color_index, team_id) -> None:
-        """Record one frame. Rows must be parallel and in draw order."""
+        """Record one frame. Rows must be parallel and in draw order.
+
+        `masks` entries are anything `as_crop` takes; a caller that also draws
+        the frame crops once and passes the same crops to both.
+        """
         packed = []
         rects = []
-        for mask in masks:
-            x0, y0, w, h = _crop_rect(mask)
-            rects.append((x0, y0, w, h))
-            packed.append(
-                np.packbits(mask[y0:y0 + h, x0:x0 + w]) if w and h
-                else np.zeros(0, dtype=np.uint8)
-            )
+        for crop in map(as_crop, masks):
+            if crop is None:
+                rects.append((0, 0, 0, 0))
+                packed.append(np.zeros(0, dtype=np.uint8))
+                continue
+            h, w = crop.mask.shape
+            rects.append((crop.x, crop.y, w, h))
+            packed.append(np.packbits(crop.mask))
         self._rows[int(frame_idx)] = (
             np.asarray(player_ids, dtype=np.int32),
             np.asarray(boxes, dtype=np.float32).reshape(-1, 4),
@@ -204,6 +217,11 @@ class _LoadedGeometry:
         start, stop = int(s["mask_offsets"][index]), int(s["mask_offsets"][index + 1])
         bits = np.unpackbits(s["mask_bits"][start:stop], count=h * w)
         return MaskCrop(x0, y0, bits.reshape(h, w).view(bool))
+
+    def frame_crops(self, frame_idx: int) -> list:
+        """Every row of `frame_idx` as `row_crop` gives it, in the cache's row order."""
+        first = self.row_offset(frame_idx)
+        return [self.row_crop(first + row) for row in range(len(self.rows(frame_idx)[0]))]
 
     def _paint(self, index: int, out: np.ndarray) -> None:
         crop = self.row_crop(index)

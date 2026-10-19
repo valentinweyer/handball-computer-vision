@@ -14,7 +14,7 @@ import cv2
 import numpy as np
 import supervision as sv
 
-from handball_cv.tracking.geometry_cache import MaskCrop, crop_mask
+from handball_cv.tracking.geometry_cache import as_crop
 from handball_cv.visualization.labels import LabelDrawer
 from handball_cv.visualization.mask_overlay import tint_masks
 from handball_cv.visualization.palette import LEGEND, TEAM_A, TEAM_B
@@ -93,18 +93,22 @@ def annotate_frame(
     only draws it, which is what lets the redraw pass reuse it with verdicts
     replayed from a cache and no live tracker state at all.
 
-    `masks` holds one entry per player: a `MaskCrop` (what the geometry cache
-    stores, and the cheap form to draw), a full-frame boolean mask (SAM2's
-    `(N, H, W)` stack, McByte's mask manager), or None where McByte's mask
-    manager has no mask for that tracklet this frame.
+    `masks` holds one entry per player, anything `as_crop` takes: a `MaskCrop`
+    (what the geometry cache stores, and the cheap form to draw), a full-frame
+    mask (SAM2's `(N, H, W)` stack, McByte's mask manager), or None where
+    McByte's mask manager has no mask for that tracklet this frame. Every
+    argument is per player, and lengths that disagree are refused rather than
+    drawn with the wrong player's colour or without a label.
     """
+    counts = {"boxes": len(boxes_xyxy), "colors": len(color_lookup),
+              "masks": len(masks), "labels": len(labels)}
+    if len(set(counts.values())) > 1:
+        raise ValueError(f"one entry per player in each of {counts}")
     annotated = frame_bgr.copy()
     if not len(boxes_xyxy):
         return annotated
 
-    crops = [mask if mask is None or isinstance(mask, MaskCrop) else crop_mask(mask)
-             for mask in masks]
-    tint_masks(annotated, crops, [palette.by_idx(int(c)).as_bgr() for c in color_lookup],
-               opacity=MASK_OPACITY)
+    tint_masks(annotated, [as_crop(mask) for mask in masks],
+               [palette.by_idx(int(c)).as_bgr() for c in color_lookup], opacity=MASK_OPACITY)
     label_drawer.draw(annotated, boxes_xyxy, labels, color_lookup)
     return annotated

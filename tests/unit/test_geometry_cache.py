@@ -8,7 +8,7 @@ import unittest
 
 import numpy as np
 
-from handball_cv.tracking.geometry_cache import GeometryCache
+from handball_cv.tracking.geometry_cache import GeometryCache, as_crop
 
 
 def mask(shape, y0, y1, x0, x1):
@@ -78,6 +78,16 @@ class GeometryCacheTests(unittest.TestCase):
         rebuilt[crop.y:crop.y + 26, crop.x:crop.x + 20] = crop.mask
         np.testing.assert_array_equal(rebuilt, a)
         self.assertIsNone(loaded.row_crop(loaded.row_offset(3) + 1))
+        self.assertEqual([c is None for c in loaded.frame_crops(3)], [False, True])
+
+    def test_crops_and_full_masks_are_stored_alike(self):
+        """The SAM2 path now hands `add` the crops it draws from."""
+        a = mask(self.shape, 4, 30, 8, 28)
+        dense, cropped = GeometryCache(64, 48, 10), GeometryCache(64, 48, 10)
+        dense.add(1, [1, 2], [[8, 4, 28, 30], [0, 0, 1, 1]], [a, np.zeros(self.shape, bool)], [0, 1], [0, 1])
+        cropped.add(1, [1, 2], [[8, 4, 28, 30], [0, 0, 1, 1]], [as_crop(a), None], [0, 1], [0, 1])
+        np.testing.assert_array_equal(self.roundtrip(cropped).frame(1).masks,
+                                      self.roundtrip(dense).frame(1).masks)
 
     def test_a_visited_frame_with_no_players_is_still_a_frame(self):
         """A redraw that skipped it would come out short and shift the rest."""

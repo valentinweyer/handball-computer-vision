@@ -61,6 +61,15 @@ def test_returns_a_copy(video, decoded):
     assert np.array_equal(frames.rgb(3), decoded[3])
 
 
+def test_bgr_is_the_same_frame_in_opencv_order_and_a_copy(video, decoded):
+    frames = VideoFrames(video, keep=4)
+    for idx in (0, 1, 2, 10, 5):
+        bgr = frames.bgr(idx)
+        assert np.array_equal(bgr[:, :, ::-1], decoded[idx]), idx
+        bgr[:] = 0
+        assert np.array_equal(frames.rgb(idx), decoded[idx]), idx
+
+
 def test_concurrent_readers_get_the_right_frames(video, decoded):
     frames = VideoFrames(video, keep=8)
     indices = [i for i in range(FRAMES) for _ in range(3)]

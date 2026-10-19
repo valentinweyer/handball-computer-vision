@@ -35,7 +35,7 @@ def test_matches_rich_label_annotator(font, width):
     rng = np.random.default_rng(width)
     frame = rng.integers(0, 256, (height, width, 3), dtype=np.uint8)
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    labels = ["#7", "P123", "#24 Ölçü-Ĝåȳ", "#9", "#11", "P4", "#1 Müller", "#88", "#3"]
+    labels = ["#7", "P123", "#24 Ölçü-Ĝåȳ", "#9", "#11", "P4", "#1 Müller\nC", "#88\n", "#3"]
     boxes = np.array([
         [100.4, 100.0, 160.7, 290.3],                        # ordinary
         [130.0, 120.0, 190.0, 300.5],                        # overlaps the first label
@@ -45,7 +45,7 @@ def test_matches_rich_label_annotator(font, width):
         [800.0, height - 60.0, 860.0, height - 5.0],         # label hangs off the bottom
         [900.0, -300.0, 960.0, -40.0],                       # label partly above the top
         [1000.0, height + 50.0, 1060.0, height + 200.0],     # entirely off frame
-        [1200.0, 400.0, 1260.0, 580.0],
+        [1200.0, 400.0, 1260.0, 580.0],                       # two lines, then a trailing newline
     ])
     colors = np.arange(len(labels)) % len(PALETTE_HEX)
 
@@ -62,3 +62,10 @@ def test_matches_rich_label_annotator(font, width):
 def test_a_missing_font_fails_loudly(tmp_path):
     with pytest.raises(FileNotFoundError):
         LabelDrawer(tmp_path / "missing.ttf", sv.ColorPalette.from_hex(PALETTE_HEX), 1920)
+
+
+def test_a_label_per_box_or_none_at_all():
+    """Mismatched lengths used to be refused by sv.Detections; still refused."""
+    drawer = LabelDrawer(FONTS[0], sv.ColorPalette.from_hex(PALETTE_HEX), 1920)
+    with pytest.raises(ValueError):
+        drawer.draw(np.zeros((100, 100, 3), np.uint8), [[0, 0, 10, 10], [5, 5, 20, 20]], ["#1"], [0, 1])

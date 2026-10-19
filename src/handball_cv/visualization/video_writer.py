@@ -54,7 +54,7 @@ class FfmpegWriter:
                 continue  # keep draining, so a writer blocked on a full queue wakes up
             try:
                 self._process.stdin.write(memoryview(frame).cast("B"))
-            except (BrokenPipeError, ValueError):
+            except Exception:  # any failure: an escaped one would end this thread silently
                 self._broken = True
 
     def write(self, frame_bgr: np.ndarray) -> None:
@@ -82,6 +82,10 @@ class FfmpegWriter:
             self._feeder.join()
 
     def _fail(self):
+        if self._process.poll() is None:
+            # Feeding failed while ffmpeg still waits for input: it would never
+            # exit on its own, and the file is incomplete either way.
+            self._process.kill()
         self._process.wait()
         error = self._process.stderr.read().decode(errors="replace") if self._process.stderr else ""
         raise RuntimeError(f"ffmpeg failed writing {self.path}: {error.strip()}")

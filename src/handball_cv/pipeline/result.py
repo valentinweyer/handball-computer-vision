@@ -160,11 +160,18 @@ class Result:
 
     def frame(self, index: int) -> np.ndarray:
         """RGB frame `index` of the bundle's video."""
+        return self._frames().rgb(index)
+
+    def frame_bgr(self, index: int) -> np.ndarray:
+        """Frame `index` in OpenCV's BGR order, for drawing and writing video."""
+        return self._frames().bgr(index)
+
+    def _frames(self):
         if self._video is None:
             from handball_cv.video import VideoFrames
             self._video = VideoFrames(self.path / self.manifest["files"]["video"],
                                       count=self.manifest["source"]["frames"])
-        return self._video.rgb(index)
+        return self._video
 
     def mask(self, mask_row: int) -> np.ndarray:
         """Full-size boolean mask for one `tracks` row, by its `mask_row`."""

@@ -32,32 +32,50 @@ def prefetch(items: Iterable, depth: int = 8) -> Iterator:
 
     For decoding while the caller draws: OpenCV releases the GIL while it
     decodes, so the two overlap. An exception in `items` is raised at the
-    consumer, at the point in the sequence where it happened.
+    consumer, at the point in the sequence where it happened. Closing the
+    returned generator -- `contextlib.closing`, or breaking out and dropping
+    it -- stops the producer, so a failed consumer does not leave a thread
+    holding `items` (and whatever decoder it has open) for the life of the
+    process.
     """
     ready: queue.Queue = queue.Queue(depth)
+    stop = threading.Event()
     done = object()
+
+    def offer(entry) -> bool:
+        while not stop.is_set():
+            try:
+                ready.put(entry, timeout=0.1)
+                return True
+            except queue.Full:
+                pass
+        return False
 
     def produce():
         try:
             for item in items:
-                ready.put((item, None))
+                if not offer((item, None)):
+                    return
         except BaseException as error:  # handed to the consumer, not swallowed
-            ready.put((done, error))
+            offer((done, error))
             return
-        ready.put((done, None))
+        offer((done, None))
 
     threading.Thread(target=produce, name="prefetch", daemon=True).start()
-    while True:
-        item, error = ready.get()
-        if item is done:
-            if error is not None:
-                raise error
-            return
-        yield item
+    try:
+        while True:
+            item, error = ready.get()
+            if item is done:
+                if error is not None:
+                    raise error
+                return
+            yield item
+    finally:
+        stop.set()
 
 
 class VideoFrames:
-    """RGB frames decoded straight from the video, in place of a JPEG folder.
+    """Frames decoded straight from the video, in place of a JPEG folder.
 
     The JPEG folder costs ~230 KB a frame on disk (~21 GB for a full match) and
     a second lossy encode between the video and the tracker. Tracking reads
@@ -105,7 +123,20 @@ class VideoFrames:
         return self._count
 
     def rgb(self, idx: int) -> np.ndarray:
-        """Frame `idx` as an RGB array. A copy, so a caller may modify it."""
+        """Frame `idx` as an RGB array, the caller's own to modify."""
+        return cv2.cvtColor(self._decoded(idx), cv2.COLOR_BGR2RGB)
+
+    def bgr(self, idx: int) -> np.ndarray:
+        """Frame `idx` in OpenCV's BGR order, the caller's own to modify."""
+        return self._decoded(idx).copy()
+
+    def _decoded(self, idx: int) -> np.ndarray:
+        """The buffered BGR frame itself: read-only by convention, never handed out.
+
+        Kept in the decoder's own order so neither accessor pays more than one
+        full-frame pass: a BGR consumer copies, an RGB one swaps channels, which
+        also leaves it a fresh array.
+        """
         idx = int(idx)
         if not 0 <= idx < self._count:
             raise IndexError(f"frame {idx} out of range [0, {self._count})")
@@ -130,8 +161,8 @@ class VideoFrames:
                     ok, frame_bgr = self._capture.read()
                     if not ok:
                         raise RuntimeError(f"{self.video} ended at frame {self._next}")
-                    self._buffer[self._next] = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
+                    self._buffer[self._next] = frame_bgr
                     self._next += 1
                     while len(self._buffer) > self.keep:
                         self._buffer.popitem(last=False)
-            return self._buffer[idx].copy()
+            return self._buffer[idx]

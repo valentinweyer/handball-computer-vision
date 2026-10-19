@@ -22,6 +22,8 @@ __all__ = ["tint_masks"]
 def tint_masks(frame_bgr: np.ndarray, crops: Sequence[MaskCrop | None],
                colors_bgr: Sequence[tuple], opacity: float) -> None:
     """Blend each crop's colour into `frame_bgr` in place; None entries draw nothing."""
+    if len(crops) != len(colors_bgr):
+        raise ValueError(f"{len(crops)} masks but {len(colors_bgr)} colours")
     present = [crop for crop in crops if crop is not None]
     if not present:
         return

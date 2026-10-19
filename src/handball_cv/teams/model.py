@@ -13,17 +13,22 @@ Goalkeepers remain a detector class and are excluded from the two-team fit.
 import pickle
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
 import supervision as sv
-import umap
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import StandardScaler
 
-from sports import TeamClassifier
+# umap and sports (SigLIP, torch) cost ~5 s to import and are needed only to fit
+# or build a classifier, so they load there. The module's constants and
+# predictions stay cheap to import -- the overlay palette and the identity
+# manager read them -- and unpickling a saved model imports both on its own.
+if TYPE_CHECKING:
+    from sports import TeamClassifier
 
 # ── crop geometry ─────────────────────────────────────────────────────────
 # "waist_v1" (default): the original centre-anchored 0.4-scale crop. "torso":
@@ -299,7 +304,7 @@ class TeamModel:
 
     def __init__(
         self,
-        classifier: TeamClassifier,
+        classifier: "TeamClassifier",
         color_scaler,
         color_reducer,
         color_projection_scaler,
@@ -327,6 +332,8 @@ class TeamModel:
         device: str = "cuda",
     ) -> "TeamModel":
         """Fit two anonymous jersey-color prototypes from clean video crops."""
+        from sports import TeamClassifier
+
         classifier = TeamClassifier(device=device)
         crops = []
         for idx, frame_bgr in enumerate(
@@ -469,7 +476,7 @@ class TeamModel:
         crops,
         seed: int = 0,
         device: str = "cuda",
-        classifier: TeamClassifier | None = None,
+        classifier: "TeamClassifier | None" = None,
     ) -> "TeamModel":
         """Fit from RGB torso crops; useful for deterministic evaluation."""
         crops = [crop for crop in crops if crop_quality(crop).accepted]
@@ -477,7 +484,10 @@ class TeamModel:
             raise RuntimeError(
                 f"only {len(crops)} usable crops sampled for team fitting"
             )
+        import umap
+
         if classifier is None:
+            from sports import TeamClassifier
             classifier = TeamClassifier(device=device)
 
         embeddings = classifier.extract_features(crops)
@@ -687,7 +697,7 @@ class TeamModel:
     def load(
         cls,
         path,
-        classifier: TeamClassifier | None = None,
+        classifier: "TeamClassifier | None" = None,
         device: str = "cuda",
     ) -> "TeamModel":
         with open(Path(path), "rb") as file:
@@ -700,6 +710,7 @@ class TeamModel:
                 f"{path} was fit under a different crop geometry or model schema"
             )
         if classifier is None:
+            from sports import TeamClassifier
             classifier = TeamClassifier(device=device)
         classifier.reducer = state["reducer"]
         classifier.cluster_model = state["cluster_model"]

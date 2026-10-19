@@ -55,7 +55,7 @@ from handball_cv.jersey.identity import (
     read_numbers,
 )
 from handball_cv.teams.model import TeamModel, crop_quality
-from handball_cv.tracking.geometry_cache import GeometryCache
+from handball_cv.tracking.geometry_cache import GeometryCache, as_crop
 from handball_cv.tracking.sam2_driver import ensure_frame_cache
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
 from handball_cv.visualization.labels import LabelDrawer
@@ -829,11 +829,13 @@ def render_sam2(args: argparse.Namespace) -> dict:
 
     def draw(frame_idx, frame_bgr, player_ids, boxes, masks, color_lookup, team_ids, labels):
         nonlocal preview
-        geometry.add(frame_idx, player_ids, boxes, masks, color_lookup, team_ids)
+        # Crop once: the cache stores the crops and the overlay draws from them.
+        crops = [as_crop(mask) for mask in masks]
+        geometry.add(frame_idx, player_ids, boxes, crops, color_lookup, team_ids)
         if writer is None:
             return
         annotated = annotate_frame(
-            frame_bgr, boxes, color_lookup, masks, labels,
+            frame_bgr, boxes, color_lookup, crops, labels,
             palette, label_drawer,
         )
         draw_legend(annotated, palette)
@@ -1092,17 +1094,15 @@ def redraw(args: argparse.Namespace) -> dict:
     frames_written = labelled = 0
     for frame_idx in tqdm(wanted, desc=f"redraw {source.stem}"):
         frame_bgr = cv2.imread(str(frame_files[frame_idx]))
-        player_ids, boxes, color_index, _team_id = cache.rows(frame_idx)
-        first_row = cache.row_offset(frame_idx)
-        crops = [cache.row_crop(first_row + row) for row in range(len(player_ids))]
+        player_ids, boxes, colors, _team_id = cache.rows(frame_idx)
         labels = backfilled_labels(
-            by_player, frame_idx, player_ids, color_index,
+            by_player, frame_idx, player_ids, colors,
             roster, canonical, causal=args.redraw_causal,
         )
         labelled += sum(1 for label in labels if label.startswith("#"))
         annotated = annotate_frame(
-            frame_bgr, boxes, color_index,
-            crops, labels, palette, label_drawer,
+            frame_bgr, boxes, colors,
+            cache.frame_crops(frame_idx), labels, palette, label_drawer,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)

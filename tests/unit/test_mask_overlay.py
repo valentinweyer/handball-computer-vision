@@ -4,9 +4,10 @@ It replaced the annotator for speed alone, so any pixel difference -- most
 likely where two players overlap -- would be a regression in every render.
 """
 import numpy as np
+import pytest
 import supervision as sv
 
-from handball_cv.tracking.geometry_cache import crop_mask
+from handball_cv.tracking.geometry_cache import as_crop
 from handball_cv.visualization.mask_overlay import tint_masks
 from handball_cv.visualization.palette import PALETTE_HEX
 
@@ -37,7 +38,7 @@ def test_matches_mask_annotator_where_players_overlap():
         frame.copy(), sv.Detections(xyxy=boxes, class_id=colors, mask=masks),
         custom_color_lookup=colors)
     got = frame.copy()
-    tint_masks(got, [crop_mask(m) for m in masks],
+    tint_masks(got, [as_crop(m) for m in masks],
                [palette.by_idx(int(c)).as_bgr() for c in colors], opacity=0.5)
 
     np.testing.assert_array_equal(got, expected)
@@ -45,5 +46,21 @@ def test_matches_mask_annotator_where_players_overlap():
 
 def test_missing_masks_draw_nothing():
     frame = np.full((20, 20, 3), 77, dtype=np.uint8)
-    tint_masks(frame, [None, crop_mask(np.zeros((20, 20), bool))], [(0, 0, 255)] * 2, opacity=0.5)
+    tint_masks(frame, [None, as_crop(np.zeros((20, 20), bool))], [(0, 0, 255)] * 2, opacity=0.5)
     assert (frame == 77).all()
+
+
+def test_a_non_bool_mask_draws_its_pixels_not_its_rows():
+    """Nonzero is foreground, as MaskAnnotator read it; a uint8 0/255 mask must
+    not turn into integer fancy indexing."""
+    frame = np.full((40, 40, 3), 50, dtype=np.uint8)
+    mask = blob(frame.shape[:2], 10, 20, 15, 25)
+    as_bool, as_uint8 = frame.copy(), frame.copy()
+    tint_masks(as_bool, [as_crop(mask)], [(0, 0, 255)], opacity=0.5)
+    tint_masks(as_uint8, [as_crop(mask.astype(np.uint8) * 255)], [(0, 0, 255)], opacity=0.5)
+    np.testing.assert_array_equal(as_uint8, as_bool)
+
+
+def test_a_colour_per_mask_or_none_at_all():
+    with pytest.raises(ValueError):
+        tint_masks(np.zeros((10, 10, 3), np.uint8), [None, None], [(0, 0, 255)], opacity=0.5)

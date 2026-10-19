@@ -99,3 +99,26 @@ def test_writer_reports_a_dead_encoder_instead_of_hanging(tmp_path):
         for _ in range(200):  # more than the queue holds: a lost error would block here
             writer.write(np.zeros((48, 64, 3), dtype=np.uint8))
         writer.close()
+
+
+def test_writer_reports_any_feed_failure_not_only_a_broken_pipe(tmp_path):
+    """A failure other than EPIPE must not end the feeder silently either."""
+    writer = FfmpegWriter(tmp_path / "out.mp4", 64, 48, 25)
+
+    class Failing:
+        def write(self, data):
+            raise OSError(5, "Input/output error")
+
+        closed = False
+
+        def close(self):
+            pass
+
+    real = writer._process.stdin
+    writer._process.stdin = Failing()
+    with pytest.raises(RuntimeError, match="ffmpeg failed"):
+        for _ in range(200):
+            writer.write(np.zeros((48, 64, 3), dtype=np.uint8))
+        writer.close()
+    real.close()
+    writer._process.kill()
