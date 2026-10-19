@@ -76,10 +76,11 @@ def lock() -> dict:
     return locked
 
 
-def load_thresholds() -> dict:
+def load_thresholds(path: Path | None = None) -> dict:
     """The locked file, with its hash: evaluation reads this and never recomputes a threshold."""
-    data = json.loads(THRESHOLDS.read_text())
-    data["file_sha256"] = sha256(THRESHOLDS)
+    path = path or THRESHOLDS
+    data = json.loads(path.read_text())
+    data["file_sha256"] = sha256(path)
     return data
 
 
@@ -135,18 +136,20 @@ def verdict(point: dict, criterion: dict) -> dict:
                                                      and natural > criterion["unknown_false_match_rate_max"])}
 
 
-def evaluate(out: Path = STAGE1) -> dict:
-    from experiments.teammate_reid.benchmark import fold_queries, frozen_embeddings, load_reviewed
+def evaluate(out: Path = STAGE1, thresholds: Path | None = None) -> dict:
+    from experiments.teammate_reid.benchmark import fold_queries, load_reviewed
+    from experiments.teammate_reid.calibration import embeddings as all_embeddings
     from experiments.teammate_reid.evaluation import outcomes, summarize
 
-    locked = load_thresholds()
+    locked = load_thresholds(thresholds)
     crops, fragments, review = load_reviewed(out)
-    prototype_matches = {"Kiel-Lemgo", "BHC-FAG", "Melsungen-Berlin", "FelixClaar", "Han-Ber4"}
-    leaked = {f["match"] for f in fragments} & prototype_matches
+    development = {"Kiel-Lemgo", "BHC-FAG", "Melsungen-Berlin", "FelixClaar", "Han-Ber4",
+                   *locked.get("development_matches", ())}
+    leaked = {f["match"] for f in fragments} & development
     if leaked:
         raise SystemExit(f"held-out evaluation would include development matches: {sorted(leaked)}")
     data = np.load(out / "features.npz")
-    embeddings = frozen_embeddings({k: data[k] for k in data.files})
+    embeddings = all_embeddings({k: data[k] for k in data.files})
     match_of = {f["video"]: f["match"] for f in fragments}
 
     report = {"thresholds_sha256": locked["file_sha256"], "primary": locked["primary"],
@@ -173,7 +176,8 @@ def evaluate(out: Path = STAGE1) -> dict:
              for r in rows if r["score"] >= tau and r["margin"] >= margin and not r["correct"]),
             key=lambda r: -r["duration_s"])
         report["configs"][config] = {
-            "locked": {"tau": tau, "margin": margin, "kiel_fold_a": point["kiel_fold_a"]},
+            "locked": {"tau": tau, "margin": margin,
+                       "development": point.get("kiel_fold_a", point.get("dev_pooled"))},
             "pooled": pooled, "pooled_ci95": clustered_ci(rows, tau, margin),
             "per_match": per_match, "accepted_wrong": accepted_wrong,
             # descriptive only: never used to choose anything, the oracle is on these rows
@@ -193,11 +197,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("command", choices=("lock", "evaluate"))
     parser.add_argument("--out", type=Path, default=STAGE1)
+    parser.add_argument("--thresholds", type=Path, default=None, help="locked rule file (default: Stage 1)")
     args = parser.parse_args()
     if args.command == "lock":
         print(json.dumps(lock(), indent=2))
     else:
-        report = evaluate(args.out)
+        report = evaluate(args.out, args.thresholds)
         primary = report["configs"][report["primary"]]
         print(json.dumps({"verdict": report["verdict"], "pooled": primary["pooled"],
                           "ci95": primary["pooled_ci95"]}, indent=2, default=float))

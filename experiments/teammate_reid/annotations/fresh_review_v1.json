@@ -1,0 +1,17 @@
+{
+  "reviewer": "assistant visual review (Claude), 2026-10-19 -- not an independent human annotator",
+  "method": "All 36 fresh-window identity contact sheets (sheets/*_team*_n*.jpg) were inspected before the locked rule was scored on them. A fragment passes when the printed number, where visible, matches the mined label and the person is consistent with the identity's other fragments; a fragment whose crops are dominated by another person is excluded.",
+  "reviewed_identities": 36,
+  "reviewed_fragments": 204,
+  "excluded": {
+    "ludwigshafen_wetzlar_67m00_10min:t246:12971-13050": "Wetzlar #5 F2: 2 of 3 crops are dominated by a person in black in the foreground",
+    "ludwigshafen_wetzlar_67m00_10min:t76:3231-3710": "Ludwigshafen #10 F3: most crops are timeout-huddle close-ups dominated by other players' heads"
+  },
+  "excluded_identities": {},
+  "notes": [
+    "Tracker-id handovers at reid breaks, each cut by mining: Ludwigshafen tracks 101/139/151/182/231 among #4, #8, #99; track 19 #29 -> #22; Wetzlar track 246 #5 -> #33; RNL tracks 64/158/239 among #24, #25, #45, #77.",
+    "RNL #77, #78 and #80 very likely are the same players as Loewen #77/#78/#80 in the development match Gummersbach-Loewen (same club): RNL-SGF is not player-independent of development data and is reported separately.",
+    "Single stray crops (another player or staff in one crop of 8-10) were kept: Wetzlar #23 F2, Ludwigshafen #13 F10, #20 F9, #29 F1, RNL #78 F7, SGF #31 F8.",
+    "RNL #45 F0 shows the player seated on the bench in his #45 shirt; same person, kept."
+  ]
+}

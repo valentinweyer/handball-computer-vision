@@ -52,7 +52,7 @@ def _specs(windows: list) -> list:
 
 
 HELDOUT = _specs(WINDOWS)
-VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT, "dev": _specs(DEV_WINDOWS),
+VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT, "fresh": _specs(WINDOWS[2:]), "dev": _specs(DEV_WINDOWS),
               "sealed": _specs(SEALED_WINDOWS)}
 
 

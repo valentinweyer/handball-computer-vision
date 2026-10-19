@@ -201,6 +201,70 @@ Results are in `runs/smart-reid-shadow/calibration/lomo_candidate.json`.
 - **Caveats.** Both are detector-training matches, and RNL–SGF shares the
   Löwen players.
 
+## Fresh test of the locked stripe rule: fails on precision by 0.002 (2026-10-19)
+
+The rule was locked in `9f0689f` before either window existed: full-crop
+stripes, score ≥ 0.860, margin ≥ 0.020. The windows are Ludwigshafen–Wetzlar
+(from 67:00) and RNL–SGF (from 66:00). Both are detector-training matches,
+which is irrelevant to re-ID.
+
+Before scoring, an assistant reviewed all 36 identities and 204 fragments
+(`annotations/fresh_review_v1.json`). Two fragments were excluded, both
+dominated by another person. Input hashes are unchanged.
+
+| pooled, primary | bound | result | 95% CI (clustered) | |
+| --- | ---: | ---: | ---: | --- |
+| precision | ≥ 0.90 | **0.898** (44 / 49) | [0.82, 0.97] | **fail** |
+| unknown false-match rate | ≤ 5% | 2.8% (5 / 176) | [0.7%, 5.1%] | pass |
+| coverage | ≥ 0.20 | 0.28 (44 / 156) | [0.17, 0.39] | pass |
+
+| match | known queries | coverage | precision | unknown false matches | note |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Ludwigshafen–Wetzlar | 94 | 0.21 | 0.83 | 4 | all four teams new to re-ID |
+| RNL–SGF | 62 | 0.39 | 0.96 | 1 | RNL players overlap the Löwen development match |
+
+**The bound was fixed in advance, so this is a fail.** No threshold was
+moved, and Stage 2 is not run.
+
+**What the errors are:**
+
+- **All 5 are unknown players matched to a teammate.** Each is a known player
+  whose own gallery was removed (synthetic unknowns), matched to a teammate:
+  - Ludwigshafen #13↔#20, in both directions
+  - #4→#22
+  - #37→#13
+  - RNL #45→#24
+- **The rest was error-free.** Zero known players were linked to the wrong
+  teammate, and zero of 21 natural unknowns were falsely matched.
+- **So matching known players transferred and rejecting unknowns did not.**
+  This is the open-set problem from §1 of the research note.
+- **The fully new match is the weaker one.** Ludwigshafen–Wetzlar has
+  precision 0.83 and coverage 0.21. The scores sit high enough there that
+  teammates clear the gate, which is the failure direction expected
+  beforehand.
+
+**The shirt+shorts-hidden companion** (score ≥ 0.882, margin ≥ 0.017) reaches
+precision 0.93 but coverage only 0.17. It also fails, on coverage.
+
+**A methodological point for the next registration, not a rescore of this
+one.** Precision pools known-player links with false matches on unknowns. The
+synthetic protocol duplicates every known query as an unknown, so the test
+assumes about 53% of queries are gallery-absent. Natural queries here suggest
+about 12% (21 of 177). Precision therefore depends on an assumed prevalence.
+
+- The next locked criterion should state the prevalence it assumes, estimated
+  on development data.
+- Or it should bound known-player precision and the unknown false-match rate
+  separately.
+- Applying either one now, after seeing this result, would be a post-hoc
+  rescue and is not done.
+
+**Next.** Ludwigshafen–Wetzlar and RNL–SGF join the development set. The
+overnight development bank (six more `train/` matches) gives nine-plus
+broadcasts for the next cycle, which should target unknown-player rejection.
+The sealed bank (Altenholz–Lübeck, Pforzheim–Bietigheim) stays unmined until
+a rule is locked. Results are in `runs/smart-reid-shadow/fresh/`.
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |
