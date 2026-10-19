@@ -436,6 +436,7 @@ if(Object.keys(d.labels||{}).length)L=d.labels;setSync("· saved on server");ren
 LABELS = OUT / "annotations_human_v1.json"
 FROZEN = OUT / "annotations_human_v1.sha256"   # written when the labels are frozen; edits stop then
 RECHECK = OUT / "annotations_human_v1_recheck.json"
+ADJUDICATION = OUT / "annotations_human_v1_adjudication.json"   # not blind: made after unsealing
 LABEL_FILES = {"/labels": (LABELS, "queue.json"), "/labels_recheck": (RECHECK, "recheck_queue.json")}
 
 
@@ -561,10 +562,14 @@ def score(version: str = "v1") -> dict:
     Nothing is re-tuned: the gate is the split-v1 lock.
     """
     labels, frozen = _frozen_labels(LABELS)
-    if version == "v2":   # v1 with the blind re-check replacing the items it covered
+    if version in ("v2", "v3"):   # v1 with the blind re-check replacing the items it covered
         rechecked, frozen_re = _frozen_labels(RECHECK)
         labels = {**labels, **rechecked}
         frozen = {"v1": frozen, "recheck": frozen_re}
+    if version == "v3":   # + the user's adjudication of the errors, made after seeing the proposals
+        adjudicated, frozen_adj = _frozen_labels(ADJUDICATION)
+        labels = {**labels, **adjudicated}
+        frozen["adjudication"] = frozen_adj
     proposals = {r["review_id"]: r for r in json.loads((OUT / "proposals_SEALED.json").read_text())["rows"]}
     membership = json.loads((OUT / "queue_membership_SEALED.json").read_text())
     pop = json.loads((OUT / "population.json").read_text())["population"]
@@ -645,7 +650,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score", "recheck"))
     parser.add_argument("--number", help="recheck: the label value to look at again")
-    parser.add_argument("--labels", default="v1", choices=("v1", "v2"), help="score: v2 = v1 + re-check")
+    parser.add_argument("--labels", default="v1", choices=("v1", "v2", "v3"),
+                        help="score: v2 = v1 + blind re-check; v3 = v2 + adjudication (not blind)")
     parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
