@@ -323,6 +323,66 @@ applied unchanged to the held-out one.
 
 Rows and folds are in `runs/smart-reid-shadow/openset/`.
 
+## Sealed test of the locked open-set rule: fails (2026-10-19)
+
+**The test.** The rule was locked in `11f776f` before any sealed data existed:
+full-crop stripes, score ≥ 0.859, margin ≥ 0.023. The criterion is v2. The
+sealed matches are Altenholz–Lübeck and Pforzheim–Bietigheim, 10 minutes from
+66:00 each. Both are lower-league halls, and Pforzheim is 720p.
+
+**The court workaround.** The court model sees a court on only 4% / 24% of
+live-play frames in these halls, so production `process_video` pauses SAM2
+almost throughout. Both windows were therefore tracked through the
+experiment-only no-court-pause path (`heldout.run_without_court_pause`,
+`ab9ea57`). An assistant reviewed all 27 identities before scoring and
+excluded nothing. The evaluation ran once, and input hashes are unchanged.
+
+| pooled | bound | result | 95% CI (clustered) | |
+| --- | ---: | ---: | ---: | --- |
+| known-player precision | ≥ 0.95 | **0.88** (22 / 25) | [0.77, 1.00] | **fail** |
+| unknown false-match rate | ≤ 3% | **10.1%** (10 / 99) | [3.3%, 17.9%] | **fail** |
+| coverage | ≥ 0.20 | 0.28 (22 / 79) | [0.14, 0.43] | pass |
+
+| match | known precision | coverage | unknown FMR | wrong s / correct s |
+| --- | ---: | ---: | ---: | ---: |
+| Altenholz–Lübeck | 0.92 (11/12) | 0.37 | 10.5% | 217 / 361 |
+| Pforzheim–Bietigheim | 0.85 (11/13) | 0.22 | 9.8% | 118 / 265 |
+
+**What the errors are:**
+
+- **Look-alike teammate pairs, not random confusions.**
+  - Altenholz yellow #8, #11 and #14 (#14→#11, #8→#11, #11→#8), plus
+    #10→#42.
+  - Pforzheim white #10→#36, five times across query variants.
+  - Bietigheim #25→#20 and #4→#20.
+- **No natural unknown was falsely matched** (0 of 20). Every unknown false
+  match is a synthetic one: a known player whose own gallery was removed, who
+  then lands on the look-alike teammate.
+- **This is a domain gap relative to development.** All nine development
+  matches are 1080p HBF broadcasts, and there every held-out fold that
+  accepted anything kept known precision ≥ 0.955. On lower-league footage
+  (different halls and kits, 720p) the frozen PRTReID features do not separate
+  these teammates well enough.
+
+**Consequences:**
+
+- **The rule is not validated.** It stays a shadow experiment, Stage 2 does
+  not run, and nothing is promoted.
+- **Nothing here says whether it would pass on unseen HBF broadcasts.** A
+  sealed test inside the development domain needs HBF matches with clubs not
+  yet used.
+- **Both sealed matches now become development data** for the next cycle.
+- **The failure points at feature quality on look-alike teammates, not at
+  calibration.** Next levers, in the research note's order:
+  - a minimum of 8 query crops
+  - a frozen-encoder comparison (SportsReID, PersonViT/DINOv3) on the 11
+    development matches
+  - match-specific adaptation, only if those plateau
+
+Results are in `runs/smart-reid-shadow/sealed/`. The preview is in
+`sealed_preview_np/`, with the wrong-link sheet and a rendered 2-minute
+overlay under `review_video/`.
+
 ## Data and review
 
 | window | match | detector exposure | fragments mined / accepted | identities | known queries | natural unknowns |
