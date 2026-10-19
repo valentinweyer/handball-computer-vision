@@ -22,6 +22,7 @@ Order, so the matcher can never shape the labels:
     python -m experiments.teammate_reid.stage2 queue       # blind mixed queue + local labelling page
     python -m experiments.teammate_reid.stage2 serve       # the page over Tailscale; labels saved here
     python -m experiments.teammate_reid.stage2 score       # only after the labels are frozen (hashed)
+    python -m experiments.teammate_reid.stage2 recheck --number 51   # blank re-check page for one label value
 """
 from __future__ import annotations
 
@@ -366,7 +367,7 @@ def queue() -> dict:
             "page": str(OUT / "review" / "label.html")}
 
 
-def _page(q: list, refs: dict) -> str:
+def _page(q: list, refs: dict, key: str = "stage2_labels_v1", labels_url: str = "labels") -> str:
     data = json.dumps(q)
     team_refs = json.dumps({m: {str(t): n for t, n in r.items()} for m, r in refs.items()})
     return """<!doctype html><html><head><meta charset="utf-8">
@@ -391,19 +392,19 @@ button.on{background:var(--acc);color:#000}.mut{color:var(--mut)}textarea{width:
 (also before/after) where the number is readable. If the box switches person, choose <i>mixed</i>.
 If you cannot tell, choose <i>unclear</i>. Never guess.</p>
 <div class="bar"><span>Team:</span><div class="teams" id="teams"></div>
-<span>Number:</span><input type="text" id="num" placeholder="e.g. 22" oninput="save()">
+<span>Number:</span><input type="text" id="num" placeholder="e.g. 22" autocomplete="off" inputmode="numeric" oninput="save()">
 <button id="b_mixed" onclick="flag('mixed')">mixed</button><button id="b_unclear" onclick="flag('unclear')">unclear</button>
 <button id="b_np" onclick="flag('not_a_player')">not a player</button></div>
 <div class="bar"><span class="mut">Evidence frames / note (optional):</span></div>
 <textarea id="note" rows="2" oninput="save()"></textarea>
 <img class="sheet" id="sheet"><video id="vid" controls muted loop playsinline></video></div></div>
 <script>
-const Q=__DATA__, REFS=__REFS__, KEY="stage2_labels_v1";
+const Q=__DATA__, REFS=__REFS__, KEY="__KEY__", LABELS_URL="__URL__";
 let L={}; try{L=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 // Served by `stage2 serve`: the server copy is the source of truth, so any device resumes it.
 let SERVED=false, timer=null;
 function setSync(t){document.getElementById("sync").textContent=t}
-function push(){clearTimeout(timer);if(!SERVED)return;timer=setTimeout(()=>fetch("labels",{method:"PUT",
+function push(){clearTimeout(timer);if(!SERVED)return;timer=setTimeout(()=>fetch(LABELS_URL,{method:"PUT",
 headers:{"Content-Type":"application/json"},body:JSON.stringify({labeller:"human",exported_at:new Date().toISOString(),labels:L})})
 .then(r=>{if(!r.ok)throw r.status;setSync("· saved on server")}).catch(e=>setSync("· NOT saved on server ("+e+")")),400)}
 let i=0; try{i=+localStorage.getItem(KEY+"_pos")||0}catch(e){}
@@ -426,14 +427,29 @@ const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.st
 a.download="annotations_human_v1.json";a.click()}
 document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
 if(e.key==="ArrowRight")go(1);if(e.key==="ArrowLeft")go(-1)});
-fetch("labels").then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{SERVED=true;
+fetch(LABELS_URL).then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{SERVED=true;
 if(Object.keys(d.labels||{}).length)L=d.labels;setSync("· saved on server");render()})
 .catch(()=>setSync("· local only: use Download"));render();
-</script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs)
+</script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs).replace("__KEY__", key).replace("__URL__", labels_url)
 
 
 LABELS = OUT / "annotations_human_v1.json"
 FROZEN = OUT / "annotations_human_v1.sha256"   # written when the labels are frozen; edits stop then
+RECHECK = OUT / "annotations_human_v1_recheck.json"
+LABEL_FILES = {"/labels": (LABELS, "queue.json"), "/labels_recheck": (RECHECK, "recheck_queue.json")}
+
+
+def recheck(number: str) -> dict:
+    """A blank page for the frozen v1 labels carrying one number, for a second blind
+    look. v1 stays as it is; the re-check is its own file and is reported beside it."""
+    labels = json.loads(LABELS.read_text())["labels"]
+    q = [x for x in json.loads((OUT / "queue.json").read_text())
+         if labels.get(x["review_id"], {}).get("number", "").strip() == number]
+    q = [{**x, "n": i + 1} for i, x in enumerate(q)]
+    (OUT / "recheck_queue.json").write_text(json.dumps(q, indent=1))
+    refs = {m: {t: f"team_{m}_{t}.jpg" for t in (0, 1)} for m in SPECS}
+    (OUT / "review" / "recheck.html").write_text(_page(q, refs, "stage2_recheck_v1", "labels_recheck"))
+    return {"items": len(q), "page": "recheck.html"}
 
 
 class _LabelHandler(SimpleHTTPRequestHandler):
@@ -456,8 +472,10 @@ class _LabelHandler(SimpleHTTPRequestHandler):
         self.wfile.write(data)
 
     def do_GET(self):
-        if self.path.split("?", 1)[0] == "/labels":
-            return self._json(200, json.loads(LABELS.read_text()) if LABELS.is_file() else {"labels": {}})
+        route = self.path.split("?", 1)[0]
+        if route in LABEL_FILES:
+            path = LABEL_FILES[route][0]
+            return self._json(200, json.loads(path.read_text()) if path.is_file() else {"labels": {}})
         rng = self.headers.get("Range")
         path = Path(self.translate_path(self.path))
         if not rng or not path.is_file():
@@ -484,23 +502,25 @@ class _LabelHandler(SimpleHTTPRequestHandler):
             self.wfile.write(f.read(end - start + 1))
 
     def do_PUT(self):
-        if self.path.split("?", 1)[0] != "/labels":
+        route = self.path.split("?", 1)[0]
+        if route not in LABEL_FILES:
             return self.send_error(405)
-        if FROZEN.is_file():
+        target, queue_file = LABEL_FILES[route]
+        if target.with_suffix(".sha256").is_file():
             return self._json(409, {"error": "labels are frozen"})
         n = int(self.headers.get("Content-Length") or 0)
         if not 0 < n <= 2_000_000:
             return self._json(413, {"error": "bad size"})
         try:
             body = json.loads(self.rfile.read(n))
-            known = {q["review_id"] for q in json.loads((OUT / "queue.json").read_text())}
+            known = {q["review_id"] for q in json.loads((OUT / queue_file).read_text())}
             assert isinstance(body, dict) and isinstance(body.get("labels"), dict)
             assert set(body["labels"]) <= known and all(isinstance(v, dict) for v in body["labels"].values())
         except (ValueError, AssertionError):
             return self._json(400, {"error": "not a labels file for this queue"})
-        tmp = LABELS.with_suffix(".tmp")
+        tmp = target.with_suffix(".tmp")
         tmp.write_text(json.dumps(body, indent=1))
-        os.replace(tmp, LABELS)
+        os.replace(tmp, target)
         return self._json(200, {"saved": len(body["labels"])})
 
 
@@ -614,7 +634,8 @@ def score() -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score"))
+    parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score", "recheck"))
+    parser.add_argument("--number", help="recheck: the label value to look at again")
     parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
@@ -626,6 +647,8 @@ def main() -> None:
         review()
     elif args.command == "propose":
         print(json.dumps(propose(), indent=1))
+    elif args.command == "recheck":
+        print(json.dumps(recheck(args.number), indent=1))
     elif args.command == "score":
         r = score()
         print(json.dumps({k: v for k, v in r.items() if k != "items"}, indent=1, default=float))
