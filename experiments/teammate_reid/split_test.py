@@ -69,7 +69,7 @@ def select() -> dict:
         "ranking": [{"candidate": list(c), "folds_passed": sc[0], "coverage": sc[1], "unknown_fmr": -sc[2]}
                     for sc, c in ranked],
     }
-    LOCK.write_text(json.dumps(locked, indent=2))
+    LOCK.write_text(json.dumps(locked, indent=2, default=float))
     return locked
 
 
