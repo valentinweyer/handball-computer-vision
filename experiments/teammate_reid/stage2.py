@@ -21,6 +21,7 @@ Order, so the matcher can never shape the labels:
     python -m experiments.teammate_reid.stage2 propose     # sealed: proposals never enter the queue or page
     python -m experiments.teammate_reid.stage2 queue       # blind mixed queue + local labelling page
     python -m experiments.teammate_reid.stage2 serve       # the page over Tailscale; labels saved here
+    python -m experiments.teammate_reid.stage2 score       # only after the labels are frozen (hashed)
 """
 from __future__ import annotations
 
@@ -513,9 +514,107 @@ def serve(host: str | None, port: int) -> None:
     server.serve_forever()
 
 
+def _identity(match: str, team, number: str, gallery_ids: set) -> tuple:
+    """A human label as (team, number). A missing team is filled only when the number
+    belongs to exactly one team among the match's vouched identities (recorded)."""
+    number = number.strip().lstrip("0") or "0"
+    if team is not None:
+        return (int(team), number), False
+    teams = {t for t, n in gallery_ids if n == number}
+    return ((teams.pop(), number), True) if len(teams) == 1 else (None, False)
+
+
+def score() -> dict:
+    """Unseal: compare the frozen human labels with the sealed proposals.
+
+    Accepted segment -> correct (same team and number), wrong (a different named
+    player, or not a player), or unscored (mixed / unclear / unnamed). Not-accepted
+    segments (random sample) -> human-identifiable or not, and whether that player had a
+    vouched gallery before the segment (else no proposal could have been correct).
+    Nothing is re-tuned: the gate is the split-v1 lock.
+    """
+    labels_path = OUT / "annotations_human_v1.json"
+    frozen = FROZEN.read_text().split()[0]
+    if sha256(labels_path) != frozen:
+        raise SystemExit("labels changed after freezing")
+    labels = json.loads(labels_path.read_text())["labels"]
+    proposals = {r["review_id"]: r for r in json.loads((OUT / "proposals_SEALED.json").read_text())["rows"]}
+    membership = json.loads((OUT / "queue_membership_SEALED.json").read_text())
+    pop = json.loads((OUT / "population.json").read_text())["population"]
+
+    def parse(identity: str) -> tuple:
+        return int(identity.split("|team")[1].split("|")[0]), identity.split("#")[-1]
+
+    gallery = {m: set() for m in SPECS}
+    for r in proposals.values():
+        for _, ident in r["top3"]:
+            gallery[r["match"]].add(parse(ident))
+        for ident in r["vetoed"]:
+            gallery[r["match"]].add(parse(ident))
+    items = []
+    for rid in membership["accepted"] + membership["random_sample"]:
+        lab, prop = labels.get(rid, {}), proposals[rid]
+        truth, inferred = (None, False)
+        if not lab.get("flag") and lab.get("number"):
+            truth, inferred = _identity(prop["match"], lab.get("team"), lab["number"], gallery[prop["match"]])
+        candidates = {parse(i) for _, i in prop["top3"]} | {parse(i) for i in prop["vetoed"]}
+        named = parse(prop["proposal"]) if prop["proposal"] else None
+        best = parse(prop["best"]) if prop["best"] else None
+        if named is None:
+            outcome = "abstained"
+        elif lab.get("flag") == "not_a_player":
+            outcome = "wrong"
+        elif truth is None:
+            outcome = "unscored"
+        else:
+            outcome = "correct" if named == truth else "wrong"
+        items.append({"review_id": rid, "match": prop["match"], "duration_s": prop["duration_s"],
+                      "group": "accepted" if rid in membership["accepted"] else "random",
+                      "label": lab, "truth": truth, "team_inferred": inferred, "proposal": named,
+                      "best": best, "decision": prop["decision"], "score": prop["score"],
+                      "margin": prop["margin"], "outcome": outcome,
+                      "truth_in_candidates": truth in candidates if truth else None,
+                      "truth_vetoed": next((v for i, v in prop["vetoed"].items() if truth and parse(i) == truth), None),
+                      "best_is_truth": (best == truth) if truth and best else None, "top3": prop["top3"]})
+
+    def tally(rows: list) -> dict:
+        out = {}
+        for k in ("correct", "wrong", "unscored", "abstained"):
+            sel = [r for r in rows if r["outcome"] == k]
+            out[k] = {"segments": len(sel), "seconds": round(sum(r["duration_s"] for r in sel), 1)}
+        return out
+
+    acc = [r for r in items if r["group"] == "accepted"]
+    rnd = [r for r in items if r["group"] == "random"]
+    c, w = (sum(r["outcome"] == k for r in acc) for k in ("correct", "wrong"))
+    total_s = sum(s["duration_s"] for s in pop)
+    rest_s = sum(s["duration_s"] for s in pop if s["review_id"] not in set(membership["accepted"]))
+    named_rnd = [r for r in rnd if r["truth"]]
+    report = {
+        "labels_sha256": frozen, "proposals_sha256": sha256(OUT / "proposals_SEALED.json"),
+        "population": {"segments": len(pop), "seconds": round(total_s, 1)},
+        "accepted": {"by_outcome": tally(acc), "precision_scored": c / max(1, c + w), "n_scored": c + w,
+                     "per_match": {m: tally([r for r in acc if r["match"] == m]) for m in SPECS}},
+        "coverage": {"correct_segments_of_population": c / len(pop),
+                     "correct_seconds_of_population": sum(r["duration_s"] for r in acc if r["outcome"] == "correct") / total_s},
+        "random_sample": {
+            "n": len(rnd), "drawn_from_seconds": round(rest_s, 1),
+            "human_named": len(named_rnd),
+            "flags": dict(Counter(r["label"].get("flag") or ("named" if r["truth"] else "unnamed") for r in rnd)),
+            "truth_had_gallery": sum(bool(r["truth_in_candidates"]) for r in named_rnd),
+            "truth_vetoed": sum(bool(r["truth_vetoed"]) for r in named_rnd),
+            "best_guess_was_truth": sum(bool(r["best_is_truth"]) for r in named_rnd),
+            "decisions": dict(Counter(r["decision"] for r in rnd)),
+        },
+        "items": items,
+    }
+    (OUT / "score.json").write_text(json.dumps(report, indent=1, default=float))
+    return report
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve"))
+    parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score"))
     parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
@@ -527,6 +626,9 @@ def main() -> None:
         review()
     elif args.command == "propose":
         print(json.dumps(propose(), indent=1))
+    elif args.command == "score":
+        r = score()
+        print(json.dumps({k: v for k, v in r.items() if k != "items"}, indent=1, default=float))
     else:
         print(json.dumps(queue(), indent=1))
 
