@@ -2,14 +2,16 @@
 from __future__ import annotations
 
 from collections import OrderedDict
+from collections.abc import Iterable, Iterator
 from pathlib import Path
+import queue
 import shutil
 import threading
 
 import cv2
 import numpy as np
 
-__all__ = ["VideoFrames", "ffmpeg_exe"]
+__all__ = ["VideoFrames", "ffmpeg_exe", "prefetch"]
 
 
 def ffmpeg_exe() -> str:
@@ -23,6 +25,35 @@ def ffmpeg_exe() -> str:
         return found
     import imageio_ffmpeg
     return imageio_ffmpeg.get_ffmpeg_exe()
+
+
+def prefetch(items: Iterable, depth: int = 8) -> Iterator:
+    """`items`, produced on a background thread up to `depth` ahead of the consumer.
+
+    For decoding while the caller draws: OpenCV releases the GIL while it
+    decodes, so the two overlap. An exception in `items` is raised at the
+    consumer, at the point in the sequence where it happened.
+    """
+    ready: queue.Queue = queue.Queue(depth)
+    done = object()
+
+    def produce():
+        try:
+            for item in items:
+                ready.put((item, None))
+        except BaseException as error:  # handed to the consumer, not swallowed
+            ready.put((done, error))
+            return
+        ready.put((done, None))
+
+    threading.Thread(target=produce, name="prefetch", daemon=True).start()
+    while True:
+        item, error = ready.get()
+        if item is done:
+            if error is not None:
+                raise error
+            return
+        yield item
 
 
 class VideoFrames:

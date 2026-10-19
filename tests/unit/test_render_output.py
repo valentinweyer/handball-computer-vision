@@ -89,3 +89,13 @@ def test_court_fits_come_back_from_the_table():
     assert not back[0].usable and back[0].age == 3
     assert np.allclose(back[1].homography, h) and back[1].inliers == 9
     assert back[1].to_court(np.array([[9.0, 11.0]])) == pytest.approx(np.array([[2.0, 2.0]]))
+
+
+def test_writer_reports_a_dead_encoder_instead_of_hanging(tmp_path):
+    """Frames go to ffmpeg from a thread; its failure must still reach the caller."""
+    writer = FfmpegWriter(tmp_path / "out.mp4", 64, 48, 25)
+    writer._process.kill()
+    with pytest.raises(RuntimeError, match="ffmpeg failed"):
+        for _ in range(200):  # more than the queue holds: a lost error would block here
+            writer.write(np.zeros((48, 64, 3), dtype=np.uint8))
+        writer.close()

@@ -25,13 +25,15 @@ from tqdm import tqdm
 from handball_cv.court.homography import CourtFit
 from handball_cv.pipeline.result import load
 from handball_cv.tracking.geometry_cache import GeometryCache
+from handball_cv.video import prefetch
 from handball_cv.visualization.court_minimap import CourtMinimap
+from handball_cv.visualization.labels import LabelDrawer
 from handball_cv.visualization.minimap_positions import smooth_minimap_positions
 from handball_cv.visualization.palette import PALETTE_HEX, color_index_for
-from handball_cv.visualization.video_writer import FfmpegWriter
-from scripts.render_full_pipeline import (
+from handball_cv.visualization.overlay import (
     DEFAULT_FONT, annotate_frame, draw_legend, load_roster, number_label,
 )
+from handball_cv.visualization.video_writer import FfmpegWriter
 
 
 def court_fits(court) -> list:
@@ -96,17 +98,15 @@ def main() -> None:
     roster = load_roster(args.roster)
 
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    label_annotator = sv.RichLabelAnnotator(
-        font_path=str(args.font), font_size=round(34 * max(width / 1920.0, 1.0)),
-        color=palette, text_color=sv.Color.WHITE, text_position=sv.Position.BOTTOM_CENTER,
-        text_offset=(0, 10), color_lookup=sv.ColorLookup.INDEX,
-    )
+    label_drawer = LabelDrawer(args.font, palette, width)
     minimap = None if args.no_minimap or not fits else CourtMinimap(
         round(width * 0.27), [palette.by_idx(i).as_bgr() for i in range(len(PALETTE_HEX))])
 
     with FfmpegWriter(output, width, height, fps) as writer:
-        for frame in tqdm(range(first, last), desc=f"render {args.bundle.name}"):
-            frame_bgr = cv2.cvtColor(result.frame(frame), cv2.COLOR_RGB2BGR)
+        decoded = prefetch(cv2.cvtColor(result.frame(frame), cv2.COLOR_RGB2BGR)
+                           for frame in range(first, last))
+        for frame, frame_bgr in tqdm(zip(range(first, last), decoded), total=last - first,
+                                     desc=f"render {args.bundle.name}"):
             rows = by_frame.get(frame)
             players = []
             if rows is not None:
@@ -118,8 +118,7 @@ def main() -> None:
                 crops = [masks.row_crop(row) for row in rows.mask_row]
                 frame_bgr = annotate_frame(
                     frame_bgr, rows[["x1", "y1", "x2", "y2"]].to_numpy(dtype=float),
-                    rows.player_id.to_numpy(), colors, crops, labels,
-                    palette, label_annotator,
+                    colors, crops, labels, palette, label_drawer,
                 )
                 players = list(zip(rows.minimap_x, rows.minimap_y, colors, numbers))
             draw_legend(frame_bgr, palette)

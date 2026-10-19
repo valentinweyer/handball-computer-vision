@@ -11,8 +11,9 @@ result can be reviewed as a whole rather than one component at a time:
         -> notebook-style overlay (team-colored mask + rich number label)
 
 The overlay deliberately matches the original notebook's final "Player
-recognition" cell (cell 96): an `sv.MaskAnnotator` tinted by team plus an
-`sv.RichLabelAnnotator` drawing the jersey number under each player.
+recognition" cell (cell 96): masks tinted by team as `sv.MaskAnnotator` drew them,
+plus the jersey number under each player as `sv.RichLabelAnnotator` drew it
+(`tint_masks` and `LabelDrawer` now draw both, pixel for pixel the same).
 
 Number votes are keyed on `player_id`, not on the tracker's own id. That is the
 whole reason `IdentityManager` exists: when McByte fragments a track and re-ID
@@ -54,12 +55,15 @@ from handball_cv.jersey.identity import (
     read_numbers,
 )
 from handball_cv.teams.model import TeamModel, crop_quality
-from handball_cv.tracking.geometry_cache import GeometryCache, MaskCrop, crop_mask
+from handball_cv.tracking.geometry_cache import GeometryCache
 from handball_cv.tracking.sam2_driver import ensure_frame_cache
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
-from handball_cv.visualization.mask_overlay import tint_masks
+from handball_cv.visualization.labels import LabelDrawer
+from handball_cv.visualization.overlay import (
+    DEFAULT_FONT, annotate_frame, draw_legend, load_roster, number_label,
+)
 from handball_cv.visualization.palette import (
-    LEGEND, PALETTE_HEX, TEAM_A, TEAM_B, color_index,
+    PALETTE_HEX, color_index,
 )
 from scripts.render_raw_team_classification import (
     number_detections,
@@ -72,8 +76,6 @@ ROOT = Path(__file__).resolve().parents[1]
 PLAYER_MODEL_ID = "player-and-handball-detection-3z9xf/3"
 GOALKEEPER_CLASS_ID = 1
 
-DEFAULT_FONT = ROOT / "notebooks" / "fonts" / "ConcertOne-Regular.ttf"
-MASK_OPACITY = 0.5
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -197,29 +199,6 @@ def build_parser() -> argparse.ArgumentParser:
 
 def parse_args(argv=None) -> argparse.Namespace:
     return build_parser().parse_args(argv)
-
-
-def load_roster(path: Path | None) -> dict:
-    """-> {team_index_or_None: {number: name}}. Empty dict when unavailable."""
-    if path is None:
-        return {}
-    data = json.loads(Path(path).read_text())
-    if all(isinstance(v, dict) for v in data.values()):
-        by_team = {"A": TEAM_A, "B": TEAM_B, "0": TEAM_A, "1": TEAM_B}
-        return {
-            by_team.get(str(key).upper(), None): {str(n): v for n, v in value.items()}
-            for key, value in data.items()
-        }
-    return {None: {str(k): v for k, v in data.items()}}
-
-
-def roster_name(roster: dict, team_index: int, number: str) -> str | None:
-    if not roster:
-        return None
-    for key in (team_index, None):
-        if key in roster and number in roster[key]:
-            return roster[key][number]
-    return None
 
 
 # The notebook calls load_dotenv() from notebooks/, so the key has historically
@@ -351,23 +330,6 @@ def readable_number_crop(frame_rgb: np.ndarray, box: np.ndarray) -> bool:
     return crop_quality(frame_rgb[y1:y2, x1:x2]).accepted
 
 
-def draw_legend(frame: np.ndarray, palette: sv.ColorPalette) -> None:
-    height, width = frame.shape[:2]
-    scale = max(width / 1920.0, 1.0)
-    x, y = round(18 * scale), height - round(18 * scale)
-    chip = round(14 * scale)
-    for index, label in reversed(LEGEND):
-        color = palette.by_idx(index).as_bgr()
-        cv2.rectangle(frame, (x, y - chip), (x + chip, y), color, -1)
-        cv2.rectangle(frame, (x, y - chip), (x + chip, y), (20, 20, 20), 1)
-        cv2.putText(
-            frame, label, (x + chip + round(6 * scale), y - round(2 * scale)),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.5 * scale, (255, 255, 255),
-            max(1, round(scale)), cv2.LINE_AA,
-        )
-        y -= chip + round(10 * scale)
-
-
 def voted_labels(player_ids, color_lookup, voter, roster: dict, canonical=None) -> list:
     """`#number name` per player from a live voter, or `P<id>` where it abstains."""
     resolve = canonical or int
@@ -380,57 +342,6 @@ def voted_labels(player_ids, color_lookup, voter, roster: dict, canonical=None) 
         number, _votes, _margin = voter.best(player_id)
         labels.append(number_label(number, int(color), roster, player_id))
     return labels
-
-
-def number_label(number, color: int, roster: dict, player_id: int) -> str:
-    """The one place a drawn label is spelled, shared by both drawing passes."""
-    if number is None:
-        return f"P{player_id}"
-    name = roster_name(roster, color, number)
-    return f"#{number} {name}" if name else f"#{number}"
-
-
-def annotate_frame(
-    frame_bgr: np.ndarray,
-    boxes_xyxy: np.ndarray,
-    player_ids,
-    color_lookup,
-    masks,
-    labels: list,
-    palette: sv.ColorPalette,
-    label_annotator,
-) -> np.ndarray:
-    """Team-tinted mask fill plus one already-decided label per player.
-
-    Shared by all three drawing paths -- McByte, SAM2, and the redraw -- so it
-    takes the palette index directly rather than a PlayerRecord, and the label
-    text rather than a voter. Deciding what to draw is the caller's job; this
-    only draws it, which is what lets the redraw pass reuse it with verdicts
-    replayed from a cache and no live tracker state at all.
-
-    `masks` holds one entry per player: a `MaskCrop` (what the geometry cache
-    stores, and the cheap form to draw), a full-frame boolean mask (SAM2's
-    `(N, H, W)` stack, McByte's mask manager), or None where McByte's mask
-    manager has no mask for that tracklet this frame.
-    """
-    annotated = frame_bgr.copy()
-    if not len(boxes_xyxy):
-        return annotated
-
-    lookup = np.asarray(color_lookup, dtype=int)
-    crops = [mask if mask is None or isinstance(mask, MaskCrop) else crop_mask(mask)
-             for mask in masks]
-    tint_masks(annotated, crops, [palette.by_idx(int(c)).as_bgr() for c in lookup],
-               opacity=MASK_OPACITY)
-    drawn = sv.Detections(
-        xyxy=np.asarray(boxes_xyxy, dtype=float).copy(),
-        class_id=lookup.copy(),
-        tracker_id=np.asarray(player_ids, dtype=int),
-    )
-    return label_annotator.annotate(
-        scene=annotated, detections=drawn, labels=labels,
-        custom_color_lookup=lookup,
-    )
 
 
 class NumberIdentityResolver:
@@ -656,15 +567,7 @@ def render(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    label_annotator = sv.RichLabelAnnotator(
-        font_path=str(args.font),
-        font_size=round(34 * max(info.width / 1920.0, 1.0)),
-        color=palette,
-        text_color=sv.Color.WHITE,
-        text_position=sv.Position.BOTTOM_CENTER,
-        text_offset=(0, 10),
-        color_lookup=sv.ColorLookup.INDEX,
-    )
+    label_drawer = LabelDrawer(args.font, palette, info.width)
 
     if enable_masks and GlobalHydra.instance().is_initialized():
         GlobalHydra.instance().clear()
@@ -783,10 +686,10 @@ def render(args: argparse.Namespace) -> dict:
             resolver.resolve(frame_index)
         color_lookup = [color_index(player) for player in players]
         annotated = annotate_frame(
-            frame_bgr, tracked.xyxy, player_ids, color_lookup, masks,
+            frame_bgr, tracked.xyxy, color_lookup, masks,
             voted_labels(player_ids, color_lookup, voter, roster,
                          canonical=identity.registry.canonical),
-            palette, label_annotator,
+            palette, label_drawer,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -865,15 +768,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    label_annotator = sv.RichLabelAnnotator(
-        font_path=str(args.font),
-        font_size=round(34 * max(info.width / 1920.0, 1.0)),
-        color=palette,
-        text_color=sv.Color.WHITE,
-        text_position=sv.Position.BOTTOM_CENTER,
-        text_offset=(0, 10),
-        color_lookup=sv.ColorLookup.INDEX,
-    )
+    label_drawer = LabelDrawer(args.font, palette, info.width)
 
     writer = None
     if not args.no_video:
@@ -938,8 +833,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
         if writer is None:
             return
         annotated = annotate_frame(
-            frame_bgr, boxes, player_ids, color_lookup, masks, labels,
-            palette, label_annotator,
+            frame_bgr, boxes, color_lookup, masks, labels,
+            palette, label_drawer,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
@@ -1170,15 +1065,7 @@ def redraw(args: argparse.Namespace) -> dict:
     if not args.font.is_file():
         raise FileNotFoundError(f"font not found: {args.font}")
     palette = sv.ColorPalette.from_hex(PALETTE_HEX)
-    label_annotator = sv.RichLabelAnnotator(
-        font_path=str(args.font),
-        font_size=round(34 * max(info.width / 1920.0, 1.0)),
-        color=palette,
-        text_color=sv.Color.WHITE,
-        text_position=sv.Position.BOTTOM_CENTER,
-        text_offset=(0, 10),
-        color_lookup=sv.ColorLookup.INDEX,
-    )
+    label_drawer = LabelDrawer(args.font, palette, info.width)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     writer = cv2.VideoWriter(
         str(args.output), cv2.VideoWriter_fourcc(*"mp4v"), info.fps,
@@ -1214,8 +1101,8 @@ def redraw(args: argparse.Namespace) -> dict:
         )
         labelled += sum(1 for label in labels if label.startswith("#"))
         annotated = annotate_frame(
-            frame_bgr, boxes, player_ids, color_index,
-            crops, labels, palette, label_annotator,
+            frame_bgr, boxes, color_index,
+            crops, labels, palette, label_drawer,
         )
         draw_legend(annotated, palette)
         writer.write(annotated)
