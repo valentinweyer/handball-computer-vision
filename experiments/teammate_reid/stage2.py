@@ -20,12 +20,17 @@ Order, so the matcher can never shape the labels:
     python -m experiments.teammate_reid.stage2 review
     python -m experiments.teammate_reid.stage2 propose     # sealed: proposals never enter the queue or page
     python -m experiments.teammate_reid.stage2 queue       # blind mixed queue + local labelling page
+    python -m experiments.teammate_reid.stage2 serve       # the page over Tailscale; labels saved here
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import os
+import re
+import subprocess
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from collections import Counter
 from pathlib import Path
 
@@ -363,7 +368,8 @@ def queue() -> dict:
 def _page(q: list, refs: dict) -> str:
     data = json.dumps(q)
     team_refs = json.dumps({m: {str(t): n for t, n in r.items()} for m, r in refs.items()})
-    return """<!doctype html><html><head><meta charset="utf-8"><title>Stage 2 labelling</title>
+    return """<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1"><title>Stage 2 labelling</title>
 <style>
 :root{--bg:#16181c;--fg:#e8e8e8;--mut:#9aa0a6;--acc:#ffd400;--card:#1f2227}
 body{background:var(--bg);color:var(--fg);font:15px system-ui,sans-serif;margin:0;padding:16px}
@@ -378,7 +384,7 @@ button.on{background:var(--acc);color:#000}.mut{color:var(--mut)}textarea{width:
 </style></head><body><div class="wrap">
 <div class="bar"><b id="pos"></b><span class="mut" id="meta"></span>
 <button onclick="go(-1)">&larr; prev</button><button onclick="go(1)">next &rarr;</button>
-<span class="mut" id="done"></span><button onclick="exportJson()">Download labels JSON</button></div>
+<span class="mut" id="done"></span><span class="mut" id="sync"></span><button onclick="exportJson()">Download labels JSON</button></div>
 <div class="card">
 <p class="mut">Who is the player in the <b style="color:var(--acc)">yellow box</b> for the whole segment? Use any frame
 (also before/after) where the number is readable. If the box switches person, choose <i>mixed</i>.
@@ -389,10 +395,16 @@ If you cannot tell, choose <i>unclear</i>. Never guess.</p>
 <button id="b_np" onclick="flag('not_a_player')">not a player</button></div>
 <div class="bar"><span class="mut">Evidence frames / note (optional):</span></div>
 <textarea id="note" rows="2" oninput="save()"></textarea>
-<img class="sheet" id="sheet"><video id="vid" controls muted loop></video></div></div>
+<img class="sheet" id="sheet"><video id="vid" controls muted loop playsinline></video></div></div>
 <script>
 const Q=__DATA__, REFS=__REFS__, KEY="stage2_labels_v1";
 let L={}; try{L=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
+// Served by `stage2 serve`: the server copy is the source of truth, so any device resumes it.
+let SERVED=false, timer=null;
+function setSync(t){document.getElementById("sync").textContent=t}
+function push(){clearTimeout(timer);if(!SERVED)return;timer=setTimeout(()=>fetch("labels",{method:"PUT",
+headers:{"Content-Type":"application/json"},body:JSON.stringify({labeller:"human",exported_at:new Date().toISOString(),labels:L})})
+.then(r=>{if(!r.ok)throw r.status;setSync("· saved on server")}).catch(e=>setSync("· NOT saved on server ("+e+")")),400)}
 let i=0; try{i=+localStorage.getItem(KEY+"_pos")||0}catch(e){}
 function cur(){const q=Q[i];return L[q.review_id]||(L[q.review_id]={team:null,number:"",flag:null,note:""})}
 function render(){const q=Q[i],l=cur();document.getElementById("pos").textContent=`#${q.n} / ${Q.length}  (${q.review_id})`;
@@ -405,21 +417,110 @@ document.getElementById("num").value=l.number;document.getElementById("note").va
 for(const [id,fl] of [["b_mixed","mixed"],["b_unclear","unclear"],["b_np","not_a_player"]])document.getElementById(id).className=l.flag===fl?"on":"";
 const n=Object.values(L).filter(x=>x.flag||(x.team!==null&&x.number)).length;document.getElementById("done").textContent=`${n} labelled`}
 function save(){const l=cur();l.number=document.getElementById("num").value.trim();l.note=document.getElementById("note").value;
-try{localStorage.setItem(KEY,JSON.stringify(L));localStorage.setItem(KEY+"_pos",i)}catch(e){}render()}
+try{localStorage.setItem(KEY,JSON.stringify(L));localStorage.setItem(KEY+"_pos",i)}catch(e){}push();render()}
 function flag(f){const l=cur();l.flag=l.flag===f?null:f;save()}
 function go(d){i=Math.max(0,Math.min(Q.length-1,i+d));save()}
 function exportJson(){const out={labeller:"human",exported_at:new Date().toISOString(),labels:L};
 const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(out,null,1)],{type:"application/json"}));
 a.download="annotations_human_v1.json";a.click()}
 document.addEventListener("keydown",e=>{if(e.target.tagName==="INPUT"||e.target.tagName==="TEXTAREA")return;
-if(e.key==="ArrowRight")go(1);if(e.key==="ArrowLeft")go(-1)});render();
+if(e.key==="ArrowRight")go(1);if(e.key==="ArrowLeft")go(-1)});
+fetch("labels").then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{SERVED=true;
+if(Object.keys(d.labels||{}).length)L=d.labels;setSync("· saved on server");render()})
+.catch(()=>setSync("· local only: use Download"));render();
 </script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs)
+
+
+LABELS = OUT / "annotations_human_v1.json"
+FROZEN = OUT / "annotations_human_v1.sha256"   # written when the labels are frozen; edits stop then
+
+
+class _LabelHandler(SimpleHTTPRequestHandler):
+    """The review folder read-only (with byte ranges, which Safari needs for video),
+    plus `GET/PUT /labels` for the one labels file. Nothing else is writable."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, directory=str(OUT / "review"), **kwargs)
+
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    def _json(self, code: int, body: dict) -> None:
+        data = json.dumps(body).encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+    def do_GET(self):
+        if self.path.split("?", 1)[0] == "/labels":
+            return self._json(200, json.loads(LABELS.read_text()) if LABELS.is_file() else {"labels": {}})
+        rng = self.headers.get("Range")
+        path = Path(self.translate_path(self.path))
+        if not rng or not path.is_file():
+            return super().do_GET()
+        m = re.fullmatch(r"bytes=(\d*)-(\d*)", rng.strip())
+        size = path.stat().st_size
+        if not m or not any(m.groups()):
+            return self.send_error(416)
+        first, last = m.groups()
+        start, end = (int(first), min(int(last), size - 1) if last else size - 1) if first \
+            else (max(0, size - int(last)), size - 1)
+        if start >= size or start > end:
+            self.send_response(416)
+            self.send_header("Content-Range", f"bytes */{size}")
+            return self.end_headers()
+        self.send_response(206)
+        self.send_header("Content-Type", self.guess_type(str(path)))
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.send_header("Content-Length", str(end - start + 1))
+        self.end_headers()
+        with path.open("rb") as f:
+            f.seek(start)
+            self.wfile.write(f.read(end - start + 1))
+
+    def do_PUT(self):
+        if self.path.split("?", 1)[0] != "/labels":
+            return self.send_error(405)
+        if FROZEN.is_file():
+            return self._json(409, {"error": "labels are frozen"})
+        n = int(self.headers.get("Content-Length") or 0)
+        if not 0 < n <= 2_000_000:
+            return self._json(413, {"error": "bad size"})
+        try:
+            body = json.loads(self.rfile.read(n))
+            known = {q["review_id"] for q in json.loads((OUT / "queue.json").read_text())}
+            assert isinstance(body, dict) and isinstance(body.get("labels"), dict)
+            assert set(body["labels"]) <= known and all(isinstance(v, dict) for v in body["labels"].values())
+        except (ValueError, AssertionError):
+            return self._json(400, {"error": "not a labels file for this queue"})
+        tmp = LABELS.with_suffix(".tmp")
+        tmp.write_text(json.dumps(body, indent=1))
+        os.replace(tmp, LABELS)
+        return self._json(200, {"saved": len(body["labels"])})
+
+
+def serve(host: str | None, port: int) -> None:
+    """Serve the labelling page; default host is this machine's Tailscale IPv4, so the
+    page is reachable from the tailnet only."""
+    host = host or subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True,
+                                  check=True).stdout.split()[0]
+    server = ThreadingHTTPServer((host, port), _LabelHandler)
+    print(f"http://{host}:{port}/label.html  (labels -> {LABELS})", flush=True)
+    server.serve_forever()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("command", choices=("population", "review", "propose", "queue"))
+    parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve"))
+    parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
+    parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
+    if args.command == "serve":
+        return serve(args.host, args.port)
     if args.command == "population":
         print(json.dumps(population()["summary"], indent=1))
     elif args.command == "review":
