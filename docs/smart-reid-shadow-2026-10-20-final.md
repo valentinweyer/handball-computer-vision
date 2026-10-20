@@ -87,15 +87,69 @@ The row bound, 0.974, treats the 113 names as independent. The identity bound,
 0.861, is the conservative reading, because names of the same player are
 correlated.
 
+## Stage 2 on the final bank: names on baseline-unresolved segments
+
+The test above asks whether the names are right on segments where the player's
+back, and so the number, was visible. Stage 2 asks the question that matters in
+production: when the matcher names a segment that the production pipeline left
+unnamed, is the name right? It uses the same protocol as the first Stage 2, run
+as `stage2 --bank final` with the split-v2 rule.
+
+- **Population.** These are segments where the production bundle shows a number
+  on fewer than half the rows, with at least 3 clean crops: 663 segments,
+  10,803 s of player-time. Another 368 segments are too short or crop-poor to
+  judge and are listed separately.
+- **Proposals.** The matcher's proposals were sealed before any labelling
+  (sha256 `26f66da8…`). It named 52 segments; 487 fell below the gate, 75 had a
+  single candidate, 47 had none, and the half-split guard stopped 2.
+- **Labelling.** The user labelled a blind queue of 92 segments: the 52 named
+  segments plus 40 random others, shuffled, with only the target box drawn.
+  Each review clip carries a follow panel cut from the source frame. The labels
+  were frozen (sha256 `c7206e19…`) before scoring.
+
+| | correct | wrong | unscored | precision | exact 95% interval |
+| --- | ---: | ---: | ---: | ---: | --- |
+| **blind labels (v1, headline)** | 45 | 3 | 4 | **0.938** | 0.828–0.987 |
+| + user adjudication of the 3 errors (v3, **not blind**) | 47 | 1 | 4 | 0.979 | 0.889–0.999 |
+
+The adjudication was made after unsealing, on full-resolution close-ups
+(`annotations_human_v1_adjudication.json`, sha256 `78f2dda6…`):
+
+- **Saarlouis S449:** the matcher said #29 and the blind label was #23. It is
+  #29, misread at 720p.
+- **Bielefeld S278:** the matcher said #97. The blind label was "not a player",
+  noted as "timeout", meaning not in play. It is #97 walking off during a
+  timeout.
+- **Balingen II S158:** the matcher said #10. It is **#7**, a genuine
+  teammate confusion, and it stays wrong.
+
+Per match on the blind labels:
+
+| match | correct | wrong |
+| --- | ---: | ---: |
+| Würzburg | 17 | 0 |
+| Bielefeld | 16 | 1 |
+| Balingen II | 8 | 1 |
+| Saarlouis | 4 | 1 |
+
+- **Coverage.** The matcher names 7% of the unresolved segments correctly (45 of
+  663), which is 5% of their seconds (586 s). This is close to the first Stage 2
+  (11% / 9%).
+- **Headroom.** In the random sample, the user could name 28 of 40 segments. For
+  19 of those the right player had a gallery, and in 14 the matcher's top guess
+  was that player but fell below the gate. The co-presence and number vetoes
+  removed the true player twice.
+- **Criterion.** The blind point estimate, 0.938, is just under the 0.95
+  precision bound, and both intervals straddle it. Only the adjudicated figure is
+  above it, and that figure is not blind.
+
 ## Caveats (they limit the claim)
 
 - **Queries are number-vouched fragments**, the case where the player's back is
   visible. The labels come from each fragment's own OCR reads. Mixed fragments
   were removed by assistant review, not by a human.
-- **This does not measure gain on unresolved segments.** Baseline-unresolved
-  segments are harder. Stage 2 measured them on Kiel, Eisenach and Gummersbach:
-  34/34 with the user's adjudication (v3), at about 11% segment coverage.
-  Stage 2 has not been run on these matches.
+- **The test above does not measure gain on unresolved segments.** That is the
+  Stage 2 section on this bank.
 - **Unknowns are mostly synthetic.** 219 of the 229 unknowns are synthetic,
   made by removing the player's gallery; only 10 are natural unknowns. A real
   unseen player, for example a substitute coming on, is represented by just
