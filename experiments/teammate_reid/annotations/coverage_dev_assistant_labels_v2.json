@@ -1,0 +1,168 @@
+{
+ "labeller": "assistant (Claude), blind full-resolution strips (12 frames), not a human label",
+ "labels": {
+  "R000": {
+   "team": 1,
+   "number": "77",
+   "note": "Loewen yellow"
+  },
+  "R001": {
+   "team": 0,
+   "number": "77"
+  },
+  "R002": {
+   "team": 0,
+   "number": "7",
+   "note": "first frames only, then motion blur"
+  },
+  "R003": {
+   "team": 1,
+   "number": null
+  },
+  "R004": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 9"
+  },
+  "R005": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "first frame another player in front"
+  },
+  "R006": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "team huddle, #37 and others in the box"
+  },
+  "R007": {
+   "team": 0,
+   "number": "17",
+   "note": "near the bench, steps onto court; last frames bench people"
+  },
+  "R008": {
+   "team": 1,
+   "number": "33"
+  },
+  "R009": {
+   "team": 0,
+   "number": "7"
+  },
+  "R010": {
+   "team": 1,
+   "number": "8"
+  },
+  "R011": {
+   "team": 0,
+   "number": "99",
+   "note": "moderately clear on shorts"
+  },
+  "R012": {
+   "team": 1,
+   "number": null
+  },
+  "R013": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#4 mostly, last frame #23"
+  },
+  "R014": {
+   "team": 1,
+   "number": "33"
+  },
+  "R015": {
+   "team": 0,
+   "number": "52"
+  },
+  "R016": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#55 early, #99 and others in scrum later"
+  },
+  "R017": {
+   "team": 0,
+   "number": null,
+   "note": "crowded scrum early"
+  },
+  "R018": {
+   "team": null,
+   "number": null,
+   "flag": "not_a_player",
+   "note": "referee in black most of the segment, then a player"
+  },
+  "R019": {
+   "team": 0,
+   "number": "10"
+  },
+  "R020": {
+   "team": 0,
+   "number": "99"
+  },
+  "R021": {
+   "team": 1,
+   "number": "23"
+  },
+  "R022": {
+   "team": 1,
+   "number": "3"
+  },
+  "R023": {
+   "team": 0,
+   "number": "17"
+  },
+  "R024": {
+   "team": 1,
+   "number": "20"
+  },
+  "R025": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#93 for most frames; late frames an Erlangen #33 in the box"
+  },
+  "R026": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#5 early, then #8 and other players"
+  },
+  "R027": {
+   "team": 1,
+   "number": "23"
+  },
+  "R028": {
+   "team": 0,
+   "number": null
+  },
+  "R029": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 78"
+  },
+  "R030": {
+   "team": 1,
+   "number": "33",
+   "note": "teammate overlapping in second half"
+  },
+  "R031": {
+   "team": 0,
+   "number": "22"
+  },
+  "R032": {
+   "team": 1,
+   "number": "6"
+  },
+  "R033": {
+   "team": 1,
+   "number": null,
+   "note": "blurred, maybe 51"
+  },
+  "R034": {
+   "team": 0,
+   "number": "19"
+  }
+ }
+}

@@ -88,8 +88,24 @@ FINAL_WINDOWS = [
      "eval/smart-id-eval/sl_1478998_2026-10-17_1478998_woelfe_wuerzburg-sg_regensburg_adler_1080p30_3990kbps.mp4",
      "detector-unseen"),
 ]
+# Higher-league fresh bank (2026-10-20): three HBF broadcasts the user added for the
+# test of the coverage candidate. Untouched by any selection, labelling or inspection
+# when registered (audit in docs/smart-reid-coverage2-2026-10-20.md); detector-unseen.
+# Clubs Melsungen, Loewen (RNL), Magdeburg and Wetzlar also appear in development data
+# (per-match galleries, frozen encoder: no player identity carries across matches).
+HIGHER_WINDOWS = [
+    ("Melsungen_Loewen_66m00_10min", "Melsungen-Loewen",
+     "eval/smart-id-eval/2026-09-22_1447412_Melsungen_Loewen.mp4", "detector-unseen"),
+    ("Magdeburg_Wetzlar_66m00_10min", "Magdeburg-Wetzlar",
+     "eval/smart-id-eval/2026-09-23_1447416_Magdeburg_Wetzlar.mp4", "detector-unseen"),
+    ("Stuttgart_Erlangen_66m00_10min", "Stuttgart-Erlangen",
+     "eval/smart-id-eval/2026-09-24_1447415_Stuttgart_Erlangen.mp4", "detector-unseen"),
+]
+# Reserve: DEV_WINDOWS cut on 2026-10-19 but never processed, mined or inspected.
+# Kept sealed as the next independent test once the higher-league bank is spent.
+RESERVE_WINDOWS = [w for w in DEV_WINDOWS if w[0] in ("DRE_MTM_66m00_10min", "Vinnhorst_Potsdam_66m00_10min")]
 WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS,
-               "final": FINAL_WINDOWS}
+               "final": FINAL_WINDOWS, "higher": HIGHER_WINDOWS}
 MINUTES_OVERRIDE = {n: 2 for n, *_ in PREVIEW_WINDOWS}
 # The rule's one allowed nudge: step forward in whole minutes to the first live play.
 # Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off

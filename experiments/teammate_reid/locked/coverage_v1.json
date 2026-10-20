@@ -1,0 +1,114 @@
+{
+ "locked_at": "2026-10-20T20:58:52",
+ "baseline": {
+  "name": "split_v2",
+  "rule": {
+   "tau": 0.7839630554462301,
+   "margin": 0.02255046162112006,
+   "single_tau": null,
+   "dup": "none",
+   "query": "spread8",
+   "clean_query": false,
+   "clean_gallery": false,
+   "support": null,
+   "mixed_guard": false,
+   "halves": true,
+   "emb": "raw",
+   "tier2": null,
+   "lone_strict": null,
+   "crowd_max": null
+  },
+  "lock_file": "locked/split_v2.json",
+  "lock_sha256": "84aae4f1bf94225772f3592446721f1c1b7cf3bd20034553db5744ad0e34d4e0"
+ },
+ "candidate": {
+  "name": "coverage_v1 (split_v2 + lone candidate >= 0.80 + duplicate-track co-presence exemption)",
+  "rule": {
+   "tau": 0.7839630554462301,
+   "margin": 0.02255046162112006,
+   "single_tau": 0.8,
+   "dup": "sustained",
+   "query": "spread8",
+   "clean_query": false,
+   "clean_gallery": false,
+   "support": null,
+   "mixed_guard": false,
+   "halves": true,
+   "emb": "raw",
+   "tier2": null,
+   "lone_strict": null,
+   "crowd_max": null
+  },
+  "duplicate_track_definition": ">= 10 co-present frames, IoU >= 0.5 on >= 90% of them, median IoU >= 0.7, between the segment's box and the other track showing the candidate's number",
+  "code": "experiments/teammate_reid/coverage2_rules.py (decide), coverage2.py (evidence store)"
+ },
+ "rejected_on_development": {
+  "tier2 strict-confirmed lower gate": "adds 6-12 correct but at least one assistant-verified mixed-person track (Kiel S105) under every setting",
+  "query/gallery outlier cleaning": "adds mixed names or loses correct ones",
+  "all-crop query": "fewer correct, one more mixed",
+  "strict-mask-only embedding": "27-32 correct names, far below raw",
+  "iou50 duplicate rule": "same dev result as the sustained rule; kept the stricter definition"
+ },
+ "development_evidence": {
+  "banks": [
+   "test_v1 (Kiel, Eisenach, Gummersbach)",
+   "final (Saarlouis, Bielefeld, Balingen II, Wuerzburg)"
+  ],
+  "v2": {
+   "correct": 100,
+   "wrong": 1,
+   "unknown_named": 2,
+   "mixed": 2,
+   "unreadable": 33
+  },
+  "candidate": {
+   "correct": 119,
+   "wrong": 1,
+   "unknown_named": 2,
+   "mixed": 2,
+   "unreadable": 37,
+   "added": {
+    "correct": 19,
+    "unreadable": 4,
+    "errors": 0
+   },
+   "lost": 0
+  },
+  "synthetic_unknowns": {
+   "v2": "5/130 false",
+   "candidate": "5/130 false"
+  },
+  "duplicate_rule_negative_test": "0 of 126 overlapping vouched pairs of different players and 0 of 1100 labelled other-player co-presence events pass; 6 of 10 same-player events pass",
+  "results_sha256": {
+   "dev_results.json": "963f1289be9719559b315da55d038064a5d07f09c46cd635d1965b10caf0cbcc",
+   "dev_stress.json": "e9c4f3eb08fe437af6e7620c62d59ca5584f8107f4d80bee6440bb9d29ead735"
+  },
+  "references": "user blind labels and post-unsealing adjudication; assistant blind labels v1/v2 (development evidence, not human validation); conflicting assistant reads count as disputed"
+ },
+ "fresh_test": {
+  "bank": "higher: Melsungen-Loewen, Magdeburg-Wetzlar, Stuttgart-Erlangen (66:00, 10 min); never inspected before this lock",
+  "reserve_kept_sealed": [
+   "DRE_MTM_66m00_10min",
+   "Vinnhorst_Potsdam_66m00_10min"
+  ],
+  "population": "stage2 definition: non-goalkeeper segments, baseline shows a number on < 50% of rows, >= 3 clean crops; zero-known stratum = no named row",
+  "procedure": [
+   "production process_video (main checkout d0fea4d)",
+   "mine + features + sheets; assistant reviews gallery sheets for mixed fragments (review.json) before any decision is run",
+   "population; evidence store; v2 and candidate decisions written sealed together",
+   "blind queue: every segment either rule names + 40 random others, shuffled codes, full-resolution strips; assistant labels frozen (sha256) before unsealing; doubtful items to the user",
+   "score once"
+  ],
+  "report": [
+   "paired links: both correct / both wrong / added correct / added wrong / lost",
+   "unknown-player false matches: natural (labelled player has no gallery) and synthetic (truth gallery removed), separately",
+   "mixed-track and bench/non-player names",
+   "unreadable and disputed names disclosed",
+   "segment coverage and newly correct player-time (duration x unnamed share), all and zero-known",
+   "intervals clustered by player within match"
+  ],
+  "quality_rule": "PASS only if: (a) zero verified errors (wrong known player, unknown named, mixed track, bench/non-player) among links the candidate adds or changes relative to v2; (b) synthetic-unknown false matches not higher than v2; (c) at least 5 added links verified correct. Any added verified error -> FAIL. Fewer than 5 verified added links, or more than half of added links unverifiable -> INCONCLUSIVE.",
+  "coverage_target": ">= 10% more verified-correct names than v2 on the same population (development: +19% overall, +17% on the three HBF matches)",
+  "honesty_note": "with ~5-15 added links expected, zero errors bounds added-link precision only to about 0.74-0.82 (one-sided 95%). A pass shows no gross failure; it cannot prove non-inferiority. Labels are assistant blind labels unless the user adjudicates."
+ }
+}

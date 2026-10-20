@@ -64,6 +64,10 @@ BANKS = {
               "specs": {s.match: s for s in VIDEO_SETS["final"]},
               "galleries": {s.match: RUNS / "final" / s.bundle.name for s in VIDEO_SETS["final"]},
               "lock": "split_v2.json", "page_key": "stage2_final_labels_v1", "recheck_key": "stage2_final_recheck_v1"},
+    "higher": {"out": RUNS / "stage2_higher",
+               "specs": {s.match: s for s in VIDEO_SETS["higher"]},
+               "galleries": {s.match: RUNS / "higher" / s.bundle.name for s in VIDEO_SETS["higher"]},
+               "lock": "split_v2.json", "page_key": "stage2_higher_labels_v1", "recheck_key": "stage2_higher_recheck_v1"},
 }
 SHOWN_MAX = 0.5          # baseline shows a number on fewer rows than this -> unresolved
 MIN_CROPS = 3            # the matcher's evidence floor

@@ -1,0 +1,230 @@
+{
+ "items": [
+  {
+   "bank": "test_v1",
+   "review_id": "S223",
+   "control": false,
+   "code": "R000"
+  },
+  {
+   "bank": "final",
+   "review_id": "S065",
+   "control": false,
+   "code": "R001"
+  },
+  {
+   "bank": "final",
+   "review_id": "S185",
+   "control": false,
+   "code": "R002"
+  },
+  {
+   "bank": "final",
+   "review_id": "S591",
+   "control": false,
+   "code": "R003"
+  },
+  {
+   "bank": "final",
+   "review_id": "S651",
+   "control": false,
+   "code": "R004"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S105",
+   "control": false,
+   "code": "R005"
+  },
+  {
+   "bank": "final",
+   "review_id": "S496",
+   "control": false,
+   "code": "R006"
+  },
+  {
+   "bank": "final",
+   "review_id": "S293",
+   "control": false,
+   "code": "R007"
+  },
+  {
+   "bank": "final",
+   "review_id": "S112",
+   "control": false,
+   "code": "R008"
+  },
+  {
+   "bank": "final",
+   "review_id": "S158",
+   "control": true,
+   "code": "R009"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S205",
+   "control": true,
+   "code": "R010"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S011",
+   "control": true,
+   "code": "R011"
+  },
+  {
+   "bank": "final",
+   "review_id": "S298",
+   "control": false,
+   "code": "R012"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S259",
+   "control": true,
+   "code": "R013"
+  },
+  {
+   "bank": "final",
+   "review_id": "S593",
+   "control": false,
+   "code": "R014"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S132",
+   "control": true,
+   "code": "R015"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S000",
+   "control": true,
+   "code": "R016"
+  },
+  {
+   "bank": "final",
+   "review_id": "S652",
+   "control": false,
+   "code": "R017"
+  },
+  {
+   "bank": "final",
+   "review_id": "S007",
+   "control": false,
+   "code": "R018"
+  },
+  {
+   "bank": "final",
+   "review_id": "S191",
+   "control": true,
+   "code": "R019"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S115",
+   "control": true,
+   "code": "R020"
+  },
+  {
+   "bank": "final",
+   "review_id": "S299",
+   "control": false,
+   "code": "R021"
+  },
+  {
+   "bank": "final",
+   "review_id": "S581",
+   "control": true,
+   "code": "R022"
+  },
+  {
+   "bank": "final",
+   "review_id": "S221",
+   "control": false,
+   "code": "R023"
+  },
+  {
+   "bank": "final",
+   "review_id": "S169",
+   "control": true,
+   "code": "R024"
+  },
+  {
+   "bank": "final",
+   "review_id": "S096",
+   "control": false,
+   "code": "R025"
+  },
+  {
+   "bank": "final",
+   "review_id": "S241",
+   "control": true,
+   "code": "R026"
+  },
+  {
+   "bank": "final",
+   "review_id": "S306",
+   "control": false,
+   "code": "R027"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S238",
+   "control": false,
+   "code": "R028"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S150",
+   "control": false,
+   "code": "R029"
+  },
+  {
+   "bank": "final",
+   "review_id": "S081",
+   "control": true,
+   "code": "R030"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S005",
+   "control": false,
+   "code": "R031"
+  },
+  {
+   "bank": "final",
+   "review_id": "S238",
+   "control": true,
+   "code": "R032"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S069",
+   "control": true,
+   "code": "R033"
+  },
+  {
+   "bank": "final",
+   "review_id": "S030",
+   "control": true,
+   "code": "R034"
+  }
+ ],
+ "from_rules": [
+  "narrow",
+  "T2 0.72/.045 st 0.7 crowd 0.05",
+  "T2 0.72/.045 st 0.7 crowd 0.08",
+  "T2 0.72/.045 st 0.7 crowd 0.1",
+  "T2 0.72/.045 st 0.72 crowd 0.05",
+  "T2 0.72/.045 st 0.72 crowd 0.08",
+  "T2 0.72/.045 st 0.72 crowd 0.1",
+  "T2 0.74/.045 st 0.7 crowd 0.05",
+  "T2 0.74/.045 st 0.7 crowd 0.08",
+  "T2 0.74/.045 st 0.7 crowd 0.1",
+  "T2 0.74/.045 st 0.72 crowd 0.05",
+  "T2 0.74/.045 st 0.72 crowd 0.08",
+  "T2 0.74/.045 st 0.72 crowd 0.1",
+  "T+cleanG"
+ ]
+}

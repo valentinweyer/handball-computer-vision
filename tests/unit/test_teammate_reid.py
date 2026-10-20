@@ -413,3 +413,26 @@ def test_coverage_baseline_rule_is_the_split_v2_lock():
     lock = json.loads((Path("experiments/teammate_reid/locked/split_v2.json")).read_text())
     assert (V2.tau, V2.margin) == tuple(lock["gate"])
     assert V2.halves == lock["halves_guard"] and V2.single_tau is None and not V2.co_ignore_duplicates
+
+
+def test_coverage_v1_lock_extends_split_v2_only_by_the_two_changes():
+    import json
+    from dataclasses import asdict, replace
+    from pathlib import Path
+    from experiments.teammate_reid.coverage2_rules import V2, Rule, is_duplicate
+
+    lock = json.loads(Path("experiments/teammate_reid/locked/coverage_v1.json").read_text())
+    v2 = json.loads(Path("experiments/teammate_reid/locked/split_v2.json").read_text())
+    assert (V2.tau, V2.margin) == tuple(v2["gate"])
+    assert lock["baseline"]["rule"] == asdict(V2)
+    assert lock["candidate"]["rule"] == asdict(replace(V2, single_tau=0.80, dup="sustained"))
+    assert Rule(**lock["candidate"]["rule"]).tier2 is None
+
+
+def test_duplicate_track_rule_rejects_brief_or_partial_overlap():
+    from experiments.teammate_reid.coverage2_rules import is_duplicate
+
+    assert is_duplicate({"n": 40, "frac50": 0.95, "median": 0.8})
+    assert not is_duplicate({"n": 6, "frac50": 1.0, "median": 0.9})       # too brief
+    assert not is_duplicate({"n": 40, "frac50": 0.6, "median": 0.8})      # players crossing
+    assert not is_duplicate({"n": 40, "frac50": 0.95, "median": 0.55})    # side by side
