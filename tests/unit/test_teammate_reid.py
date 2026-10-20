@@ -389,3 +389,17 @@ def test_split_is_disjoint_and_selection_never_sees_test_rows():
     rows = {"f": [{"match": m} for m in st.TUNING + st.TEST]}
     kept = st.tuning_rows(rows)["f"]
     assert {r["match"] for r in kept} == set(st.TUNING)
+
+
+def test_stage2_v2_galleries_use_both_sides_but_never_the_segment_track():
+    from experiments.teammate_reid.stage2 import MIN_SEP, gallery_allowed
+
+    seg = {"start": 1000, "end": 1200, "track_id": 7}
+    early = {"start": 0, "end": 1000 - MIN_SEP, "track_id": 3}
+    late = {"start": 1200 + MIN_SEP, "end": 1500, "track_id": 3}
+    near = {"start": 1200 + MIN_SEP - 1, "end": 1500, "track_id": 3}
+    own = {"start": 1200 + MIN_SEP, "end": 1500, "track_id": 7}
+    assert gallery_allowed(early, seg, v2=False) and not gallery_allowed(late, seg, v2=False)
+    assert gallery_allowed(early, seg, v2=True) and gallery_allowed(late, seg, v2=True)
+    assert not gallery_allowed(near, seg, v2=True) and not gallery_allowed(own, seg, v2=True)
+    assert gallery_allowed({**early, "track_id": 7}, seg, v2=False)   # v1 kept its own-track galleries

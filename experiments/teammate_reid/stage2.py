@@ -1,4 +1,10 @@
-"""Stage 2: incremental coverage on baseline-unresolved segments (the three split-v1 test matches).
+"""Stage 2: incremental coverage on baseline-unresolved segments.
+
+Two banks, each with its own output folder, galleries and lock (`--bank`):
+`test_v1` -- the three split-v1 test matches against `locked/split_v1.json` (the default,
+unchanged); `final` -- the four final-test windows against `locked/split_v2.json`
+(galleries from both sides without the segment's own track, spread query crops,
+half-split guard).
 
 Order, so the matcher can never shape the labels:
 
@@ -23,6 +29,7 @@ Order, so the matcher can never shape the labels:
     python -m experiments.teammate_reid.stage2 serve       # the page over Tailscale; labels saved here
     python -m experiments.teammate_reid.stage2 score       # only after the labels are frozen (hashed)
     python -m experiments.teammate_reid.stage2 recheck --number 51   # blank re-check page for one label value
+    python -m experiments.teammate_reid.stage2 --bank final population   # same steps on the final bank
 """
 from __future__ import annotations
 
@@ -41,10 +48,21 @@ import numpy as np
 import pandas as pd
 
 from experiments.teammate_reid.mining import load_video, mine_video, sample_crops
-from experiments.teammate_reid.run import HELDOUT, VIDEOS
+from experiments.teammate_reid.run import HELDOUT, VIDEO_SETS, VIDEOS
 
-OUT = Path("/home/valentinweyer/projects/handball-computer-vision/runs/smart-reid-shadow/stage2")
-SPECS = {"Kiel-Lemgo": VIDEOS[0], "Eisenach-Hamburg": HELDOUT[0], "Gummersbach-Loewen": HELDOUT[1]}
+REPO = Path("/home/valentinweyer/projects/handball-computer-vision")
+RUNS = REPO / "runs/smart-reid-shadow"
+BANKS = {
+    "test_v1": {"out": RUNS / "stage2",
+                "specs": {"Kiel-Lemgo": VIDEOS[0], "Eisenach-Hamburg": HELDOUT[0], "Gummersbach-Loewen": HELDOUT[1]},
+                "galleries": {"Kiel-Lemgo": REPO / "runs/smart-reid-prototype-2026-10-18/results",
+                              "Eisenach-Hamburg": RUNS / "stage1", "Gummersbach-Loewen": RUNS / "stage1"},
+                "lock": "split_v1.json", "page_key": "stage2_labels_v1", "recheck_key": "stage2_recheck_v1"},
+    "final": {"out": RUNS / "stage2_final",
+              "specs": {s.match: s for s in VIDEO_SETS["final"]},
+              "galleries": {s.match: RUNS / "final" / s.bundle.name for s in VIDEO_SETS["final"]},
+              "lock": "split_v2.json", "page_key": "stage2_final_labels_v1", "recheck_key": "stage2_final_recheck_v1"},
+}
 SHOWN_MAX = 0.5          # baseline shows a number on fewer rows than this -> unresolved
 MIN_CROPS = 3            # the matcher's evidence floor
 FPS = 25.0
@@ -192,11 +210,6 @@ def _sheet(path: Path, rid: str, s: dict, keys: list, frames: dict) -> None:
 
 # --- proposals (split-v1 lock, applied to unresolved segments) -----------------
 
-LOCK = Path(__file__).parent / "locked/split_v1.json"
-REPO = Path("/home/valentinweyer/projects/handball-computer-vision")
-GALLERY_RESULTS = {"Kiel-Lemgo": REPO / "runs/smart-reid-prototype-2026-10-18/results",
-                   "Eisenach-Hamburg": REPO / "runs/smart-reid-shadow/stage1",
-                   "Gummersbach-Loewen": REPO / "runs/smart-reid-shadow/stage1"}
 M_CROPS, TOP, MIN_SEP = 8, 3, 50
 
 
@@ -204,6 +217,13 @@ def _supported_numbers(reads: dict) -> set:
     """Numbers this segment's own reads support (>= 2 reads); a trailing single digit folds in."""
     full = {v for v, c in reads.items() if c >= 2 and len(v) > 1}
     return full | {v for v, c in reads.items() if c >= 2 and len(v) == 1 and not any(f.endswith(v) for f in full)}
+
+
+def gallery_allowed(g: dict, s: dict, v2: bool) -> bool:
+    """May vouched fragment `g` serve as gallery for segment `s`? (split v1 / v2 protocol)"""
+    before = g["end"] + MIN_SEP <= s["start"]
+    after = v2 and g["start"] >= s["end"] + MIN_SEP
+    return (before or after) and not (v2 and g["track_id"] == s["track_id"])
 
 
 def propose() -> dict:
@@ -217,13 +237,26 @@ def propose() -> dict:
     contradiction (the segment's own reads support only other numbers). Accept when
     score >= tau and margin >= m over the runner-up; one candidate left -> abstain.
     Never feeds back into galleries, tracks or labels.
+
+    Under a split-v2 lock the lock's own protocol applies instead: gallery fragments may
+    also start >= 2 s after the segment, the segment's own track never serves as a
+    gallery, 8 query crops are spread over the segment, and the segment abstains
+    (`halves_disagree`) when its first and second half pick different players.
     """
     from experiments.teammate_reid.benchmark import load_reviewed
     from experiments.teammate_reid.encoders import SportsReIDViT
     from experiments.teammate_reid.masking import crop_with_digits
     from experiments.teammate_reid.run import FrameReader
+    from experiments.teammate_reid.symmetric import _pick
+    if (OUT / "proposals_SEALED.json").exists():
+        raise SystemExit(f"{OUT / 'proposals_SEALED.json'} exists; proposals are sealed once")
     lock = json.loads(LOCK.read_text())
-    assert lock["feature"] == "sportsreid" and lock["rule"] == "absolute"
+    v2 = "gallery" in lock
+    if v2:
+        assert (lock["encoder"], lock["mask"], lock["gallery"], lock["query_crops"], lock["rule"]) == (
+            "sportsreid_vitb16", "raw", "both_notrack", "spread8", "absolute") and lock["min_sep_frames"] == MIN_SEP
+    else:
+        assert lock["feature"] == "sportsreid" and lock["rule"] == "absolute"
     tau, m_gate = lock["gate"][:2]
     pop = {s["segment"]: s for s in json.loads((OUT / "population.json").read_text())["population"]}
     encoder = SportsReIDViT()
@@ -256,7 +289,8 @@ def propose() -> dict:
         for s in segs:
             recs, _ = sample_crops(frags[s["key"]], tbf, nbf, set(det["frame"].unique()), src["width"],
                                    src["height"], every=10, cap=60, referees_by_frame=refs)
-            records[s["segment"]] = sorted(recs, key=lambda r: r["frame"])[:M_CROPS]
+            recs = sorted(recs, key=lambda r: r["frame"])
+            records[s["segment"]] = recs if v2 else recs[:M_CROPS]
         wanted = sorted({r["frame"] for rs in records.values() for r in rs})
         reader = FrameReader(spec.bundle / loaded["manifest"]["files"]["video"])
         pixels = {}
@@ -268,7 +302,8 @@ def propose() -> dict:
                         pixels[(seg, i)] = crop_with_digits(frame, r["box"], [])[0]
         for s in segs:
             rs = records[s["segment"]]
-            q = encoder.encode([pixels[(s["segment"], i)] for i in range(len(rs))])
+            q_all = encoder.encode([pixels[(s["segment"], i)] for i in range(len(rs))])
+            q = q_all[_pick(list(range(len(rs))), "spread8")] if v2 else q_all
             rows = by_track[s["track_id"]].loc[s["start"]:s["end"]]
             teams = rows["team"].value_counts()
             settled = (rows["team_state"] == "stable").mean() >= 0.9 and len(teams) == 1
@@ -278,7 +313,7 @@ def propose() -> dict:
             for g in gfrags:
                 if settled and g["team"] != int(teams.index[0]):
                     continue
-                if g["end"] + MIN_SEP > s["start"]:
+                if not gallery_allowed(g, s, v2):
                     continue
                 scores.setdefault(g["identity"], []).extend(gcrops_by_frag.get(g["key"], []))
             for identity in list(scores):
@@ -289,26 +324,40 @@ def propose() -> dict:
                     vetoes[identity] = "co_presence"
                 elif supported and number not in supported:
                     vetoes[identity] = "number_contradiction:" + ",".join(sorted(supported))
-            ranked = []
-            for identity, ids in scores.items():
-                if identity in vetoes or not ids:
-                    continue
-                sims = q @ gfeat[ids].T
-                k = min(TOP, sims.shape[1])
-                ranked.append((float(np.sort(sims, axis=1)[:, -k:].mean(1).mean()), identity))
-            ranked.sort(reverse=True)
+            def rank(qx: np.ndarray) -> list:
+                out = []
+                for identity, ids in scores.items():
+                    if identity in vetoes or not ids:
+                        continue
+                    sims = qx @ gfeat[ids].T
+                    k = min(TOP, sims.shape[1])
+                    out.append((float(np.sort(sims, axis=1)[:, -k:].mean(1).mean()), identity))
+                return sorted(out, reverse=True)
+
+            ranked = rank(q)
             best = ranked[0] if ranked else (float("-inf"), None)
             margin = best[0] - ranked[1][0] if len(ranked) > 1 else float("-inf")
-            accepted = best[1] is not None and best[0] >= tau and margin >= m_gate
-            reason = ("accepted" if accepted else "no_candidate" if not ranked else
+            halves_agree = None
+            h = len(rs) // 2
+            if v2 and h >= 2 and len(ranked) > 1:
+                first, second = (rank(q_all[_pick(list(part), "spread8")])[0][1]
+                                 for part in (range(h), range(h, len(rs))))
+                halves_agree = first == second
+            gate_ok = best[1] is not None and best[0] >= tau and margin >= m_gate
+            accepted = gate_ok and halves_agree is not False
+            reason = ("accepted" if accepted else "halves_disagree" if gate_ok else "no_candidate" if not ranked else
                       "single_candidate" if len(ranked) == 1 else "below_gate")
             out_rows.append({"review_id": s["review_id"], "segment": s["segment"], "match": match,
                              "duration_s": s["duration_s"], "query_crops": len(rs), "team_settled": bool(settled),
                              "proposal": best[1] if accepted else None, "best": best[1], "score": best[0],
                              "margin": margin, "decision": reason, "candidates": len(ranked),
+                             "halves_agree": halves_agree,
                              "vetoed": vetoes, "top3": ranked[:3]})
-    sealed = {"lock_sha256": sha256(LOCK), "gate": [tau, m_gate],
-              "protocol": "gallery fragments end >= 2 s before the segment (as validated)", "rows": out_rows}
+    protocol = ("split v2: galleries end >= 2 s before or start >= 2 s after the segment, never its own track; "
+                "8 spread query crops; half-split guard" if v2 else
+                "gallery fragments end >= 2 s before the segment (as validated)")
+    sealed = {"lock_sha256": sha256(LOCK), "lock": LOCK.name, "gate": [tau, m_gate], "protocol": protocol,
+              "rows": out_rows}
     path = OUT / "proposals_SEALED.json"
     path.write_text(json.dumps(sealed, indent=1, default=float))
     (OUT / "accepted_ids.json").write_text(json.dumps(
@@ -362,7 +411,7 @@ def queue() -> dict:
     membership = {"accepted": sorted(accepted), "random_sample": sorted(sample), "seed": SEED}
     (OUT / "queue.json").write_text(json.dumps(q, indent=1))
     (OUT / "queue_membership_SEALED.json").write_text(json.dumps(membership, indent=1))
-    (OUT / "review" / "label.html").write_text(_page(q, refs))
+    (OUT / "review" / "label.html").write_text(_page(q, refs, BANK["page_key"]))
     return {"queue": len(q), "accepted": len(accepted), "random": len(sample),
             "page": str(OUT / "review" / "label.html")}
 
@@ -433,11 +482,21 @@ if(Object.keys(d.labels||{}).length)L=d.labels;setSync("· saved on server");ren
 </script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs).replace("__KEY__", key).replace("__URL__", labels_url)
 
 
-LABELS = OUT / "annotations_human_v1.json"
-FROZEN = OUT / "annotations_human_v1.sha256"   # written when the labels are frozen; edits stop then
-RECHECK = OUT / "annotations_human_v1_recheck.json"
-ADJUDICATION = OUT / "annotations_human_v1_adjudication.json"   # not blind: made after unsealing
-LABEL_FILES = {"/labels": (LABELS, "queue.json"), "/labels_recheck": (RECHECK, "recheck_queue.json")}
+def configure(bank: str) -> None:
+    """Point the module at one bank. Labels freeze with `<labels>.sha256`; edits stop then.
+    The adjudication file is not blind: it is made after unsealing."""
+    global BANK, OUT, SPECS, GALLERY_RESULTS, LOCK, LABELS, FROZEN, RECHECK, ADJUDICATION, LABEL_FILES
+    BANK = BANKS[bank]
+    OUT, SPECS, GALLERY_RESULTS = BANK["out"], BANK["specs"], BANK["galleries"]
+    LOCK = Path(__file__).parent / "locked" / BANK["lock"]
+    LABELS = OUT / "annotations_human_v1.json"
+    FROZEN = OUT / "annotations_human_v1.sha256"
+    RECHECK = OUT / "annotations_human_v1_recheck.json"
+    ADJUDICATION = OUT / "annotations_human_v1_adjudication.json"
+    LABEL_FILES = {"/labels": (LABELS, "queue.json"), "/labels_recheck": (RECHECK, "recheck_queue.json")}
+
+
+configure("test_v1")
 
 
 def recheck(number: str) -> dict:
@@ -449,7 +508,7 @@ def recheck(number: str) -> dict:
     q = [{**x, "n": i + 1} for i, x in enumerate(q)]
     (OUT / "recheck_queue.json").write_text(json.dumps(q, indent=1))
     refs = {m: {t: f"team_{m}_{t}.jpg" for t in (0, 1)} for m in SPECS}
-    (OUT / "review" / "recheck.html").write_text(_page(q, refs, "stage2_recheck_v1", "labels_recheck"))
+    (OUT / "review" / "recheck.html").write_text(_page(q, refs, BANK["recheck_key"], "labels_recheck"))
     return {"items": len(q), "page": "recheck.html"}
 
 
@@ -648,6 +707,7 @@ def score(version: str = "v1") -> dict:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--bank", default="test_v1", choices=tuple(BANKS))
     parser.add_argument("command", choices=("population", "review", "propose", "queue", "serve", "score", "recheck"))
     parser.add_argument("--number", help="recheck: the label value to look at again")
     parser.add_argument("--labels", default="v1", choices=("v1", "v2", "v3"),
@@ -655,6 +715,7 @@ def main() -> None:
     parser.add_argument("--host", help="serve: bind address (default: Tailscale IPv4)")
     parser.add_argument("--port", type=int, default=8790)
     args = parser.parse_args()
+    configure(args.bank)
     if args.command == "serve":
         return serve(args.host, args.port)
     if args.command == "population":
