@@ -167,6 +167,12 @@ def review() -> None:
                     writers[rid].write(small)
         for w in writers.values():
             w.release()
+        for rid in writers:   # OpenCV writes MPEG-4 Part 2, which Firefox/Chrome cannot play
+            clip = rdir / f"{rid}.mp4"
+            tmp = clip.with_suffix(".h264.mp4")
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clip), "-c:v", "libx264", "-preset", "veryfast",
+                            "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(tmp)], check=True)
+            tmp.replace(clip)
         for rid, (s, keys, _) in plans.items():
             _sheet(rdir / f"{rid}.jpg", rid, s, keys, frames.get(rid, {}))
 
