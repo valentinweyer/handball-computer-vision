@@ -1,0 +1,53 @@
+{
+  "Saarlouis_Muenster_66m00_10min": {
+    "reviewer": "assistant visual review (Claude), 2026-10-20 -- not an independent human annotator",
+    "method": "All identity contact sheets of this final window inspected before the locked split_v2 rule was scored on it (once); suspect fragments re-inspected at enlarged crop size.",
+    "reviewed_identities": 5,
+    "reviewed_fragments": 22,
+    "excluded": {},
+    "excluded_identities": {},
+    "notes": [
+      "#29 F0 (track 2, 1-1350): ~10 blurred crops at 665-955 in front of the bench; the visible numbers (525-645) are #29, kept.",
+      "Low yield: 22 accepted fragments, 5 identities."
+    ]
+  },
+  "Bielefeld_Aurich_86m00_10min": {
+    "reviewer": "assistant visual review (Claude), 2026-10-20 -- not an independent human annotator",
+    "method": "All identity contact sheets of this final window inspected before the locked split_v2 rule was scored on it (once); suspect fragments re-inspected at enlarged crop size.",
+    "reviewed_identities": 14,
+    "reviewed_fragments": 93,
+    "excluded": {
+      "bielefeld_aurich_86m00_10min:t161:7391-8130": "Aurich #20 F6: #20 to ~7725, then #6 (7925-7935, number visible), then a third player (8005-8105); 8 of 18 crops are other people",
+      "bielefeld_aurich_86m00_10min:t160:7371-8140": "Aurich #8 F1: all 6 crops show a substitute in a black warm-up shirt over red shorts at the bench; no number visible, unlike every other #8 fragment"
+    },
+    "excluded_identities": {},
+    "notes": [
+      "Kept but uncertain: Bielefeld #17 F1 (track 85, 5371-6650): front views of a bulky player at the bench and back views of a slimmer player both carry 17; may be pose, may be two people.",
+      "Kept: #7 F3 crop 2455 (player on the floor), #21 F15 (track 246) and #18 F2 (track 210) re-inspected enlarged and consistent."
+    ]
+  },
+  "BalingenII_Erlangen_66m00_10min": {
+    "reviewer": "assistant visual review (Claude), 2026-10-20 -- not an independent human annotator",
+    "method": "All identity contact sheets of this final window inspected before the locked split_v2 rule was scored on it (once); suspect fragments re-inspected at enlarged crop size.",
+    "reviewed_identities": 11,
+    "reviewed_fragments": 37,
+    "excluded": {},
+    "excluded_identities": {},
+    "notes": [
+      "#10 F2 and #93 F0 are broadcast close-ups (score / 2-Min graphics) of the same player, kept.",
+      "#19 F6 crop 12335 is partly occluded by an Erlangen player, kept."
+    ]
+  },
+  "Wuerzburg_Regensburg_66m00_10min": {
+    "reviewer": "assistant visual review (Claude), 2026-10-20 -- not an independent human annotator",
+    "method": "All identity contact sheets of this final window inspected before the locked split_v2 rule was scored on it (once); suspect fragments re-inspected at enlarged crop size.",
+    "reviewed_identities": 16,
+    "reviewed_fragments": 89,
+    "excluded": {},
+    "excluded_identities": {},
+    "notes": [
+      "Goalkeeper #44 (yellow) mined into team0, kept as an identity.",
+      "Single junk crops kept: Regensburg #13 F4 crop 8185 (mostly score graphic)."
+    ]
+  }
+}
