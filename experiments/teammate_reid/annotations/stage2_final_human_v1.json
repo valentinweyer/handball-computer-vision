@@ -1,0 +1,558 @@
+{
+ "labeller": "human",
+ "exported_at": "2026-10-20T11:07:13.178Z",
+ "labels": {
+  "S407": {
+   "team": "1",
+   "number": "3",
+   "flag": null,
+   "note": ""
+  },
+  "S123": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S028": {
+   "team": "1",
+   "number": "10",
+   "flag": null,
+   "note": ""
+  },
+  "S247": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S560": {
+   "team": "1",
+   "number": "29",
+   "flag": null,
+   "note": ""
+  },
+  "S241": {
+   "team": "1",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S158": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S395": {
+   "team": null,
+   "number": "",
+   "flag": "mixed",
+   "note": ""
+  },
+  "S578": {
+   "team": "0",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S283": {
+   "team": "0",
+   "number": "10",
+   "flag": null,
+   "note": ""
+  },
+  "S636": {
+   "team": "1",
+   "number": "25",
+   "flag": null,
+   "note": ""
+  },
+  "S021": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S307": {
+   "team": "1",
+   "number": "6",
+   "flag": "mixed",
+   "note": ""
+  },
+  "S199": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S309": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S305": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S633": {
+   "team": "1",
+   "number": "25",
+   "flag": null,
+   "note": ""
+  },
+  "S188": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S542": {
+   "team": "0",
+   "number": "2?",
+   "flag": null,
+   "note": ""
+  },
+  "S659": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S280": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S550": {
+   "team": "0",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S443": {
+   "team": "0",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S287": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": "8589 is only his foot"
+  },
+  "S191": {
+   "team": "0",
+   "number": "10",
+   "flag": null,
+   "note": "8589 is only his foot"
+  },
+  "S449": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S226": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S027": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S284": {
+   "team": "0",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S634": {
+   "team": "0",
+   "number": "10",
+   "flag": null,
+   "note": ""
+  },
+  "S291": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S635": {
+   "team": "0",
+   "number": "67",
+   "flag": null,
+   "note": ""
+  },
+  "S178": {
+   "team": "1",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S581": {
+   "team": "1",
+   "number": "3",
+   "flag": null,
+   "note": ""
+  },
+  "S527": {
+   "team": "1",
+   "number": "3",
+   "flag": null,
+   "note": ""
+  },
+  "S625": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S232": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S278": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": "timeout"
+  },
+  "S169": {
+   "team": "1",
+   "number": "20",
+   "flag": null,
+   "note": ""
+  },
+  "S030": {
+   "team": "0",
+   "number": "19",
+   "flag": null,
+   "note": ""
+  },
+  "S129": {
+   "team": "0",
+   "number": "19",
+   "flag": null,
+   "note": ""
+  },
+  "S613": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S646": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S238": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S626": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S303": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S529": {
+   "team": "1",
+   "number": "29",
+   "flag": null,
+   "note": ""
+  },
+  "S200": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S541": {
+   "team": "0",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S437": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S253": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": "timeout"
+  },
+  "S469": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": "on the bench (standing tho)"
+  },
+  "S348": {
+   "team": "0",
+   "number": "1\u00df",
+   "flag": null,
+   "note": ""
+  },
+  "S463": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": "player on bench standing"
+  },
+  "S497": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": "player on bench standing"
+  },
+  "S057": {
+   "team": "1",
+   "number": "10",
+   "flag": null,
+   "note": ""
+  },
+  "S154": {
+   "team": "0",
+   "number": "7",
+   "flag": null,
+   "note": ""
+  },
+  "S254": {
+   "team": "0",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S092": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S568": {
+   "team": null,
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S611": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S156": {
+   "team": "0",
+   "number": "6",
+   "flag": "mixed",
+   "note": ""
+  },
+  "S577": {
+   "team": "0",
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S339": {
+   "team": "1",
+   "number": "14",
+   "flag": null,
+   "note": ""
+  },
+  "S506": {
+   "team": "1",
+   "number": "42",
+   "flag": null,
+   "note": ""
+  },
+  "S174": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S597": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S127": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S388": {
+   "team": "1",
+   "number": "29",
+   "flag": null,
+   "note": ""
+  },
+  "S592": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S167": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S064": {
+   "team": "0",
+   "number": "93",
+   "flag": null,
+   "note": ""
+  },
+  "S219": {
+   "team": "0",
+   "number": "97",
+   "flag": null,
+   "note": ""
+  },
+  "S612": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S660": {
+   "team": "0",
+   "number": "10",
+   "flag": null,
+   "note": ""
+  },
+  "S302": {
+   "team": "0",
+   "number": "17",
+   "flag": null,
+   "note": ""
+  },
+  "S162": {
+   "team": "0",
+   "number": "29",
+   "flag": null,
+   "note": ""
+  },
+  "S604": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S383": {
+   "team": "1",
+   "number": "66",
+   "flag": null,
+   "note": ""
+  },
+  "S081": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S657": {
+   "team": "1",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S621": {
+   "team": "0",
+   "number": "67",
+   "flag": null,
+   "note": ""
+  },
+  "S641": {
+   "team": "1",
+   "number": "25",
+   "flag": null,
+   "note": ""
+  },
+  "S631": {
+   "team": "1",
+   "number": "26",
+   "flag": null,
+   "note": ""
+  },
+  "S170": {
+   "team": "1",
+   "number": "18",
+   "flag": null,
+   "note": ""
+  },
+  "S647": {
+   "team": "0",
+   "number": "18",
+   "flag": null,
+   "note": ""
+  },
+  "S155": {
+   "team": "0",
+   "number": "42",
+   "flag": null,
+   "note": ""
+  },
+  "S617": {
+   "team": "0",
+   "number": "9",
+   "flag": null,
+   "note": ""
+  },
+  "S176": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S464": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S643": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S036": {
+   "team": "1",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  }
+ }
+}

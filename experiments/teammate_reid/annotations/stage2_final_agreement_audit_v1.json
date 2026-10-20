@@ -1,0 +1,236 @@
+{
+ "kind": "audit of the 45 names where the blind label and the matcher agreed, made after unsealing (NOT blind)",
+ "created_at": "2026-10-20T13:34:25",
+ "method": "full-resolution strips (8 frames per segment, cut from the source frame) for every agreed name; assistant read the number where readable; segments without a readable number went to the user",
+ "result": {
+  "confirmed": 45,
+  "contradicted": 0
+ },
+ "items": {
+  "S027": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S028": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S030": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S036": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S057": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S092": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S127": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S129": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S167": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S169": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S170": {
+   "verdict": "confirmed",
+   "by": "user",
+   "note": "18: number seen in the video"
+  },
+  "S174": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S176": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S188": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S191": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S219": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S232": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S238": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S247": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S280": {
+   "verdict": "confirmed",
+   "by": "user",
+   "note": "7: number seen in the video"
+  },
+  "S283": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S302": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S303": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S309": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S388": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S443": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S529": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S560": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S604": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S611": {
+   "verdict": "confirmed",
+   "by": "user",
+   "note": "9: user knows the player"
+  },
+  "S612": {
+   "verdict": "confirmed",
+   "by": "user",
+   "note": "13: user knows the player (same as S625)"
+  },
+  "S613": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S617": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S621": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S625": {
+   "verdict": "confirmed",
+   "by": "user",
+   "note": "13: user knows the player"
+  },
+  "S626": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S633": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S634": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S635": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S636": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S643": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S646": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S657": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S659": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  },
+  "S660": {
+   "verdict": "confirmed",
+   "by": "assistant visual check (not a human label)",
+   "note": "claimed number readable in the strip"
+  }
+ }
+}

@@ -109,10 +109,14 @@ as `stage2 --bank final` with the split-v2 rule.
 
 | | correct | wrong | unscored | precision | exact 95% interval |
 | --- | ---: | ---: | ---: | ---: | --- |
-| **blind labels (v1, headline)** | 45 | 3 | 4 | **0.938** | 0.828–0.987 |
-| + user adjudication of the 3 errors (v3, **not blind**) | 47 | 1 | 4 | 0.979 | 0.889–0.999 |
+| **every name reviewed (v3 + agreement audit)** | **47** | **1** | 4 | **0.979** | 0.889–0.999 |
+| blind labels only (v1) | 45 | 3 | 4 | 0.938 | 0.828–0.987 |
 
-The adjudication was made after unsealing, on full-resolution close-ups
+All of these reviews were made after unsealing, so none of them is blind. They
+went in both directions.
+
+**Disagreements.** The 3 cases where the blind label and the matcher disagreed
+were checked on full-resolution close-ups
 (`annotations_human_v1_adjudication.json`, sha256 `78f2dda6…`):
 
 - **Saarlouis S449:** the matcher said #29 and the blind label was #23. It is
@@ -123,14 +127,30 @@ The adjudication was made after unsealing, on full-resolution close-ups
 - **Balingen II S158:** the matcher said #10. It is **#7**, a genuine
   teammate confusion, and it stays wrong.
 
+**Agreements.** All 45 names where the blind label and the matcher agreed were
+checked on full-resolution strips (`agreement_audit.json`, sha256
+`8ca50716…`). In 40 of them the claimed number is readable in the strip; this
+was checked by the assistant visually, not by a human. The other 5 went to the
+user:
+
+- Bielefeld S280 #7 and S170 #18: the number is visible in the video.
+- Würzburg S625 #13, S612 #13 and S611 #9: the user knows the players.
+
+None of the 45 was contradicted.
+
+So the matcher made one error in 48 scorable names. On these hard,
+mostly-720p segments, the user's single blind pass made two label errors.
+Blind labels are an incomplete reference on footage like this, which is why
+every name was reviewed.
+
 Per match on the blind labels:
 
-| match | correct | wrong |
-| --- | ---: | ---: |
-| Würzburg | 17 | 0 |
-| Bielefeld | 16 | 1 |
-| Balingen II | 8 | 1 |
-| Saarlouis | 4 | 1 |
+| match | correct | wrong | after review |
+| --- | ---: | ---: | --- |
+| Würzburg | 17 | 0 | 17 / 0 |
+| Bielefeld | 16 | 1 | 17 / 0 |
+| Balingen II | 8 | 1 | 8 / 1 |
+| Saarlouis | 4 | 1 | 5 / 0 |
 
 - **Coverage.** The matcher names 7% of the unresolved segments correctly (45 of
   663), which is 5% of their seconds (586 s). This is close to the first Stage 2
@@ -139,9 +159,10 @@ Per match on the blind labels:
   19 of those the right player had a gallery, and in 14 the matcher's top guess
   was that player but fell below the gate. The co-presence and number vetoes
   removed the true player twice.
-- **Criterion.** The blind point estimate, 0.938, is just under the 0.95
-  precision bound, and both intervals straddle it. Only the adjudicated figure is
-  above it, and that figure is not blind.
+- **Criterion.** With every name reviewed, precision is 0.979, above the 0.95
+  bound. With n = 48 the exact interval (0.889–0.999) still reaches below
+  0.95, so this bank supports the bound but cannot prove it on its own. The
+  blind-only figure, 0.938, is the lower reading.
 
 ## Caveats (they limit the claim)
 
