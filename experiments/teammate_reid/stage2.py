@@ -660,10 +660,11 @@ def score(version: str = "v1") -> dict:
     Nothing is re-tuned: the gate is the split-v1 lock.
     """
     labels, frozen = _frozen_labels(LABELS)
-    if version in ("v2", "v3"):   # v1 with the blind re-check replacing the items it covered
-        rechecked, frozen_re = _frozen_labels(RECHECK)
-        labels = {**labels, **rechecked}
-        frozen = {"v1": frozen, "recheck": frozen_re}
+    if version in ("v2", "v3"):   # v1 with the blind re-check replacing the items it covered (if a bank had one)
+        frozen = {"v1": frozen, "recheck": None}
+        if RECHECK.exists():
+            rechecked, frozen["recheck"] = _frozen_labels(RECHECK)
+            labels = {**labels, **rechecked}
     if version == "v3":   # + the user's adjudication of the errors, made after seeing the proposals
         adjudicated, frozen_adj = _frozen_labels(ADJUDICATION)
         labels = {**labels, **adjudicated}

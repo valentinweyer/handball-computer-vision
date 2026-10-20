@@ -7,6 +7,7 @@ label. Proposals stay shadow output: nothing is written back to any bundle. A sh
 highlight reel cuts just those segments (with context) out of the overlay video.
 
     python -m experiments.teammate_reid.shadow_video Kiel-Lemgo
+    python -m experiments.teammate_reid.shadow_video --bank final Bielefeld-Aurich
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ import sys
 import cv2
 from tqdm import tqdm
 
-from experiments.teammate_reid.stage2 import OUT, SPECS
+from experiments.teammate_reid import stage2
 from handball_cv.pipeline.result import load
 from handball_cv.visualization.video_writer import FfmpegWriter
 
@@ -29,8 +30,8 @@ CAPTION = "magenta = smart re-ID proposal (shadow, not in production)"
 
 def accepted_segments(match: str) -> list:
     """The matcher's accepted proposals for one match, with track id and frame range."""
-    pop = {s["review_id"]: s for s in json.loads((OUT / "population.json").read_text())["population"]}
-    rows = json.loads((OUT / "proposals_SEALED.json").read_text())["rows"]
+    pop = {s["review_id"]: s for s in json.loads((stage2.OUT / "population.json").read_text())["population"]}
+    rows = json.loads((stage2.OUT / "proposals_SEALED.json").read_text())["rows"]
     out = []
     for r in rows:
         if r["match"] == match and r["decision"] == "accepted":
@@ -42,7 +43,7 @@ def accepted_segments(match: str) -> list:
 
 
 def overlay(match: str, base, dest) -> None:
-    result = load(SPECS[match].bundle)
+    result = load(stage2.SPECS[match].bundle)
     segs = accepted_segments(match)
     tracks = result.tracks
     boxes = {}
@@ -75,7 +76,7 @@ def overlay(match: str, base, dest) -> None:
 
 def highlights(match: str, video, dest) -> None:
     """Concatenate each accepted segment with context, merging overlaps."""
-    fps = float(load(SPECS[match].bundle).manifest["source"]["fps"])
+    fps = float(load(stage2.SPECS[match].bundle).manifest["source"]["fps"])
     spans = []
     for s in accepted_segments(match):
         a, b = max(0.0, s["start"] / fps - CONTEXT_S), s["end"] / fps + CONTEXT_S
@@ -92,13 +93,17 @@ def highlights(match: str, video, dest) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("match", choices=tuple(SPECS))
+    parser.add_argument("--bank", default="test_v1", choices=tuple(stage2.BANKS))
+    parser.add_argument("match", choices=sorted({m for b in stage2.BANKS.values() for m in b["specs"]}))
     args = parser.parse_args()
-    folder = OUT / "video"
+    stage2.configure(args.bank)
+    if args.match not in stage2.SPECS:
+        parser.error(f"{args.match} is not in bank {args.bank}")
+    folder = stage2.OUT / "video"
     folder.mkdir(exist_ok=True)
     base = folder / f"{args.match}_production.mp4"
     if not base.is_file():
-        subprocess.run([sys.executable, "-m", "scripts.render_result", str(SPECS[args.match].bundle),
+        subprocess.run([sys.executable, "-m", "scripts.render_result", str(stage2.SPECS[args.match].bundle),
                         "--output", str(base)], check=True)
     smart = folder / f"{args.match}_smart.mp4"
     overlay(args.match, base, smart)
