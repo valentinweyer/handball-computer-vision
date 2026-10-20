@@ -45,31 +45,31 @@ def wrong_runs(matches: list, keep: set) -> list[dict]:
     return sorted(runs, key=lambda r: -r["frames"])
 
 
-def factory(name: str, clip: Clip, arm: str, gates: dict):
+def factory(name: str, clip: Clip, arm: str, gates: dict, activation: float = 0.7):
     fps = clip.fps
     if name == "sort":
         return lambda: SORTTracker(frame_rate=fps, lost_track_buffer=30,
-                                   track_activation_threshold=0.7)
+                                   track_activation_threshold=activation)
     if name == "sort_strict":
         # "Break, don't swap": demand more overlap and forget lost tracks
         # sooner, so contact ends a track instead of handing it over. Fixed
         # before running, not tuned.
         return lambda: SORTTracker(frame_rate=fps, lost_track_buffer=10,
-                                   track_activation_threshold=0.7,
+                                   track_activation_threshold=activation,
                                    minimum_iou_threshold=0.5)
     if name == "bytetrack":
         return lambda: ByteTrackTracker(frame_rate=fps, lost_track_buffer=30,
-                                        track_activation_threshold=0.7)
+                                        track_activation_threshold=activation)
     feature, mode, *strict = name.split("_")      # e.g. colour_gate, colour_gate_strict
     feats = features(clip, arm, feature)
     sort_args = (dict(lost_track_buffer=10, minimum_iou_threshold=0.5) if strict
                  else dict(lost_track_buffer=30))
     return lambda: AppearanceSORT(feats, mode, gates[feature], frame_rate=fps,
-                                  track_activation_threshold=0.7, **sort_args)
+                                  track_activation_threshold=activation, **sort_args)
 
 
-def evaluate(clip: Clip, arm: str, name: str, gates: dict) -> dict:
-    matches = run_tracker(factory(name, clip, arm, gates), clip.reference,
+def evaluate(clip: Clip, arm: str, name: str, gates: dict, activation: float = 0.7) -> dict:
+    matches = run_tracker(factory(name, clip, arm, gates, activation), clip.reference,
                           clip.video, clip.detections_for(arm), "cpu")
     metrics = score(matches, clip.keep)
     players = sum(sum(i in clip.keep for i in t) for t in clip.reference.values())
@@ -119,6 +119,8 @@ def main() -> None:
     parser.add_argument("--calibrate", default=None)
     parser.add_argument("--feature", default="colour")
     parser.add_argument("--tag", default="results")
+    parser.add_argument("--activation", type=float, default=0.7,
+                        help="track activation threshold, all variants")
     args = parser.parse_args()
 
     if args.calibrate:
@@ -130,7 +132,7 @@ def main() -> None:
         clip = Clip(clip_name)
         for arm in args.arms:
             for name in args.variants:
-                m = evaluate(clip, arm, name, gates)
+                m = evaluate(clip, arm, name, gates, args.activation)
                 results[f"{clip_name}/{arm}/{name}"] = m
                 top = ", ".join(f"{r['dominant']}->{r['ref']}@{r['first']}({r['frames']})"
                                 for r in m["wrong_runs"] if r["frames"] >= 3)

@@ -38,6 +38,10 @@ CLIPS = {
 }
 
 
+# arm -> export directory; `detector` itself is the `_v1` cache used in §1.
+EVERY_FRAME_EXPORTS = {"expanded": "detector-expanded-v1", "local": "detector-local"}
+
+
 class Clip:
     def __init__(self, name: str):
         stem, detections, reference, labels, exclude = CLIPS[name]
@@ -68,6 +72,11 @@ class Clip:
         if arm == "oracle":
             boxes = self.oracle_boxes
             return lambda f: oracle_frame_detections(boxes, f)
+        if arm in EVERY_FRAME_EXPORTS:
+            # every-frame runs of a newer export (detect_every_frame.py)
+            other = load_detection_cache(
+                OUT / "detections" / EVERY_FRAME_EXPORTS[arm] / f"{self.name}.npz")
+            return lambda f: frame_detections(other, f)
         if self._cache is None:
             self._cache = load_detection_cache(self.detection_cache)
         cache = self._cache

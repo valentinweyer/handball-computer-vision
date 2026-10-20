@@ -1,7 +1,9 @@
 # Can a box tracker replace SAM2? Oracle study, 2026-10-20
 
-Overnight investigation following `docs/tracking-evaluation.md` §8.13. CPU only
-(the GPU was busy with a pipeline run); no production code or default changed.
+Overnight investigation following `docs/tracking-evaluation.md` §8.13, CPU only
+while the GPU ran a pipeline; the every-frame detector runs and the SAM2
+scaling benchmark were added the next morning on the GPU. No production code
+or default changed.
 Code: `experiments/box_tracker_oracle/`. Artifacts:
 `runs/tracker_eval/oracle_2026-10-20/` (per-run JSON, event renders, feature
 caches, logs).
@@ -39,11 +41,18 @@ where it matters.**
 4. 8 of the 9 persistent error events are **cross-team** (attacker vs
    defender); the one same-team event may be a reference error.
 
+5. With the production detector run on every frame (14-20 ms/frame), a box
+   tracker plus kit-colour gate is within 0.9 / 2.9 points of SAM2 on BHC-FAG
+   / Han-Ber4 but 11+ points short on FelixClaar.
+6. A SAM2-only-near-contact hybrid would save only ~1.8x: contact is within
+   10 frames on ~87% of match frames, and SAM2 costs 93 ms fixed + 17.8 ms
+   per player.
+
 So "box tracker + better detector" is viable only if "better" means
 **separate, tight boxes for players in contact**. That is now a measurable
-detector target (below): with the current detector only 64% / 60% of
-touching pairs get two separate boxes on FelixClaar / BHC-FAG (90% on
-Han-Ber4).
+detector target (below): the production detector gives both players of a
+touching pair their own box 75% / 87% / 69% of the time (FelixClaar /
+Han-Ber4 / BHC-FAG).
 
 ## Setup
 
@@ -143,26 +152,84 @@ leaves wrong-identity where it was (SORT: Felix 7.7 -> 10.0, Han 3.2 -> 3.2,
 BHC 2.3 -> 3.1). Recall is a coverage problem, not the swap problem. The swap
 problem is box geometry in contact.
 
-### Current detector versus the `_v1` caches
+### Production detector, every frame (added after the GPU was free)
 
-The detector arm used the `_v1` caches from the first comparison. The current
-fine-tuned export (`rfdetr-large-handball.ts`) has only run at stride 5 on
-these clips (`data/interim/score_*`), so the comparison is on the 50/40/100
-frames both scored (`detector_versions.py`), at confidence 0.3:
+The detector arm above uses the `_v1` caches from the first comparison. The
+production default is `detector-expanded-v1` (retrained 2026-10-17); the
+older `detector-local` export made the stride-5 `data/interim/score_*`
+caches. Both were run on every frame of the three clips
+(`detect_every_frame.py`, threshold 0.3 as in `process_video`): **14-20 ms
+per frame including decode**, against ~460 ms for the SAM2 loop. Running the
+detector every frame is cheap.
 
-| clip | recall v1 -> current | contact pairs separated v1 -> current |
+Detector quality on every reference frame (confidence 0.5;
+`detector_versions.py --every-frame`). "Separated" = of reference player
+pairs in contact (box IoU > 0.2), the share where each player gets its own
+detection at IoU >= 0.5 under one-to-one matching:
+
+| clip | recall v1 / local / expanded | separated v1 / local / expanded | contact pairs |
+|---|---|---|---|
+| FelixClaar | 90.7 / 91.6 / 92.1 | 66.2 / 66.2 / **75.2** | 133 |
+| Han-Ber4 | 95.6 / 98.6 / 98.5 | 71.1 / 86.3 / **87.3** | 197 |
+| BHC-FAG | 98.4 / 99.0 / 98.7 | 76.4 / 69.7 / **68.5** | 89 |
+
+The production detector separates contacts better on FelixClaar and Han-Ber4
+and slightly worse on BHC-FAG. Roughly a quarter of contact pairs on the hard
+clips still get one shared box.
+
+Trackers on the production detector. The activation threshold was chosen on
+Han-Ber4 only (0.3 and 0.5 tie, 0.7 is worse: SORT 95.5 / 95.6 / 93.8%) and
+fixed at 0.5 for every clip and variant; colour gate 0.28 as before:
+
+| variant | FelixClaar | Han-Ber4 | BHC-FAG |
+|---|---|---|---|
+| sort | 80.9 / 11.0 / 2.77 | 95.5 / 2.4 / 1.58 | 97.9 / 0.2 / 2.25 |
+| sort_strict | 83.6 / 7.6 / 3.08 | 95.3 / 2.5 / 1.67 | 97.9 / 0.2 / 2.25 |
+| bytetrack | 80.3 / 12.2 / 2.00 | 88.2 / 10.5 / 1.42 | 95.3 / 3.1 / 1.58 |
+| colour_gate | 83.4 / 8.2 / 2.69 | 97.0 / 0.2 / 2.00 | 98.0 / 0.1 / 2.25 |
+| colour_gate_strict | 83.1 / 8.1 / 3.00 | 96.8 / 0.0 / 2.00 | 97.9 / 0.1 / 2.42 |
+| *SAM2 (reference)* | *95.0 / ~0.8 / 1.38* | *99.9 / 0.0 / 1.00* | *98.9 / 0.1 / 1.42* |
+
+(`detector-local` rows are in `current_detectors.json`; it is no better.)
+With the production detector a box tracker plus kit-colour gate is within
+0.9 points of SAM2 on BHC-FAG and 2.9 on Han-Ber4 (in-sample for both the
+gate and the activation threshold), but FelixClaar stays 11+ points short:
+its contacts (6/7 at f64, 3/4 at f63) still swap.
+
+### Is a contact-triggered SAM2 hybrid worth it?
+
+All swaps sit at contacts, so the natural hybrid runs a box tracker
+everywhere and SAM2 only near contacts. Two measurements size it.
+
+**How much of a match is contact** (`contact_coverage.py`, 15 full 10-minute
+games, production detector at stride 5, court-in-view frames, person boxes
+at confidence >= 0.5, contact = box IoU > 0.1, widened by +/-10 frames):
+
+| | median over games | range |
 |---|---|---|
-| FelixClaar | 90.9 -> 92.2 | 57.1 -> 64.3% (28 pairs) |
-| Han-Ber4 | 95.8 -> 99.1 | 68.3 -> 90.2% (41 pairs) |
-| BHC-FAG | 98.4 -> 99.2 | 60.0 -> 60.0% (15 pairs) |
+| frames with any contact, instantaneous | ~65% | 49-79% |
+| frames with a contact within +/-10 frames | ~87% | 78-95% |
+| player boxes near a contact (+/-10 frames) | ~39% | 35-47% |
+| visible players per frame | ~10 | 8-12 |
 
-"Separated" = both players of a touching pair (reference box IoU > 0.2) get
-their own detection at IoU >= 0.5 under one-to-one matching. The current
-detector is better, clearly so on Han-Ber4, but still leaves ~35-40% of
-contact pairs merged on FelixClaar and BHC-FAG. The samples are small. At
-confidence 0.7 -- the trackers' activation threshold -- the current detector
-separates *fewer* pairs on FelixClaar (46 -> 32%): its contact detections
-score lower, so a box tracker on it would need a lower threshold.
+Contact is the normal state of handball, not an event: SAM2 would be needed
+on ~87% of frames. Skipping whole frames (Selective Mask Propagation's
+dispatch) saves almost nothing here.
+
+**How SAM2's cost scales with players** (`sam2_object_scaling.py`, GPU,
+production predictor and accelerations, bf16, Han-Ber4, 60 steady frames):
+
+| tracked players | 1 | 2 | 4 | 8 | 14 |
+|---|---|---|---|---|---|
+| ms / frame | 110.8 | 128.6 | 165.3 | 234.7 | 343.3 |
+
+Linear fit: **93 ms fixed + 17.8 ms per player.** A hybrid that runs SAM2 on
+87% of frames for ~40% of ~10 players costs about
+0.87 x 93 + 0.39 x 10 x 17.8 = ~150 ms/frame against ~271 ms for SAM2 on
+those 10 players: **~1.8x, not an order of magnitude**, before any cost of
+handing identities between the two trackers. A narrower trigger -- only
+where the detector actually merges two players, or where a box track is lost
+in contact -- would fire less often, but needs its own measurement.
 
 ### Stitching the fragments
 
@@ -203,6 +270,8 @@ and leaving the fragments unlinked).
   it re-creates the swap, so the identity layer must either have evidence
   that survives contact (jersey numbers) or leave such fragments unlinked --
   abstaining, which this project already prefers to a confident wrong link.
+- A SAM2-near-contacts hybrid buys ~1.8x at best, because contact is the
+  normal state of handball. It is not the route to a fast tracker.
 - Appearance in association is worth keeping only as a cheap kit-colour gate
   and only as a soft, separately evaluated option (CLAUDE.md: no team-gated
   association by default). PRTReID adds CPU/GPU cost with no gain here.
@@ -212,24 +281,32 @@ and leaving the fragments unlinked).
 - Three short clips, nine error events; FelixClaar carries most of the signal.
 - The references are partly mask-propagated (§8.4); the oracle boxes come from
   them and are cleaner than any detector.
-- The detector arm uses `_v1` detections; no every-frame run of the current
-  detector exists for these clips.
+- The production-detector runs use an activation threshold and colour gate
+  chosen on Han-Ber4; its rows are in-sample.
 - Thresholds were calibrated on Han-Ber4 and are in-sample there.
 
 ## Next steps
 
-1. When the GPU is free: run the current detector on every frame of the three
-   clips (~950 frames) and repeat the detector arm (`sort`, `sort_strict`,
-   `colour_gate`). Pick the activation threshold on one clip only.
-2. Stitch with the real identity layer: feed `sort_strict` tracklets through
+1. Fast tier: a box tracker (SORT, optionally strict, optional kit-colour
+   gate) on the production detector run every frame is ~20x cheaper than
+   SAM2, and on the same `_v1` detections `sort_strict` beats MCByte on all
+   three clips (83.8 / 90.1 / 97.2% against 75.5 / 89.2 / 93.8%). Worth adopting as the fast
+   option in place of MCByte -- a decision for the user, since CLAUDE.md
+   names MCByte. The colour gate stays off by default (no team-gated
+   association) unless evaluated separately.
+2. Detector: fine-tune on contact-heavy frames, with the every-frame contact
+   separation rate (`detector_versions.py --every-frame`) as the acceptance
+   metric. It is the only lever that moves a box tracker on FelixClaar-type
+   play.
+3. Stitch with the real identity layer: feed `sort_strict` tracklets through
    `PlayerRegistry` (re-ID plus jersey numbers) and score it. The motion proxy
-   above shows the easy cases are free and the hard crossing is not; the
-   question is whether number reads resolve it, or whether the registry
-   correctly declines to link.
-3. If (1) still shows contact merges as the dominant failure, fine-tune the
-   detector on contact-heavy frames and track the contact-separation rate as
-   the acceptance metric.
-4. Build the contact-event evaluation set discussed on 2026-10-19 before any
+   shows the easy cases are free and the hard crossing is not; the question
+   is whether number reads resolve it, or whether the registry correctly
+   declines to link.
+4. Hybrid: not worth building on an any-overlap trigger (~1.8x). Only revisit
+   with a narrow trigger (detector merge or box track lost in contact), after
+   measuring how often that fires.
+5. Build the contact-event evaluation set discussed on 2026-10-19 before any
    production decision; three clips cannot carry it.
 
 ## Reproduce
@@ -254,4 +331,12 @@ python -m experiments.box_tracker_oracle.stitch --arm oracle    # and --arm dete
 python -m experiments.box_tracker_oracle.detector_versions
 python -m experiments.box_tracker_oracle.table
 python -m experiments.box_tracker_oracle.render_event felix 1 6 121 out.jpg
+# GPU
+python -m experiments.box_tracker_oracle.detect_every_frame detector-expanded-v1  # and detector-local
+python -m experiments.box_tracker_oracle.run --arms expanded local --activation 0.5 \
+    --variants sort sort_strict bytetrack colour_gate colour_gate_strict \
+    --gate colour=0.28 --tag current_detectors
+python -m experiments.box_tracker_oracle.detector_versions --every-frame
+python -m experiments.box_tracker_oracle.contact_coverage
+python -m experiments.box_tracker_oracle.sam2_object_scaling
 ```

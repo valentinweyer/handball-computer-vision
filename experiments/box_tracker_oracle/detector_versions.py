@@ -82,7 +82,31 @@ def contact_separation(clip, cache, frames, threshold, contact_iou=0.2):
     return separated, pairs
 
 
+def every_frame():
+    """All three detector versions on every reference frame (stride-1 caches)."""
+    from experiments.box_tracker_oracle.common import EVERY_FRAME_EXPORTS, OUT
+
+    for name in INTERIM:
+        clip = Clip(name)
+        caches = {"v1": load(clip.detection_cache)}
+        for arm, export in EVERY_FRAME_EXPORTS.items():
+            caches[arm] = load(OUT / "detections" / export / f"{name}.npz")
+        frames = sorted(clip.reference)
+        row = {}
+        for label, cache in caches.items():
+            hit, total = recall(clip, cache, frames, 0.5)
+            separated, pairs = contact_separation(clip, cache, frames, 0.5)
+            row[label] = {"recall": round(100 * hit / total, 1),
+                          "separated": round(100 * separated / max(pairs, 1), 1),
+                          "contact_pairs": pairs}
+        print(name, json.dumps(row))
+
+
 def main():
+    import sys
+    if "--every-frame" in sys.argv:
+        every_frame()
+        return
     report = {}
     for name, interim in INTERIM.items():
         clip = Clip(name)
