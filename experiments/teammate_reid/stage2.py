@@ -39,6 +39,7 @@ import json
 import os
 import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from collections import Counter
 from pathlib import Path
@@ -157,8 +158,8 @@ def review() -> None:
                     frames.setdefault(rid, {})[f] = (frame.copy(), box)
                 if f in clip:
                     small = cv2.resize(frame, (960, 540))
-                    if box is not None:
-                        x1, y1, x2, y2 = (int(v / 2) for v in box)
+                    if box is not None:   # box is in source pixels; the clip is 960 wide
+                        x1, y1, x2, y2 = (int(v * 960 / frame.shape[1]) for v in box)
                         cv2.rectangle(small, (x1, y1), (x2, y2), BOX, 2)
                     cv2.putText(small, f"{rid}  frame {f}", (8, 24), 0, 0.7, (255, 255, 255), 2)
                     if rid not in writers:
@@ -167,14 +168,17 @@ def review() -> None:
                     writers[rid].write(small)
         for w in writers.values():
             w.release()
-        for rid in writers:   # OpenCV writes MPEG-4 Part 2, which Firefox/Chrome cannot play
-            clip = rdir / f"{rid}.mp4"
-            tmp = clip.with_suffix(".h264.mp4")
-            subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clip), "-c:v", "libx264", "-preset", "veryfast",
-                            "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(tmp)], check=True)
-            tmp.replace(clip)
+        with ThreadPoolExecutor(8) as pool:   # OpenCV writes MPEG-4 Part 2, which Firefox/Chrome cannot play
+            list(pool.map(_to_h264, (rdir / f"{rid}.mp4" for rid in writers)))
         for rid, (s, keys, _) in plans.items():
             _sheet(rdir / f"{rid}.jpg", rid, s, keys, frames.get(rid, {}))
+
+
+def _to_h264(clip: Path) -> None:
+    tmp = clip.with_suffix(".h264.mp4")
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(clip), "-c:v", "libx264", "-preset", "veryfast",
+                    "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", str(tmp)], check=True)
+    tmp.replace(clip)
 
 
 def _sheet(path: Path, rid: str, s: dict, keys: list, frames: dict) -> None:
