@@ -141,7 +141,7 @@ def main() -> None:
 
     print(f"track lifecycle events: {len(track_manager.events)}")
     for e in track_manager.events:
-        print(f"  frame {e['frame']:>4}  {e['type']:<16} obj_id={e['obj_id']}")
+        print(f"  frame {e['frame']:>4}  {e['type']:<16} obj_id={e.get('obj_id')}")
 
     events_path = args.output.with_name(args.output.stem + "_events.json")
     events_path.write_text(json.dumps(track_manager.events, indent=2, default=_json_default))
