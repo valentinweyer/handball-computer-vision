@@ -1,7 +1,8 @@
-"""Score the final windows once against `locked/split_v2.json`.
+"""Score a final bank once against `locked/split_v2.json`.
 
-The four lower-league windows (`heldout.FINAL_WINDOWS`) were cut after the v2 lock was
-committed and were never used for tuning or selection. This reads only the lock: the
+Each bank is a set of windows cut after the v2 lock was committed and never used for
+tuning or selection: `final` = the four lower-league windows (`heldout.FINAL_WINDOWS`).
+A match may sit in one bank only, never in tuning or the split-v1 test (asserted). This reads only the lock: the
 gallery, query-crop and half-split settings and the gate come from it, nothing is chosen
 here. Fragments the assistant review excluded (`<window>/review.json`) are dropped by
 `load_reviewed`, as on every earlier bank.
@@ -11,10 +12,11 @@ within each match: known precision, coverage of known queries, unknown false-mat
 rate, the criterion v2 verdict, and correct/wrong names and seconds over the universe
 of vouched fragments (>= 3 crops). Refuses to run twice.
 
-    python -m experiments.teammate_reid.final_test
+    python -m experiments.teammate_reid.final_test [--bank final]
 """
 from __future__ import annotations
 
+import argparse
 import datetime
 import hashlib
 import json
@@ -26,8 +28,7 @@ from experiments.teammate_reid.openset import CRITERION, RUNS
 from experiments.teammate_reid.split_test import TEST, TUNING
 from experiments.teammate_reid.symmetric import LOCK, Arrays, results_rows
 
-FINAL = RUNS / "final"
-OUT = FINAL / "test.json"
+BANKS = {"final": (FINAL_WINDOWS, RUNS / "final")}   # bank -> (windows, results root with <window>/ dirs)
 KP, FMR, COV = (CRITERION[k] for k in ("known_precision_min", "unknown_false_match_rate_max", "coverage_min"))
 
 
@@ -59,22 +60,27 @@ def clustered_ci(rows: list, halves: bool, gate: list, reps: int = 2000, seed: i
 
 
 def main() -> None:
-    if OUT.is_file():
-        raise SystemExit(f"{OUT} exists; the final windows are scored once")
+    parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    parser.add_argument("--bank", default="final", choices=tuple(BANKS))
+    windows, root = BANKS[parser.parse_args().bank]
+    out = root / "test.json"
+    if out.is_file():
+        raise SystemExit(f"{out} exists; a bank is scored once")
     lock = json.loads(LOCK.read_text())
     gate, halves = lock["gate"], lock["halves_guard"]
-    final = lambda m: m not in TUNING and m not in TEST
+    elsewhere = {m for w, _ in BANKS.values() if w is not windows for _n, m, *_ in w}
+    final = lambda m: m not in TUNING and m not in TEST and m not in elsewhere
     rows, universe, inputs = [], [], {}
-    for name, match, _source, _exposure in FINAL_WINDOWS:
+    for name, match, _source, _exposure in windows:
         assert final(match), match
-        results = FINAL / name
+        results = root / name
         r, u = results_rows(results, (match,), lock["gallery"], lock["query_crops"], allowed=final)
         rows += r
         universe += u
         inputs[name] = {f: hashlib.sha256((results / f).read_bytes()).hexdigest()
                         for f in ("fragments.json", "crops.json", "features_sportsreid_vitb16.npz", "review.json")}
     per_match = {}
-    for _name, match, *_ in FINAL_WINDOWS:
+    for _name, match, *_ in windows:
         sub = [r for r in rows if r["match"] == match]
         uni = [u for u in universe if u["match"] == match]
         per_match[match] = {**summary(sub, halves, gate), "universe": len(uni),
@@ -97,7 +103,7 @@ def main() -> None:
                   "mixed fragments removed by assistant visual review, not by a human annotator",
         "rows": rows,
     }
-    OUT.write_text(json.dumps(report, indent=2, default=float))
+    out.write_text(json.dumps(report, indent=2, default=float))
     print(json.dumps({k: report[k] for k in ("pass", "pooled_ci95")}, indent=1))
     keys = ("known_queries", "accepted_known", "correct", "wrong_known", "precision", "coverage",
             "unknown_queries", "unknown_false_matches", "fmr", "correct_seconds", "wrong_seconds", "passes")

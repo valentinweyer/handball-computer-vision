@@ -39,6 +39,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from concurrent.futures import ThreadPoolExecutor
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from collections import Counter
@@ -164,14 +165,41 @@ def review() -> None:
                     cv2.putText(small, f"{rid}  frame {f}", (8, 24), 0, 0.7, (255, 255, 255), 2)
                     if rid not in writers:
                         writers[rid] = cv2.VideoWriter(str(rdir / f"{rid}.mp4"), cv2.VideoWriter_fourcc(*"mp4v"),
-                                                       12.5, (960, 540))
-                    writers[rid].write(small)
+                                                       12.5, (960 + ZOOM_W, 540))
+                    writers[rid].write(np.hstack([small, _zoom(frame, box)]))
         for w in writers.values():
             w.release()
         with ThreadPoolExecutor(8) as pool:   # OpenCV writes MPEG-4 Part 2, which Firefox/Chrome cannot play
             list(pool.map(_to_h264, (rdir / f"{rid}.mp4" for rid in writers)))
         for rid, (s, keys, _) in plans.items():
             _sheet(rdir / f"{rid}.jpg", rid, s, keys, frames.get(rid, {}))
+
+
+ZOOM_W = 360   # follow panel beside the 960x540 context view, cut from the source frame
+
+
+def _zoom(frame: np.ndarray, box) -> np.ndarray:
+    """The target at source resolution: a 2:3 window around the box, scaled to ZOOM_W x 540.
+    No box (before/after the segment, or a gap) -> a grey panel, never a guessed position."""
+    panel = np.full((540, ZOOM_W, 3), 40, np.uint8)
+    if box is None:
+        cv2.putText(panel, "no target box", (20, 270), 0, 0.7, (200, 200, 200), 1)
+        return panel
+    H, W = frame.shape[:2]
+    x1, y1, x2, y2 = box
+    h = min(H, max(1.6 * (y2 - y1), 1.6 * 1.5 * (x2 - x1), 96))
+    w = h * ZOOM_W / 540
+    cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
+    left, top = int(np.clip(cx - w / 2, 0, max(0, W - w))), int(np.clip(cy - h / 2, 0, max(0, H - h)))
+    crop = frame[top:top + int(h), left:left + int(w)]
+    if not crop.size:
+        return panel
+    scale = 540 / crop.shape[0]
+    zoom = cv2.resize(crop, (ZOOM_W, 540), interpolation=cv2.INTER_CUBIC)
+    bx1, by1, bx2, by2 = ((x1 - left) * ZOOM_W / crop.shape[1], (y1 - top) * scale,
+                          (x2 - left) * ZOOM_W / crop.shape[1], (y2 - top) * scale)
+    cv2.rectangle(zoom, (int(bx1), int(by1)), (int(bx2), int(by2)), BOX, 1)
+    return zoom
 
 
 def _to_h264(clip: Path) -> None:
@@ -458,7 +486,7 @@ If you cannot tell, choose <i>unclear</i>. Never guess.</p>
 <textarea id="note" rows="2" oninput="save()"></textarea>
 <img class="sheet" id="sheet"><video id="vid" controls muted loop playsinline></video></div></div>
 <script>
-const Q=__DATA__, REFS=__REFS__, KEY="__KEY__", LABELS_URL="__URL__";
+const Q=__DATA__, REFS=__REFS__, KEY="__KEY__", LABELS_URL="__URL__", MEDIA_V="__MEDIA_V__";
 let L={}; try{L=JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){}
 // Served by `stage2 serve`: the server copy is the source of truth, so any device resumes it.
 let SERVED=false, timer=null;
@@ -470,7 +498,7 @@ let i=0; try{i=+localStorage.getItem(KEY+"_pos")||0}catch(e){}
 function cur(){const q=Q[i];return L[q.review_id]||(L[q.review_id]={team:null,number:"",flag:null,note:""})}
 function render(){const q=Q[i],l=cur();document.getElementById("pos").textContent=`#${q.n} / ${Q.length}  (${q.review_id})`;
 document.getElementById("meta").textContent=`${q.match} · ${q.duration_s.toFixed(1)} s`;
-document.getElementById("sheet").src=q.review_id+".jpg";const v=document.getElementById("vid");v.src=q.review_id+".mp4";
+document.getElementById("sheet").src=q.review_id+".jpg?v="+MEDIA_V;const v=document.getElementById("vid");v.src=q.review_id+".mp4?v="+MEDIA_V;
 const t=document.getElementById("teams");t.innerHTML="";for(const k of ["0","1"]){const f=document.createElement("figure");
 const im=document.createElement("img");im.src=REFS[q.match][k];im.className=l.team===k?"sel":"";im.onclick=()=>{l.team=l.team===k?null:k;save();render()};
 f.appendChild(im);f.appendChild(document.createTextNode("team "+k));t.appendChild(f)}
@@ -489,7 +517,8 @@ if(e.key==="ArrowRight")go(1);if(e.key==="ArrowLeft")go(-1)});
 fetch(LABELS_URL).then(r=>r.ok?r.json():Promise.reject(r.status)).then(d=>{SERVED=true;
 if(Object.keys(d.labels||{}).length)L=d.labels;setSync("· saved on server");render()})
 .catch(()=>setSync("· local only: use Download"));render();
-</script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs).replace("__KEY__", key).replace("__URL__", labels_url)
+</script></body></html>""".replace("__DATA__", data).replace("__REFS__", team_refs).replace("__KEY__", key).replace("__URL__", labels_url).replace(
+        "__MEDIA_V__", str(int(time.time())))   # new URLs whenever the page is rebuilt: browsers keep old video
 
 
 def configure(bank: str) -> None:

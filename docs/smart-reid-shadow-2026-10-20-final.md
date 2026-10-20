@@ -112,13 +112,12 @@ correlated.
 python -m scripts.process_video data/raw/<window>.mp4
 # worktree: mining, PRTReID + SportsReID features, sheets (runs/smart-reid-shadow/mine_final.sh)
 PYTHONPATH=src:. $PY -m experiments.teammate_reid.run --out runs/smart-reid-shadow/final/<window> \
-    --set final --only=<window lowercase> mine   # then extract, sheets
+    --set final --only <window lowercase> mine   # then extract, sheets
 # review.json per window (assistant review), then once:
 PYTHONPATH=src:. $PY -m experiments.teammate_reid.final_test
 ```
 
-`--only` takes several names. Write it as `--only=<name>`, otherwise it
-swallows the subcommand; the first overnight mining attempt failed this way.
+`--only` used to take several space-separated names and swallowed the subcommand after it, so the first overnight mining attempt failed. It now takes one comma-separated value and rejects names not in the set.
 
 Results are in `runs/smart-reid-shadow/final/test.json`, with all rows,
 per-match figures, the lock hash and input hashes.
