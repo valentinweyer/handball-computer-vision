@@ -54,7 +54,7 @@ v1 test.
   assistant review, not an independent human one. Two Bielefeld fragments were
   excluded:
   - Aurich #20, track 161, switches to #6 and then a third player.
-  - Aurich #8, track 161, is a substitute in a warm-up shirt with no visible
+  - Aurich #8, track 160, is a substitute in a warm-up shirt with no visible
     number.
 
   The review is in `annotations/final_review_v1.json`.
