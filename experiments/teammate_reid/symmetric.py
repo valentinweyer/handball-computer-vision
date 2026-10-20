@@ -61,42 +61,52 @@ def _best(sim: np.ndarray, qc: list, galleries: dict) -> tuple:
 
 
 def rows_for(gallery: str, query_mode: str) -> tuple[list, list]:
-    """(query rows, universe): universe = every vouched fragment with >= 3 crops."""
-    after, exclude_track = GALLERIES[gallery]
+    """(query rows, universe) over the tuning matches only."""
     rows, universe = [], []
     for results, matches in DEV_SOURCES.items():
         matches = tuple(m for m in matches if m in TUNING)
-        if not matches:
-            continue
-        crops, fragments, _ = load_reviewed(results)
-        emb = np.load(results / "features_sportsreid_vitb16.npz")["raw"]
-        emb = emb / np.clip(np.linalg.norm(emb, axis=1, keepdims=True), 1e-8, None)
-        by_fragment: dict = {}
-        for c in sorted(crops, key=lambda c: c["frame"]):
-            by_fragment.setdefault(c["fragment"], []).append(c["crop_id"])
-        for video in sorted({f["video"] for f in fragments if f["match"] in matches}):
-            frags = [f for f in fragments if f["video"] == video and by_fragment.get(f["key"])]
-            match = frags[0]["match"]
-            assert match in TUNING and match not in TEST
-            ids = sorted({c for f in frags for c in by_fragment[f["key"]]})
-            index = {c: i for i, c in enumerate(ids)}
-            sim = emb[ids] @ emb[ids].T
-            local = {k: [index[c] for c in v] for k, v in by_fragment.items() if k in {f["key"] for f in frags}}
-            universe += [{"match": match, "fragment": f["key"], "duration_s": (f["end"] - f["start"] + 1) / 25.0}
-                         for f in frags if len(local[f["key"]]) >= 3]
-            for q in build_queries(frags, local, after=after, exclude_track=exclude_track):
-                qc = _pick(q.crops, query_mode)
-                best, score, margin = _best(sim, qc, q.galleries)
-                h = len(q.crops) // 2
-                halves = None
-                if h >= 2 and len(q.galleries) > 1:
-                    first, second = (_best(sim, _pick(part, "spread8"), q.galleries)[0]
-                                     for part in (q.crops[:h], q.crops[h:]))
-                    halves = first == second
-                rows.append({"match": match, "fragment": q.fragment, "identity": q.identity, "known": q.known,
-                             "synthetic_unknown": q.synthetic_unknown, "duration_s": q.meta["duration_s"],
-                             "best": best, "score": score, "margin": margin, "halves_agree": halves,
-                             "candidates": len(q.galleries)})
+        if matches:
+            r, u = results_rows(results, matches, gallery, query_mode, allowed=lambda m: m in TUNING)
+            rows += r
+            universe += u
+    return rows, universe
+
+
+def results_rows(results: Path, matches: tuple, gallery: str, query_mode: str, allowed) -> tuple[list, list]:
+    """(query rows, universe) of one results dir: universe = every vouched fragment with >= 3 crops.
+
+    `allowed(match)` is asserted for every match loaded, so a split cannot leak."""
+    after, exclude_track = GALLERIES[gallery]
+    rows, universe = [], []
+    crops, fragments, _ = load_reviewed(results)
+    emb = np.load(results / "features_sportsreid_vitb16.npz")["raw"]
+    emb = emb / np.clip(np.linalg.norm(emb, axis=1, keepdims=True), 1e-8, None)
+    by_fragment: dict = {}
+    for c in sorted(crops, key=lambda c: c["frame"]):
+        by_fragment.setdefault(c["fragment"], []).append(c["crop_id"])
+    for video in sorted({f["video"] for f in fragments if f["match"] in matches}):
+        frags = [f for f in fragments if f["video"] == video and by_fragment.get(f["key"])]
+        match = frags[0]["match"]
+        assert allowed(match) and match not in TEST
+        ids = sorted({c for f in frags for c in by_fragment[f["key"]]})
+        index = {c: i for i, c in enumerate(ids)}
+        sim = emb[ids] @ emb[ids].T
+        local = {k: [index[c] for c in v] for k, v in by_fragment.items() if k in {f["key"] for f in frags}}
+        universe += [{"match": match, "fragment": f["key"], "duration_s": (f["end"] - f["start"] + 1) / 25.0}
+                     for f in frags if len(local[f["key"]]) >= 3]
+        for q in build_queries(frags, local, after=after, exclude_track=exclude_track):
+            qc = _pick(q.crops, query_mode)
+            best, score, margin = _best(sim, qc, q.galleries)
+            h = len(q.crops) // 2
+            halves = None
+            if h >= 2 and len(q.galleries) > 1:
+                first, second = (_best(sim, _pick(part, "spread8"), q.galleries)[0]
+                                 for part in (q.crops[:h], q.crops[h:]))
+                halves = first == second
+            rows.append({"match": match, "fragment": q.fragment, "identity": q.identity, "known": q.known,
+                         "synthetic_unknown": q.synthetic_unknown, "duration_s": q.meta["duration_s"],
+                         "best": best, "score": score, "margin": margin, "halves_agree": halves,
+                         "candidates": len(q.galleries)})
     return rows, universe
 
 
