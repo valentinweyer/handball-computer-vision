@@ -247,6 +247,15 @@ class CourtTracker:
             least half of the last `view_window` frames agreed. Out of view,
             the tracker abstains and forgets its fit rather than carry it
             through a stretch it cannot see.
+        min_confirmed: a frame whose keypoints mostly disagree still counts as
+            showing the court when at least this many of them land within
+            `ransac_px` of where the carried estimate puts them; it is then
+            fitted from those. On two lower-league broadcasts the model put the
+            centre-line points on a sponsor circle in mid-court views, so the
+            goal-area points were outvoted and 14% of frames were declared
+            courtless; the carried court matched >= 4 keypoints in 81% and 34%
+            of those frames, and in none of Kiel's lights-off timeout (max 3).
+            None disables it.
     """
 
     def __init__(
@@ -263,6 +272,7 @@ class CourtTracker:
         max_age: int = 50,
         min_agreement: float = 0.5,
         view_window: int = 25,
+        min_confirmed: int | None = 4,
     ) -> None:
         self._vertices = np.asarray(vertices, dtype=np.float64)
         self._image_size = (float(image_size[0]), float(image_size[1]))
@@ -273,6 +283,7 @@ class CourtTracker:
         self._prior_weight = prior_weight
         self._max_age = max_age
         self._min_agreement = min_agreement
+        self._min_confirmed = min_confirmed
         self._recent_agreement: deque[bool] = deque(maxlen=view_window)
         self._homography: np.ndarray | None = None
         # Which way round the court sits in the picture (see `_orientation`) is a
@@ -408,6 +419,16 @@ class CourtTracker:
         # prediction has a say: a mirrored labelling agrees with itself, points
         # found on a dark huddle do not.
         agrees = consensus is not None and len(consensus[1]) >= self._min_agreement * len(observed)
+        # Outvoted by its own mislabelled points, a frame can still show the
+        # court history expects: enough landmarks exactly where the carried
+        # estimate puts them is a court, not points found on silhouettes.
+        confirmed = False
+        if not agrees and prediction is not None and self._min_confirmed is not None:
+            held = self._confirmed_slots(slots, observed, prediction)
+            if len(held) >= max(4, self._min_confirmed):
+                confirmed_consensus = self._consensus(held, observed)
+                if confirmed_consensus is not None:
+                    consensus, agrees, confirmed = confirmed_consensus, True, True
         self._recent_agreement.append(agrees)
         if 2 * sum(self._recent_agreement) < len(self._recent_agreement):
             self._homography = None
@@ -419,7 +440,7 @@ class CourtTracker:
         self._orientation_votes[self._orientation_of(consensus[0])] += 1
 
         use_prior = prediction is not None
-        if prediction is not None and self._identity_gate_px is not None:
+        if prediction is not None and self._identity_gate_px is not None and not confirmed:
             gated = self._agreeing_slots(slots, observed, prediction)
             held = self._consensus(gated, observed) if gated != slots else consensus
             if self._prediction_contradicted(consensus, held):
@@ -448,6 +469,21 @@ class CourtTracker:
         self._previous_points = observed
         self._age = 0
         return self._describe(blended, court_in, image_in, "keypoints")
+
+    def _confirmed_slots(
+        self, slots: list[int], observed: dict[int, tuple[float, float]], prediction: np.ndarray
+    ) -> list[int]:
+        """Landmarks within `ransac_px` of where the carried estimate places them."""
+        if not slots:
+            return []
+        placed = cv2.perspectiveTransform(
+            court_points(slots, self._vertices).reshape(-1, 1, 2).astype(np.float32),
+            prediction.astype(np.float32),
+        ).reshape(-1, 2)
+        seen = np.array([observed[s] for s in slots], dtype=np.float64)
+        with np.errstate(invalid="ignore"):
+            distance = np.linalg.norm(placed - seen, axis=1)
+        return [s for s, d in zip(slots, distance) if np.isfinite(d) and d <= self._ransac_px]
 
     def _consensus(
         self, slots: list[int], observed: dict[int, tuple[float, float]]
