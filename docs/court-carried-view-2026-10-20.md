@@ -82,3 +82,13 @@ Overlays are in `runs/smart-reid-shadow/court_check/` (`*_NEW_*.mp4`).
 - **Position accuracy:** court positions in rescued frames inherit the fit
   quality described above. Nothing measures position accuracy against ground
   truth here.
+
+## Rejected: a looser RANSAC tolerance
+
+Raising `ransac_px` from 20 to 30 px clears Würzburg completely (7.5% → 0%)
+and Eisenach to 3.5%. But it also cuts Kiel's no-court share from 9.1% to 7.3%.
+Of the 266 Kiel frames it adds back as "court in view", 11 of 12 sampled
+frames are the lights-off timeout itself: a dark huddle under a spotlight, where
+hallucinated points now pass as a court. Only the last stretch, at 100 s with
+the lights back on, is real play. So the tolerance stays at 20 px. Würzburg's
+remainder is a keypoint-model problem.
