@@ -60,6 +60,8 @@ def main():
     parser.add_argument('--lean-method', choices=['memory', 'off'], default='memory')
     parser.add_argument('--cutie-size', type=int, choices=[480, 1024], default=480)
     parser.add_argument('--fps', type=float, default=25.0)
+    parser.add_argument('--sam2-stride', type=int, default=1,
+                        help='propagate on every Nth frame, interpolating the rest (drive_sam2)')
     parser.add_argument('--output', type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
@@ -100,7 +102,8 @@ def main():
             (Path(tmp) / path.name).symlink_to(path.resolve())
         manager, seeds, frames = drive_sam2(
             args.frames, lambda fid: person_detections(cache, fid), team, str(checkpoint),
-            frame_cache_dir=Path(tmp), predictor_factory=factory, desc=f'{args.backend} review')
+            frame_cache_dir=Path(tmp), predictor_factory=factory, desc=f'{args.backend} review',
+            sam2_stride=args.sam2_stride)
         rows.extend((0, int(oid), box.copy()) for oid, box in seeds.items())
         # Frame 0 is the seed frame; it has no propagated masks, so show the
         # seed boxes' frame plainly rather than invent masks for it.

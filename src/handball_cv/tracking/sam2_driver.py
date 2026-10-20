@@ -223,13 +223,16 @@ class LazyFrames:
     itself. For the latter the decoded RGB array goes through the same PIL
     steps `_load_img_as_tensor` applies to an opened JPEG, so the two paths
     differ only in the pixels they start from.
+
+    `frames`, if given, is the sorted list of video frames SAM2 sees: its index
+    i is video frame `frames[i]` (see `drive_sam2`'s `sam2_stride`).
     """
 
     MEAN = (0.485, 0.456, 0.406)  # load_video_frames' defaults, which init_state uses
     STD = (0.229, 0.224, 0.225)
 
     def __init__(self, source: "list[Path] | VideoFrames", image_size: int, device,
-                 ahead: int = 2) -> None:
+                 ahead: int = 2, frames: "list[int] | None" = None) -> None:
         from PIL import Image
         from sam2.utils.misc import _load_img_as_tensor
 
@@ -246,6 +249,7 @@ class LazyFrames:
             self.paths = [str(p) for p in source]
             with Image.open(self.paths[0]) as first:
                 self.video_width, self.video_height = first.size
+        self.frames = frames
         self.mean = torch.tensor(self.MEAN, dtype=torch.float32)[:, None, None].to(device)
         self.std = torch.tensor(self.STD, dtype=torch.float32)[:, None, None].to(device)
         self._pool = ThreadPoolExecutor(max_workers=1)
@@ -253,9 +257,13 @@ class LazyFrames:
         self._recent: dict[int, torch.Tensor] = {}
 
     def __len__(self) -> int:
+        if self.frames is not None:
+            return len(self.frames)
         return len(self.video) if self.video is not None else len(self.paths)
 
     def _decode(self, idx: int) -> torch.Tensor:
+        if self.frames is not None:
+            idx = self.frames[idx]
         if self.video is None:
             img, _, _ = self._load_img(self.paths[idx], self.image_size)
         else:
@@ -321,13 +329,15 @@ def install_rope_repeat_cache() -> None:
     transformer.apply_rotary_enc = apply_rotary_enc
 
 
-def init_state_lazily(predictor, frames: "Path | VideoFrames") -> dict:
+def init_state_lazily(predictor, frames: "Path | VideoFrames",
+                      track_frames: "list[int] | None" = None) -> dict:
     """`predictor.init_state` with `LazyFrames` in place of the whole-clip preload.
 
     `frames` is a JPEG folder, or a `VideoFrames` decoding the video directly.
-    Only upstream's own `SAM2VideoPredictor` loads frames through the function
-    replaced here; anything else gets its plain `init_state`, which needs a
-    folder.
+    `track_frames` restricts SAM2 to those video frames (SAM2's frame i is
+    video frame `track_frames[i]`). Only upstream's own `SAM2VideoPredictor`
+    loads frames through the function replaced here; anything else gets its
+    plain `init_state`, which needs a folder and every frame.
     """
     video = frames if isinstance(frames, VideoFrames) else None
     try:
@@ -338,6 +348,8 @@ def init_state_lazily(predictor, frames: "Path | VideoFrames") -> dict:
         if video is not None:
             raise ValueError("decoding the video directly needs upstream SAM2VideoPredictor; "
                              "other backends read a JPEG folder")
+        if track_frames is not None:
+            raise ValueError("tracking a subset of frames needs upstream SAM2VideoPredictor")
         return predictor.init_state(video_path=str(frames))
 
     if video is not None:
@@ -351,7 +363,7 @@ def init_state_lazily(predictor, frames: "Path | VideoFrames") -> dict:
 
     def load_lazily(video_path, image_size, offload_video_to_cpu, async_loading_frames=False,
                     compute_device=torch.device("cuda"), **_):
-        lazy = LazyFrames(source, image_size, compute_device)
+        lazy = LazyFrames(source, image_size, compute_device, frames=track_frames)
         return lazy, lazy.video_height, lazy.video_width
 
     preload = video_predictor.load_video_frames
@@ -420,6 +432,73 @@ class Sam2FrameResult:
     masks: np.ndarray        # (N, H, W) bool
     boxes: np.ndarray        # (N, 4) xyxy, mask-derived
     read_frame: Callable[[], np.ndarray]  # -> RGB frame, decoded once and cached
+    # True for a frame SAM2 skipped (`drive_sam2`'s `sam2_stride`): boxes
+    # interpolated between the neighbouring processed frames, masks shifted
+    # from the earlier one. Display geometry only -- never evidence (numbers,
+    # team, re-ID).
+    interpolated: bool = False
+
+
+def track_frame_schedule(num_frames: int, stride: int, *cadences: int) -> list[int] | None:
+    """The video frames SAM2 propagates on when it runs at 1/`stride` frame rate.
+
+    Every `stride`-th frame, plus every frame on one of `cadences` -- whatever
+    must see a real SAM2 mask: detector checkpoints, jersey reads -- plus the
+    last frame. `stride` 1 is every frame and returns None, the unchanged path.
+    Measured on the three scored clips (`docs/sam2-throughput-2026-10-20.md`):
+    stride 2 keeps identity quality, stride 3 does not.
+    """
+    if stride < 1:
+        raise ValueError(f"stride must be >= 1, got {stride}")
+    if stride == 1:
+        return None
+    keep = set(range(0, num_frames, stride))
+    for cadence in cadences:
+        keep.update(range(0, num_frames, cadence))
+    keep.add(num_frames - 1)
+    return sorted(keep)
+
+
+def shift_mask(mask: np.ndarray, dx: int, dy: int) -> np.ndarray:
+    """`mask` translated by (dx, dy) pixels; what leaves the frame is dropped."""
+    out = np.zeros_like(mask)
+    h, w = mask.shape
+    if abs(dx) >= w or abs(dy) >= h:
+        return out
+    out[max(dy, 0):h + min(dy, 0), max(dx, 0):w + min(dx, 0)] = \
+        mask[max(-dy, 0):h + min(-dy, 0), max(-dx, 0):w + min(-dx, 0)]
+    return out
+
+
+def interpolate_skipped(frame_a: int, ids_a, boxes_a: np.ndarray, masks_a: np.ndarray,
+                        frame_b: int, ids_b, boxes_b: np.ndarray):
+    """Geometry for the frames strictly between two processed frames.
+
+    Yields (frame, ids, boxes, masks) for each skipped frame. A player present
+    on both sides is carried: its box interpolated linearly and its earlier
+    mask shifted by the box-centre displacement. One whose mask is empty on
+    either side stays listed with an empty mask and a zero box, as SAM2 lists
+    it on a processed frame. Anyone added or removed at the boundary simply
+    starts or stops at the processed frame.
+    """
+    index_b = {int(i): k for k, i in enumerate(ids_b)}
+    carried = [k for k, i in enumerate(ids_a) if int(i) in index_b]
+    ids = np.asarray([int(ids_a[k]) for k in carried], dtype=int)
+    visible = np.array([masks_a[k].any() and boxes_b[index_b[int(ids_a[k])]].any()
+                        for k in carried], dtype=bool)
+    start = boxes_a[carried].astype(float) if carried else np.zeros((0, 4))
+    end = (np.stack([boxes_b[index_b[int(ids_a[k])]] for k in carried]).astype(float)
+           if carried else np.zeros((0, 4)))
+    centre_a = (start[:, :2] + start[:, 2:]) / 2
+    for frame in range(frame_a + 1, frame_b):
+        w = (frame - frame_a) / (frame_b - frame_a)
+        boxes = np.where(visible[:, None], (1 - w) * start + w * end, 0.0)
+        shift = np.rint((boxes[:, :2] + boxes[:, 2:]) / 2 - centre_a).astype(int)
+        masks = np.zeros((len(carried), *masks_a.shape[1:]), dtype=bool)
+        for row, (k, (dx, dy)) in enumerate(zip(carried, shift)):
+            if visible[row]:
+                masks[row] = shift_mask(masks_a[k], int(dx), int(dy))
+        yield frame, ids, boxes, masks
 
 
 def _apply_reset_reseed(predictor, state, frame_idx, actions, masks_by_id) -> None:
@@ -495,6 +574,8 @@ def drive_sam2(
     frame_source: str = "jpeg",
     prune_memory: bool = True,
     court_in_view: Callable[[int], bool] | None = None,
+    sam2_stride: int = 1,
+    real_mask_every: tuple[int, ...] = (),
 ) -> tuple[TrackManager, dict[int, np.ndarray], Iterator[Sam2FrameResult]]:
     """Seed and propagate SAM2 with periodic detector-checkpoint reprompting.
 
@@ -548,6 +629,13 @@ def drive_sam2(
     been back for `RESUME_AFTER_FRAMES`, and players re-enter through the
     usual confirmation and re-ID. None, the default, never pauses.
 
+    `sam2_stride` > 1 runs SAM2 on every `sam2_stride`-th frame, every
+    checkpoint frame and every frame on a `real_mask_every` cadence (the
+    consumer's jersey reads, so they keep real masks); the frames between are
+    yielded with interpolated boxes and shifted masks, flagged `interpolated`.
+    Stride 2 is ~1.6-1.9x faster at unchanged identity quality on the three
+    scored clips; stride 3 is not (`docs/sam2-throughput-2026-10-20.md`).
+
     `checkpoint_policy` selects how `TrackManager`'s decisions reach the
     predictor. It does not change what those decisions are.
 
@@ -595,6 +683,28 @@ def drive_sam2(
     if max_frames is not None:
         num_frames = min(num_frames, max_frames)
 
+    # `sam2_stride` > 1 propagates SAM2 on every sam2_stride-th frame plus
+    # every checkpoint and every frame on a `real_mask_every` cadence (jersey
+    # reads), see `track_frame_schedule`. SAM2 sees `track_frames` (its index
+    # i = video frame track_frames[i]); everything else -- TrackManager,
+    # detections, court, the consumer -- keeps video frame numbers. Skipped
+    # frames are yielded with interpolated geometry
+    # (`Sam2FrameResult.interpolated`). Stride 1 is the unchanged path.
+    track_frames = track_frame_schedule(num_frames, sam2_stride, check_every, *real_mask_every)
+    sam2_count = num_frames if track_frames is None else len(track_frames)
+
+    def video_frame(sam2_idx: int) -> int:
+        return sam2_idx if track_frames is None else track_frames[sam2_idx]
+
+    def chunk_length(t: int) -> int:
+        """SAM2 steps from t to the next checkpoint (or the last frame)."""
+        if track_frames is None:
+            return min(check_every, num_frames - 1 - t)
+        for s in range(t + 1, sam2_count):
+            if track_frames[s] % check_every == 0:
+                return s - t
+        return sam2_count - 1 - t
+
     if predictor_factory is None:
         from sam2.build_sam import build_sam2_video_predictor
 
@@ -628,7 +738,7 @@ def drive_sam2(
     # Lean-SAM2 -- gets frames on demand (LazyFrames, identical values), so
     # forks are timed on the same frame loading; any other backend keeps its
     # own init_state untouched (init_state_lazily falls back to it).
-    state = init_state_lazily(predictor, frames_for_sam2)
+    state = init_state_lazily(predictor, frames_for_sam2, track_frames)
     window = memory_window(predictor) if prune_memory else None
     with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
         for oid, xyxy in zip(obj_ids0, det0.xyxy):
@@ -670,27 +780,49 @@ def drive_sam2(
         in_view_since: int | None = 0
         last_masks_by_id: dict[int, np.ndarray] = {}
         last_frame = frame0
+        # Last processed frame, for interpolating the frames after it that
+        # SAM2 skips (track_frames only).
+        previous = (0, np.asarray(obj_ids0, dtype=int), None, None)
 
-        pbar = tqdm(total=num_frames - 1, desc=desc)
+        pbar = tqdm(total=sam2_count - 1, desc=desc)
         t = 0
-        while t < num_frames - 1:
-            chunk_len = min(check_every, num_frames - 1 - t)
-            chunk_end = t
+        while t < sam2_count - 1:
+            chunk_len = chunk_length(t)
+            chunk_end_s = t
 
             # Each chunk restarts on frame t, which the previous chunk already
             # yielded. Skipping that recompute (starting at t + 1) looks free --
             # same memory, same frame -- but it is not bit-identical: the stored
             # and recomputed frame-t outputs differ, and on FelixClaar skipping
             # it cost 2 wrong-identity frames (95.01% -> 94.92%). Keep it.
+            # SAM2 indices (s, t, chunk_end_s) index its own frame list; fid and
+            # chunk_end are video frames.
             with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
-                for fid, obj_ids, mask_logits in propagate(t, chunk_len):
-                    if fid < next_new_fid or fid >= num_frames:
+                for s, obj_ids, mask_logits in propagate(t, chunk_len):
+                    if s == 0 and track_frames is not None:
+                        # Frame 0 is the seed, never yielded; keep its geometry
+                        # so the frames SAM2 skips right after it interpolate.
+                        seed_masks = masks_from_logits(mask_logits)
+                        previous = (0, np.asarray(obj_ids, dtype=int),
+                                    sv.mask_to_xyxy(masks=seed_masks), seed_masks)
+                    if s < next_new_fid or s >= sam2_count:
                         continue  # repeated boundary frame, or past our truncation
+                    fid = video_frame(s)
 
                     masks = masks_from_logits(mask_logits)
                     track_manager.update_from_propagation(fid, obj_ids, masks)
 
                     boxes_this = sv.mask_to_xyxy(masks=masks)
+                    if track_frames is not None and previous[2] is not None:
+                        for skipped, ids, boxes, shifted in interpolate_skipped(
+                                previous[0], previous[1], previous[2], previous[3],
+                                fid, obj_ids, boxes_this):
+                            yield Sam2FrameResult(
+                                frame_idx=skipped, player_ids=ids, masks=shifted,
+                                boxes=boxes, read_frame=frame_reader(skipped),
+                                interpolated=True,
+                            )
+                    previous = (fid, np.asarray(obj_ids, dtype=int), boxes_this, masks)
                     reader = frame_reader(fid)
                     yield Sam2FrameResult(
                         frame_idx=fid,
@@ -700,17 +832,18 @@ def drive_sam2(
                         read_frame=reader,
                     )
 
-                    chunk_end = fid
+                    chunk_end_s = s
                     if window is not None:
-                        prune_frame_outputs(state, fid, window)
-                    if fid == t + chunk_len:
+                        prune_frame_outputs(state, s, window)
+                    if s == t + chunk_len:
                         last_masks_by_id = dict(zip(obj_ids, masks))
                         last_frame = reader()  # decoded once, shared with the consumer
                     pbar.update(1)
 
-            next_new_fid = chunk_end + 1
-            t = chunk_end
-            if t >= num_frames - 1:
+            next_new_fid = chunk_end_s + 1
+            t = chunk_end_s
+            chunk_end = video_frame(chunk_end_s)
+            if t >= sam2_count - 1:
                 break
 
             # ── detector checkpoint: decide add / remove / reprompt ──
@@ -745,7 +878,7 @@ def drive_sam2(
             with torch.inference_mode(), torch.autocast("cuda", dtype=torch.bfloat16):
                 if checkpoint_policy == "reset_reseed":
                     _apply_reset_reseed(
-                        predictor, state, chunk_end, actions, last_masks_by_id
+                        predictor, state, chunk_end_s, actions, last_masks_by_id
                     )
                     continue
                 for action in actions:
@@ -753,13 +886,13 @@ def drive_sam2(
                         predictor.remove_object(state, obj_id=action["obj_id"])
                     elif action["type"] == "reprompt":
                         predictor.add_new_points_or_box(
-                            state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                            state, frame_idx=chunk_end_s, obj_id=action["obj_id"],
                             box=np.asarray(action["box"], dtype=np.float32),
                             clear_old_points=True,
                         )
                     elif action["type"] == "add":
                         predictor.add_new_points_or_box(
-                            state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                            state, frame_idx=chunk_end_s, obj_id=action["obj_id"],
                             box=np.asarray(action["box"], dtype=np.float32),
                         )
                     elif action["type"] == "reset":
@@ -771,7 +904,7 @@ def drive_sam2(
                         if len(state["obj_id_to_idx"]) > 1:
                             predictor.remove_object(state, obj_id=action["obj_id"])
                             predictor.add_new_points_or_box(
-                                state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                                state, frame_idx=chunk_end_s, obj_id=action["obj_id"],
                                 box=np.asarray(action["box"], dtype=np.float32),
                             )
                         else:
@@ -779,7 +912,7 @@ def drive_sam2(
                             # session (see SAM2VideoPredictor.remove_object) --
                             # fall back to an in-place reprompt instead.
                             predictor.add_new_points_or_box(
-                                state, frame_idx=chunk_end, obj_id=action["obj_id"],
+                                state, frame_idx=chunk_end_s, obj_id=action["obj_id"],
                                 box=np.asarray(action["box"], dtype=np.float32),
                                 clear_old_points=True,
                             )

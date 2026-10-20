@@ -115,6 +115,10 @@ def main() -> None:
     parser.add_argument("--court-weights", type=Path, default=COURT_WEIGHTS)
     parser.add_argument("--check-every", type=int, default=CHECK_EVERY_DEFAULT)
     parser.add_argument("--ocr-every", type=int, default=OCR_EVERY_N_FRAMES)
+    parser.add_argument("--sam2-stride", type=int, default=1,
+                        help="track: propagate SAM2 on every Nth frame (plus checkpoints and "
+                             "read frames), interpolating the rest. 2 measured ~1.6-1.9x "
+                             "faster at unchanged quality (docs/sam2-throughput-2026-10-20.md)")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
 
@@ -126,6 +130,13 @@ def main() -> None:
     outputs = stage_outputs(work)
     if args.force:
         clear_from(args.force, outputs)
+    track_json = work / "track.json"
+    if track_json.is_file():
+        stored_stride = json.loads(track_json.read_text()).get("sam2_stride", 1)
+        if stored_stride != args.sam2_stride:
+            raise SystemExit(
+                f"{work} holds a track pass made with --sam2-stride {stored_stride}; "
+                f"rerun with --force track, or use another --work, for {args.sam2_stride}")
     timings_path = work / "timings.json"
     timings = json.loads(timings_path.read_text()) if timings_path.is_file() else {}
 
@@ -199,7 +210,8 @@ def main() -> None:
                    "--team-model", str(work / "team.pkl"), "--output", str(work / "track.mp4"),
                    "--frame-source", "video", "--no-video", "--device", args.device,
                    "--court-in-view", str(save_court_in_view(work, meta)),
-                   "--check-every", str(args.check_every), "--ocr-every", str(args.ocr_every)]
+                   "--check-every", str(args.check_every), "--ocr-every", str(args.ocr_every),
+                   "--sam2-stride", str(args.sam2_stride)]
         env = {**os.environ, "SAM2_UPSTREAM_DIR": os.environ.get("SAM2_UPSTREAM_DIR", str(ROOT / "sam2-upstream"))}
         with (work / "track.log").open("w") as log_file:
             completed = subprocess.run(command, cwd=ROOT, env=env, stdout=log_file, stderr=subprocess.STDOUT)

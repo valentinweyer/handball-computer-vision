@@ -18,6 +18,12 @@ logs, scores, review renders).
 - **Every third frame: ~2.5x, but Han-Ber4 gets its first identity errors**
   (99.91 -> 98.31%, 4 wrong frames, 2 mixed tracklets). Every second frame
   is the setting to take forward.
+- **Built into the pipeline as `--sam2-stride 2` (opt-in, default unchanged):**
+  the track stage of a 91 s clip runs 1.52x faster with jersey reads kept on
+  real masks; numbers resolved, reads and switch counts unchanged. On the
+  unseen review clips it made one identity error full rate did not (VfL
+  f1480: a goalkeeper re-identified as an earlier floor-wiper track) and
+  one extra fragment (Hannover).
 
 ## Baseline
 
@@ -103,6 +109,90 @@ jerseys every `OCR_EVERY_N_FRAMES = 5` frames, so:
 - Re-check on the unseen clips (Hannover, VfL) by eye before switching, as for
   CUTIE: three clips are enough to rule out an obvious regression, not to
   promise none.
+
+## Built into the pipeline (opt-in)
+
+`drive_sam2(..., sam2_stride=N, real_mask_every=(...))` runs SAM2 on
+`track_frame_schedule(num_frames, N, check_every, *real_mask_every)`: every
+Nth frame, every checkpoint frame, every frame on a `real_mask_every`
+cadence, and the last frame. SAM2 sees only those (`LazyFrames(frames=...)`);
+TrackManager, detections, court and the consumer keep video frame numbers.
+Skipped frames are yielded with `Sam2FrameResult.interpolated=True`:
+interpolated boxes, earlier mask shifted by the box-centre displacement,
+players with an empty mask listed empty as on processed frames. They are
+display geometry, never evidence.
+
+- `render_full_pipeline.py --sam2-stride N` passes `real_mask_every=(ocr_every,)`,
+  so every jersey-read frame keeps a real SAM2 mask (reads unchanged), and it
+  skips reads on interpolated frames as a guard. Run summary records
+  `sam2_stride`.
+- `process_video.py --sam2-stride N` (default 1) forwards it and refuses to
+  reuse a track pass made with a different stride.
+- With reads every 5 frames, stride 2 processes 60% of frames (even frames
+  plus 5, 15, 25, ...), so expect ~1.6x on the track loop rather than 1.86x.
+- `run_sam2_reprompt_tracker.py` and `experiments/cutie/render_review.py`
+  take `--sam2-stride` for scoring and review.
+
+**Default path unchanged:** FelixClaar at stride 1 through the modified
+driver is byte-identical to the stored baseline. **Built-in stride 2 on the
+references** (runner path, no read cadence): 96.67 / 99.57 / 98.97% against
+95.01 / 99.91 / 98.88% at full rate, same loop times as the prototype.
+
+## Unseen clips (Hannover, VfL 60 s)
+
+Rendered with the CUTIE review harness, same inputs as the 2026-10-16
+review, full rate and stride 2 with current code
+(`runs/sam2_throughput/review/`: `<clip>_s1`, `<clip>_s2`, and
+`<clip>_left-full_right-stride2.mp4` side by side). Wall time including
+drawing and encoding: Hannover 408 -> 244 s (1.68x), VfL 375 -> 220 s (1.70x).
+
+No reference exists, so `agreement.py` matches each run's boxes to the other's
+and lists where identities disagree; every disagreement was checked in the
+frames:
+
+- **Hannover f302-330**: both runs open a duplicate track (15) on the same
+  player as track 7; at full rate the duplicate is removed and 7 continues,
+  at stride 2 track 7 is removed and 15 continues. Same player throughout --
+  one extra fragment at stride 2, not a swap.
+- **VfL f0-36**: two tracks (8, 10) with identical boxes on one player in
+  both runs; an artefact of the comparison, not a difference.
+- **VfL f1480 -- a real stride-2 error.** At stride 2 the re-ID layer reuses
+  identity 30 for a goalkeeper entering at the left edge. Track 30 was last
+  seen at f1190 and was not a player but a floor wiper
+  (`review/vfl_reid_1480.jpg`). At full rate the same wiper is tracked too
+  (track 29), but the goalkeeper correctly gets a new track. The weakness is
+  the re-ID layer (it tracks and later reuses a non-player identity); stride 2
+  changed the masks enough to tip the decision on this clip.
+
+Overall 97.4-99.8% of matched boxes agree in each direction, and every
+disagreement of three or more frames is in one of these spans.
+
+## End to end through `process_video` (BHC-FAG, 91 s)
+
+Same prepare/scan/teams outputs (hard-linked), track stage at stride 1 and 2
+(`runs/sam2_throughput/pipeline/BHC-FAG_s{1,2}`, bundles alongside):
+
+| | stride 1 | stride 2 |
+|---|---|---|
+| track stage | 716 s | 470 s (**1.52x**) |
+| jersey-read frames / reads | 434 / 793 | 434 / 800 |
+| resolved numbers | 15 | the same 15 |
+| team switches / suspected ID switches | 6 / 2 | 6 / 2 |
+| new allocations / distinct players after linking | 39 / 29 | 36 / 26 |
+| lifecycle events | 182 | 67 |
+
+The track stage gains 1.52x rather than the loop's 1.86x: 60% of frames are
+still processed (reads every 5 frames), and reads, re-ID and team work do not
+shrink.
+
+The lifecycle gap is one track. At stride 1 the #22 orange goalkeeper
+(track 13) is masked over shirt and shorts only, so his mask box overlaps the
+detector's full-body box at IoU 0.2-0.45 -- the drift band -- and he is
+reprompted at **every checkpoint, 103 times**, without the mask ever
+recovering (`pipeline/track13_s1.jpg`). At stride 2 the same goalkeeper
+(track 10) is masked whole and never needs a reprompt. Not a stride
+regression; a separate production finding: a reprompt that does not fix the
+mask is repeated forever.
 
 ## Effect on a full match
 
