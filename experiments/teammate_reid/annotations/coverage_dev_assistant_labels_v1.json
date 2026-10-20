@@ -1,0 +1,665 @@
+{
+ "labeller": "assistant (Claude), blind full-resolution strips, not a human label",
+ "labels": {
+  "Q000": {
+   "team": 1,
+   "number": null,
+   "note": "Lemgo blue, number not legible"
+  },
+  "Q001": {
+   "team": 0,
+   "number": null,
+   "note": "Kiel white, no number visible"
+  },
+  "Q002": {
+   "team": 1,
+   "number": null,
+   "note": "red, chest digit unclear"
+  },
+  "Q003": {
+   "team": 1,
+   "number": "33"
+  },
+  "Q004": {
+   "team": 1,
+   "number": null,
+   "note": "red, maybe 21, unsure"
+  },
+  "Q005": {
+   "team": 1,
+   "number": "29"
+  },
+  "Q006": {
+   "team": 0,
+   "number": "17"
+  },
+  "Q007": {
+   "team": 0,
+   "number": "17"
+  },
+  "Q008": {
+   "team": 0,
+   "number": "13"
+  },
+  "Q009": {
+   "team": 1,
+   "number": "9"
+  },
+  "Q010": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q011": {
+   "team": 1,
+   "number": "6",
+   "note": "late frames crowded"
+  },
+  "Q012": {
+   "team": 0,
+   "number": "10"
+  },
+  "Q013": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q014": {
+   "team": 0,
+   "number": "55",
+   "note": "shorts, fairly clear"
+  },
+  "Q015": {
+   "team": 1,
+   "number": "33"
+  },
+  "Q016": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q017": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 4, unsure"
+  },
+  "Q018": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 33, unsure"
+  },
+  "Q019": {
+   "team": 1,
+   "number": "10"
+  },
+  "Q020": {
+   "team": 1,
+   "number": null,
+   "note": "35 or 25, unsure"
+  },
+  "Q021": {
+   "team": 1,
+   "number": null
+  },
+  "Q022": {
+   "team": 1,
+   "number": null
+  },
+  "Q023": {
+   "team": 0,
+   "number": "15"
+  },
+  "Q024": {
+   "team": 1,
+   "number": null
+  },
+  "Q025": {
+   "team": 0,
+   "number": "13",
+   "note": "one early frame has another player in the box"
+  },
+  "Q026": {
+   "team": 0,
+   "number": null
+  },
+  "Q027": {
+   "team": 0,
+   "number": "44",
+   "note": "shorts"
+  },
+  "Q028": {
+   "team": 0,
+   "number": "4"
+  },
+  "Q029": {
+   "team": 1,
+   "number": null
+  },
+  "Q030": {
+   "team": 0,
+   "number": null,
+   "note": "maybe 55"
+  },
+  "Q031": {
+   "team": 0,
+   "number": null
+  },
+  "Q032": {
+   "team": 1,
+   "number": "6"
+  },
+  "Q033": {
+   "team": 1,
+   "number": null
+  },
+  "Q034": {
+   "team": 1,
+   "number": "6"
+  },
+  "Q035": {
+   "team": 0,
+   "number": null,
+   "note": "maybe 44"
+  },
+  "Q036": {
+   "team": 1,
+   "number": "26"
+  },
+  "Q037": {
+   "team": 0,
+   "number": null
+  },
+  "Q038": {
+   "team": 1,
+   "number": "9"
+  },
+  "Q039": {
+   "team": 0,
+   "number": "44"
+  },
+  "Q040": {
+   "team": 1,
+   "number": "33"
+  },
+  "Q041": {
+   "team": 0,
+   "number": "10"
+  },
+  "Q042": {
+   "team": 1,
+   "number": null
+  },
+  "Q043": {
+   "team": 1,
+   "number": "20"
+  },
+  "Q044": {
+   "team": 1,
+   "number": "6"
+  },
+  "Q045": {
+   "team": 0,
+   "number": "10"
+  },
+  "Q046": {
+   "team": 0,
+   "number": "99"
+  },
+  "Q047": {
+   "team": 1,
+   "number": null
+  },
+  "Q048": {
+   "team": 0,
+   "number": null
+  },
+  "Q049": {
+   "team": 1,
+   "number": null,
+   "note": "last frame another player"
+  },
+  "Q050": {
+   "team": 1,
+   "number": "66"
+  },
+  "Q051": {
+   "team": 0,
+   "number": "21",
+   "note": "shorts"
+  },
+  "Q052": {
+   "team": 0,
+   "number": null
+  },
+  "Q053": {
+   "team": 0,
+   "number": null
+  },
+  "Q054": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q055": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q056": {
+   "team": 1,
+   "number": "71"
+  },
+  "Q057": {
+   "team": 1,
+   "number": "9",
+   "note": "box drifts in a tackle at the end"
+  },
+  "Q058": {
+   "team": 0,
+   "number": null
+  },
+  "Q059": {
+   "team": 1,
+   "number": null
+  },
+  "Q060": {
+   "team": 0,
+   "number": "55",
+   "note": "shorts"
+  },
+  "Q061": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q062": {
+   "team": 0,
+   "number": "6",
+   "note": "chest, moderately clear"
+  },
+  "Q063": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "box moves onto the referee"
+  },
+  "Q064": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 4"
+  },
+  "Q065": {
+   "team": 0,
+   "number": "21"
+  },
+  "Q066": {
+   "team": 1,
+   "number": "33"
+  },
+  "Q067": {
+   "team": 0,
+   "number": "19"
+  },
+  "Q068": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#23 and #6 both in the box"
+  },
+  "Q069": {
+   "team": 0,
+   "number": "93",
+   "note": "early frames crowded"
+  },
+  "Q070": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "#4 mostly, last frame #23"
+  },
+  "Q071": {
+   "team": 1,
+   "number": "9",
+   "note": "shorts, moderately clear"
+  },
+  "Q072": {
+   "team": 1,
+   "number": null
+  },
+  "Q073": {
+   "team": 1,
+   "number": "33"
+  },
+  "Q074": {
+   "team": 1,
+   "number": null
+  },
+  "Q075": {
+   "team": 0,
+   "number": "93",
+   "note": "last two frames show Erlangen players"
+  },
+  "Q076": {
+   "team": 0,
+   "number": null
+  },
+  "Q077": {
+   "team": 1,
+   "number": "66"
+  },
+  "Q078": {
+   "team": 1,
+   "number": null
+  },
+  "Q079": {
+   "team": 0,
+   "number": null
+  },
+  "Q080": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q081": {
+   "team": 1,
+   "number": "66"
+  },
+  "Q082": {
+   "team": 1,
+   "number": null
+  },
+  "Q083": {
+   "team": 0,
+   "number": null
+  },
+  "Q084": {
+   "team": 1,
+   "number": null
+  },
+  "Q085": {
+   "team": 0,
+   "number": "17"
+  },
+  "Q086": {
+   "team": 0,
+   "number": "37"
+  },
+  "Q087": {
+   "team": 1,
+   "number": null
+  },
+  "Q088": {
+   "team": 0,
+   "number": "25"
+  },
+  "Q089": {
+   "team": 0,
+   "number": "8"
+  },
+  "Q090": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 6"
+  },
+  "Q091": {
+   "team": 0,
+   "number": "44"
+  },
+  "Q092": {
+   "team": 0,
+   "number": "97"
+  },
+  "Q093": {
+   "team": 1,
+   "number": null,
+   "note": "25 at the end, overlapping teammate early"
+  },
+  "Q094": {
+   "team": 1,
+   "number": "10"
+  },
+  "Q095": {
+   "team": 0,
+   "number": "13",
+   "note": "moderately clear"
+  },
+  "Q096": {
+   "team": 0,
+   "number": null,
+   "note": "pink shoes"
+  },
+  "Q097": {
+   "team": 1,
+   "number": "3"
+  },
+  "Q098": {
+   "team": 0,
+   "number": null
+  },
+  "Q099": {
+   "team": 0,
+   "number": "10"
+  },
+  "Q100": {
+   "team": 0,
+   "number": null
+  },
+  "Q101": {
+   "team": 1,
+   "number": "25"
+  },
+  "Q102": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q103": {
+   "team": 1,
+   "number": null
+  },
+  "Q104": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "pink-shoe player early, #17 later"
+  },
+  "Q105": {
+   "team": 0,
+   "number": null
+  },
+  "Q106": {
+   "team": 0,
+   "number": null
+  },
+  "Q107": {
+   "team": 1,
+   "number": null
+  },
+  "Q108": {
+   "team": 1,
+   "number": "51"
+  },
+  "Q109": {
+   "team": 0,
+   "number": null
+  },
+  "Q110": {
+   "team": 1,
+   "number": null
+  },
+  "Q111": {
+   "team": 0,
+   "number": "99",
+   "note": "shorts, moderately clear"
+  },
+  "Q112": {
+   "team": 1,
+   "number": "25"
+  },
+  "Q113": {
+   "team": 1,
+   "number": "6",
+   "note": "moderately clear"
+  },
+  "Q114": {
+   "team": 0,
+   "number": "21"
+  },
+  "Q115": {
+   "team": 0,
+   "number": "67"
+  },
+  "Q116": {
+   "team": 1,
+   "number": "6"
+  },
+  "Q117": {
+   "team": 0,
+   "number": null
+  },
+  "Q118": {
+   "team": 0,
+   "number": "13"
+  },
+  "Q119": {
+   "team": 1,
+   "number": "35"
+  },
+  "Q120": {
+   "team": 1,
+   "number": null
+  },
+  "Q121": {
+   "team": 0,
+   "number": "21"
+  },
+  "Q122": {
+   "team": 1,
+   "number": null,
+   "note": "maybe 10 on shorts"
+  },
+  "Q123": {
+   "team": 0,
+   "number": null
+  },
+  "Q124": {
+   "team": 0,
+   "number": "15"
+  },
+  "Q125": {
+   "team": 1,
+   "number": null,
+   "note": "crowded"
+  },
+  "Q126": {
+   "team": 0,
+   "number": null
+  },
+  "Q127": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q128": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q129": {
+   "team": 0,
+   "number": "67"
+  },
+  "Q130": {
+   "team": null,
+   "number": null,
+   "flag": "mixed"
+  },
+  "Q131": {
+   "team": 0,
+   "number": "10"
+  },
+  "Q132": {
+   "team": 0,
+   "number": null
+  },
+  "Q133": {
+   "team": 1,
+   "number": null
+  },
+  "Q134": {
+   "team": 0,
+   "number": null
+  },
+  "Q135": {
+   "team": 0,
+   "number": null,
+   "note": "24 visible only in last frame, maybe another player"
+  },
+  "Q136": {
+   "team": 1,
+   "number": "4"
+  },
+  "Q137": {
+   "team": 1,
+   "number": null
+  },
+  "Q138": {
+   "team": 1,
+   "number": "23"
+  },
+  "Q139": {
+   "team": 0,
+   "number": "21"
+  },
+  "Q140": {
+   "team": 1,
+   "number": null,
+   "note": "crowded tackles"
+  },
+  "Q141": {
+   "team": 1,
+   "number": null
+  },
+  "Q142": {
+   "team": 0,
+   "number": null
+  },
+  "Q143": {
+   "team": 1,
+   "number": null
+  },
+  "Q144": {
+   "team": 1,
+   "number": "33",
+   "note": "moderately clear"
+  },
+  "Q145": {
+   "team": 0,
+   "number": "9"
+  },
+  "Q146": {
+   "team": 1,
+   "number": null
+  },
+  "Q147": {
+   "team": 1,
+   "number": null
+  },
+  "Q148": {
+   "team": 0,
+   "number": "17"
+  },
+  "Q149": {
+   "team": 1,
+   "number": "42"
+  },
+  "Q150": {
+   "team": 0,
+   "number": "13",
+   "note": "late frames crowded with #15"
+  },
+  "Q151": {
+   "team": 1,
+   "number": "6"
+  },
+  "Q152": {
+   "team": 0,
+   "number": "19"
+  }
+ }
+}

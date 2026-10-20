@@ -403,3 +403,13 @@ def test_stage2_v2_galleries_use_both_sides_but_never_the_segment_track():
     assert gallery_allowed(early, seg, v2=True) and gallery_allowed(late, seg, v2=True)
     assert not gallery_allowed(near, seg, v2=True) and not gallery_allowed(own, seg, v2=True)
     assert gallery_allowed({**early, "track_id": 7}, seg, v2=False)   # v1 kept its own-track galleries
+
+
+def test_coverage_baseline_rule_is_the_split_v2_lock():
+    import json
+    from pathlib import Path
+    from experiments.teammate_reid.coverage_rules import V2
+
+    lock = json.loads((Path("experiments/teammate_reid/locked/split_v2.json")).read_text())
+    assert (V2.tau, V2.margin) == tuple(lock["gate"])
+    assert V2.halves == lock["halves_guard"] and V2.single_tau is None and not V2.co_ignore_duplicates
