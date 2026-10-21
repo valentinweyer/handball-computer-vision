@@ -1,0 +1,389 @@
+{
+ "verify_labels_sha256": "28c85af9d66715836bdb6d162ef47d9dd9c27ce0f6efde6660a3d24897db5381",
+ "grid": {
+  "cap=None|base|v2": {
+   "counts": {
+    "unreadable": 25,
+    "abstained": 145,
+    "correct": 50,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9433962264150944,
+   "newly_correct_seconds": 534.3,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 54,
+    "false_match": 2
+   }
+  },
+  "cap=None|base|coverage_v1": {
+   "counts": {
+    "unreadable": 28,
+    "abstained": 134,
+    "correct": 58,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9508196721311475,
+   "newly_correct_seconds": 671.1,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 54,
+    "false_match": 2
+   }
+  },
+  "cap=None|extra|v2": {
+   "counts": {
+    "unreadable": 42,
+    "abstained": 111,
+    "correct": 67,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9571428571428572,
+   "newly_correct_seconds": 813.5,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 49,
+    "false_match": 7
+   }
+  },
+  "cap=None|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 46,
+    "abstained": 94,
+    "correct": 79,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.9518072289156626,
+   "newly_correct_seconds": 987.1,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 49,
+    "false_match": 7
+   }
+  },
+  "cap=150|base|v2": {
+   "counts": {
+    "unreadable": 24,
+    "abstained": 149,
+    "correct": 47,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.94,
+   "newly_correct_seconds": 510.3,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 55,
+    "false_match": 1
+   }
+  },
+  "cap=150|base|coverage_v1": {
+   "counts": {
+    "unreadable": 27,
+    "abstained": 139,
+    "correct": 54,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9473684210526315,
+   "newly_correct_seconds": 645.1,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 55,
+    "false_match": 1
+   }
+  },
+  "cap=150|extra|v2": {
+   "counts": {
+    "unreadable": 35,
+    "abstained": 127,
+    "correct": 58,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9508196721311475,
+   "newly_correct_seconds": 761.1,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 53,
+    "false_match": 3
+   }
+  },
+  "cap=150|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 39,
+    "abstained": 111,
+    "correct": 69,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.9452054794520548,
+   "newly_correct_seconds": 932.7,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 53,
+    "false_match": 3
+   }
+  },
+  "cap=100|base|v2": {
+   "counts": {
+    "unreadable": 24,
+    "abstained": 151,
+    "correct": 46,
+    "unknown_named": 2
+   },
+   "errors": 2,
+   "precision": 0.9583333333333334,
+   "newly_correct_seconds": 501.9,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 55,
+    "false_match": 1
+   }
+  },
+  "cap=100|base|coverage_v1": {
+   "counts": {
+    "unreadable": 26,
+    "abstained": 142,
+    "correct": 53,
+    "unknown_named": 2
+   },
+   "errors": 2,
+   "precision": 0.9636363636363636,
+   "newly_correct_seconds": 636.7,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 55,
+    "false_match": 1
+   }
+  },
+  "cap=100|extra|v2": {
+   "counts": {
+    "unreadable": 32,
+    "abstained": 135,
+    "correct": 53,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9464285714285714,
+   "newly_correct_seconds": 689.9,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 54,
+    "false_match": 2
+   }
+  },
+  "cap=100|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 35,
+    "abstained": 122,
+    "correct": 63,
+    "mixed": 1,
+    "unknown_named": 2
+   },
+   "errors": 3,
+   "precision": 0.9545454545454546,
+   "newly_correct_seconds": 857.1,
+   "synthetic_unknowns": {
+    "trials": 56,
+    "abstained": 54,
+    "false_match": 2
+   }
+  }
+ },
+ "alignment": {
+  "Kiel_Lemgo_56m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     172.5,
+     149.5,
+     143.1
+    ],
+    "1": [
+     142.0,
+     93.3,
+     76.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     178.2,
+     155.7,
+     149.8
+    ],
+    "1": [
+     148.3,
+     97.8,
+     78.4
+    ]
+   }
+  },
+  "Kiel_Lemgo_76m00_10min": {
+   "map": {
+    "0": 1,
+    "1": 0
+   },
+   "main_bgr": {
+    "0": [
+     172.5,
+     149.5,
+     143.1
+    ],
+    "1": [
+     142.0,
+     93.3,
+     76.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     141.1,
+     93.4,
+     77.6
+    ],
+    "1": [
+     169.0,
+     147.4,
+     140.4
+    ]
+   }
+  },
+  "Eisenach_Hamburg_57m00_9min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     103.5,
+     73.5,
+     68.0
+    ],
+    "1": [
+     70.4,
+     54.1,
+     91.0
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     109.6,
+     79.8,
+     72.1
+    ],
+    "1": [
+     71.0,
+     56.2,
+     91.3
+    ]
+   }
+  },
+  "Eisenach_Hamburg_76m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     103.5,
+     73.5,
+     68.0
+    ],
+    "1": [
+     70.4,
+     54.1,
+     91.0
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     104.3,
+     76.8,
+     73.3
+    ],
+    "1": [
+     71.0,
+     56.4,
+     95.8
+    ]
+   }
+  }
+ },
+ "added": {
+  "Kiel-Lemgo": {
+   "fragments": 152,
+   "crops": 4826,
+   "new_identities": [
+    "Kiel-Lemgo|extra|team0|#11",
+    "Kiel-Lemgo|extra|team0|#24",
+    "Kiel-Lemgo|extra|team0|#48",
+    "Kiel-Lemgo|extra|team0|#91"
+   ],
+   "extended_identities": [
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#21",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#22",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#4",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#53",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#61",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#7",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#93",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#23",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#24",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#25",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#28",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#3",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#35",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#4",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#41",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#8"
+   ]
+  },
+  "Eisenach-Hamburg": {
+   "fragments": 145,
+   "crops": 3499,
+   "new_identities": [
+    "Eisenach-Hamburg|extra|team0|#14",
+    "Eisenach-Hamburg|extra|team1|#11"
+   ],
+   "extended_identities": [
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#11",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#22",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#3",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#41",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#44",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#52",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#6",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#74",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#99",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#13",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#2",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#21",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#23",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#33",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#4",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#5",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#51",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#6"
+   ]
+  }
+ },
+ "population": 223,
+ "seconds": 2722.119999999999
+}

@@ -19,7 +19,7 @@ import cv2
 import numpy as np
 import pandas as pd
 
-from experiments.teammate_reid.heldout import (HIGHER_WINDOWS, 
+from experiments.teammate_reid.heldout import (EXTRA_DEV_WINDOWS, HIGHER_WINDOWS, 
     DEV_WINDOWS, FINAL_WINDOWS, NO_PAUSE_SUFFIX, PREVIEW_WINDOWS, SEALED_WINDOWS, WINDOWS)
 from experiments.teammate_reid.masking import MODES, apply_mask, crop_with_digits
 from experiments.teammate_reid.mining import VideoSpec, load_video, mine_video, sample_crops
@@ -58,6 +58,7 @@ VIDEO_SETS = {"prototype": VIDEOS, "heldout": HELDOUT, "fresh": _specs(WINDOWS[2
               "sealed_nopause": _specs([(n + NO_PAUSE_SUFFIX, *rest) for n, *rest in SEALED_WINDOWS]),
               "preview_nopause": _specs([(n + NO_PAUSE_SUFFIX, *rest) for n, *rest in PREVIEW_WINDOWS]),
               "final": _specs(FINAL_WINDOWS), "higher": _specs(HIGHER_WINDOWS),
+              "extra_dev": _specs(EXTRA_DEV_WINDOWS),
               "final_nopause": _specs([(n + NO_PAUSE_SUFFIX, *rest) for n, *rest in FINAL_WINDOWS])}
 
 

@@ -1,0 +1,152 @@
+{
+ "labeller": "assistant (Claude), blind full-resolution strips with team reference crops and target zooms, 2026-10-21; NOT a human label",
+ "protocol": "extra-gallery development check; 21 segments a capped/uncapped extended-gallery rule named outside existing references + 8 seeded human-labelled controls, shuffled codes; labelled without seeing names",
+ "labels": {
+  "E000": {
+   "team": 0,
+   "number": null,
+   "note": "blue Eisenach player running, no number readable; 9376-9390 cut"
+  },
+  "E001": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired red Hamburg player, chest digit not readable; 5700-5730 blur/cut"
+  },
+  "E002": {
+   "team": 1,
+   "number": null,
+   "note": "bearded blue (Lemgo) player, number not readable; 5336-5360 crowd with blue #24 in front, box may end on #24 (possible tail switch)"
+  },
+  "E003": {
+   "team": 0,
+   "number": "44",
+   "note": "44 clear on shorts throughout; 2194-2210 cut"
+  },
+  "E004": {
+   "team": 1,
+   "number": null,
+   "note": "red Hamburg player walking along the boards, side views, no number"
+  },
+  "E005": {
+   "team": 0,
+   "number": "21",
+   "note": "dark-haired blue player with black leggings, 21 on shorts at 10803/10842 (moderately clear); back at 10491 consistent with 21; 10881-10920 blur/cut"
+  },
+  "E006": {
+   "team": 1,
+   "number": "5",
+   "note": "blond red Hamburg player, 5 clear on chest"
+  },
+  "E007": {
+   "team": 0,
+   "number": null,
+   "note": "Kiel striped player, brown wavy hair; back at 631/641 two digits ending in 1, probably 91 but 81 not excluded at this resolution. DOUBT for user"
+  },
+  "E008": {
+   "team": 0,
+   "number": null,
+   "note": "Kiel striped player, brown wavy hair, 56 s; chest at 4818 and back at 4946 look like 91 (first digit 9 fairly clear, second blurred); 4310 #61 in front; 5200 cut. Probably 91, not certain. DOUBT for user"
+  },
+  "E009": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired red Hamburg player standing at the side line; chest two digits, 53 or 33, not decidable"
+  },
+  "E010": {
+   "team": 0,
+   "number": "52",
+   "note": "tattooed blue Eisenach player with knee sleeves; back reads 52 at 3896 (moderately clear at full res); same player through crowded 3934-4010"
+  },
+  "E011": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired red Hamburg player; back digit at 1738/1756 is 6 or 5, not decidable; ends on the floor after a foul (same player); 1810 cut. DOUBT for user"
+  },
+  "E012": {
+   "team": 0,
+   "number": "21",
+   "note": "blond Kiel player with black arm sleeves, 21 clear on chest"
+  },
+  "E013": {
+   "team": 0,
+   "number": "91",
+   "note": "brown-haired Kiel player standing at the side line, 91 on chest at 5885/5910 (moderately clear at full res); runs off 6057-6106 (same player); 6130 cut"
+  },
+  "E014": {
+   "team": 1,
+   "number": "13",
+   "note": "red Hamburg player, 13 on chest/shorts (14762-14850 moderately clear)"
+  },
+  "E015": {
+   "team": 0,
+   "number": "91",
+   "note": "brown-haired Kiel player at the side line, 91 on chest at 10319 (clear); 10422 box drifts onto a blue Lemgo player passing in front (brief), rest same player; 11140 cut"
+  },
+  "E016": {
+   "team": 0,
+   "number": "44",
+   "note": "blue Eisenach player along the boards, 44 on shorts at 8560 (moderately clear); 8570-8590 blur; 8600-8610 cut"
+  },
+  "E017": {
+   "team": 1,
+   "number": "5",
+   "note": "blond red Hamburg player, 5 clear on chest 5012-5101"
+  },
+  "E018": {
+   "team": 0,
+   "number": null,
+   "note": "brown-haired Kiel player, motion blur, no number readable; same build/hair as the #91 player but not verifiable; 400 cut"
+  },
+  "E019": {
+   "team": 0,
+   "number": "91",
+   "note": "brown-haired Kiel player along the boards, 95.6 s; 91 on chest at 12527 and 12961 (clear); same player throughout; 13830 cut"
+  },
+  "E020": {
+   "team": 0,
+   "number": null,
+   "flag": "mixed",
+   "note": "dark-haired Kiel player with black arm sleeves, neon shoes, 7011-7297 and 7378-7419; at 7338 the box sits on a different white player (back number 5/6, no sleeves... arm sleeve visible though) - brief; chest number not readable. Probably one player with a one-frame drift; mixed only if 7338 is another person. DOUBT for user"
+  },
+  "E021": {
+   "team": 1,
+   "number": "33",
+   "note": "dark-haired red Hamburg player, 33 on chest 1481-1490 (moderately clear at full res)"
+  },
+  "E022": {
+   "team": 1,
+   "number": null,
+   "note": "blond red Hamburg player with tattooed arm; chest two digits (23? 28?) not decidable"
+  },
+  "E023": {
+   "team": 0,
+   "number": null,
+   "note": "Kiel player(s), 35 s; brown-haired with tattooed arm at 14520 vs dark-haired slimmer player at 14600; no number readable anywhere. Possibly two people across camera cuts. DOUBT for user"
+  },
+  "E024": {
+   "team": 0,
+   "number": "91",
+   "note": "brown-haired Kiel player, 91 clear on back 7011-7178; same player throughout; 7470 cut"
+  },
+  "E025": {
+   "team": 0,
+   "number": null,
+   "note": "brown-haired Kiel player, back at 3188 shows a 9-like first digit but not readable; chest unreadable; same build as the #91 player but not verifiable"
+  },
+  "E026": {
+   "team": 0,
+   "number": "91",
+   "note": "brown-haired Kiel player, 91 clear on back at 9657; same player throughout; 9940 cut"
+  },
+  "E027": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired blue Lemgo player at the corner/bench line (substitute?), no number readable; 7450 cut"
+  },
+  "E028": {
+   "team": 0,
+   "number": null,
+   "note": "dark-haired Kiel player, chest digit partly visible (2x? 4x?) at 8841-8858, not readable; 8874-8890 cut"
+  }
+ }
+}

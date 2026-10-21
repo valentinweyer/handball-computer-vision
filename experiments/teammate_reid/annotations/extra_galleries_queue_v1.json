@@ -1,0 +1,150 @@
+{
+ "items": [
+  {
+   "review_id": "S098",
+   "group": "target",
+   "code": "E000"
+  },
+  {
+   "review_id": "S048",
+   "group": "target",
+   "code": "E001"
+  },
+  {
+   "review_id": "S257",
+   "group": "target",
+   "code": "E002"
+  },
+  {
+   "review_id": "S022",
+   "group": "target",
+   "code": "E003"
+  },
+  {
+   "review_id": "S089",
+   "group": "control",
+   "code": "E004"
+  },
+  {
+   "review_id": "S116",
+   "group": "target",
+   "code": "E005"
+  },
+  {
+   "review_id": "S056",
+   "group": "target",
+   "code": "E006"
+  },
+  {
+   "review_id": "S240",
+   "group": "target",
+   "code": "E007"
+  },
+  {
+   "review_id": "S252",
+   "group": "target",
+   "code": "E008"
+  },
+  {
+   "review_id": "S044",
+   "group": "control",
+   "code": "E009"
+  },
+  {
+   "review_id": "S036",
+   "group": "control",
+   "code": "E010"
+  },
+  {
+   "review_id": "S020",
+   "group": "target",
+   "code": "E011"
+  },
+  {
+   "review_id": "S283",
+   "group": "control",
+   "code": "E012"
+  },
+  {
+   "review_id": "S261",
+   "group": "target",
+   "code": "E013"
+  },
+  {
+   "review_id": "S136",
+   "group": "target",
+   "code": "E014"
+  },
+  {
+   "review_id": "S285",
+   "group": "target",
+   "code": "E015"
+  },
+  {
+   "review_id": "S084",
+   "group": "target",
+   "code": "E016"
+  },
+  {
+   "review_id": "S038",
+   "group": "target",
+   "code": "E017"
+  },
+  {
+   "review_id": "S230",
+   "group": "target",
+   "code": "E018"
+  },
+  {
+   "review_id": "S294",
+   "group": "target",
+   "code": "E019"
+  },
+  {
+   "review_id": "S268",
+   "group": "control",
+   "code": "E020"
+  },
+  {
+   "review_id": "S013",
+   "group": "control",
+   "code": "E021"
+  },
+  {
+   "review_id": "S053",
+   "group": "control",
+   "code": "E022"
+  },
+  {
+   "review_id": "S300",
+   "group": "target",
+   "code": "E023"
+  },
+  {
+   "review_id": "S269",
+   "group": "target",
+   "code": "E024"
+  },
+  {
+   "review_id": "S247",
+   "group": "target",
+   "code": "E025"
+  },
+  {
+   "review_id": "S282",
+   "group": "target",
+   "code": "E026"
+  },
+  {
+   "review_id": "S266",
+   "group": "control",
+   "code": "E027"
+  },
+  {
+   "review_id": "S279",
+   "group": "target",
+   "code": "E028"
+  }
+ ],
+ "seed": 20261021
+}

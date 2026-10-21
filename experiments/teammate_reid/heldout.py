@@ -101,6 +101,18 @@ HIGHER_WINDOWS = [
     ("Stuttgart_Erlangen_66m00_10min", "Stuttgart-Erlangen",
      "eval/smart-id-eval/2026-09-24_1447415_Stuttgart_Erlangen.mp4", "detector-unseen"),
 ]
+# Extra development footage (2026-10-21): windows of two development matches adjacent
+# to, never overlapping, their 66:00 windows. Gallery-only: they add vouched fragments
+# for the 66:00 population, never population segments of their own. Cut from the full
+# broadcasts in data/raw/ by runs/smart-reid-shadow/run_extra_windows.sh (source column informational).
+EXTRA_DEV_WINDOWS = [
+    ("Kiel_Lemgo_56m00_10min", "Kiel-Lemgo", "eval/2026-06-07_1284785_Kiel_Lemgo.mp4", "detector-unseen"),
+    ("Kiel_Lemgo_76m00_10min", "Kiel-Lemgo", "eval/2026-06-07_1284785_Kiel_Lemgo.mp4", "detector-unseen"),
+    ("Eisenach_Hamburg_57m00_9min", "Eisenach-Hamburg", "eval/2026-06-07_1284788_Eisenach_Hamburg.mp4",
+     "detector-unseen"),
+    ("Eisenach_Hamburg_76m00_10min", "Eisenach-Hamburg", "eval/2026-06-07_1284788_Eisenach_Hamburg.mp4",
+     "detector-unseen"),
+]
 # Reserve: DEV_WINDOWS cut on 2026-10-19 but never processed, mined or inspected.
 # Kept sealed as the next independent test once the higher-league bank is spent.
 RESERVE_WINDOWS = [w for w in DEV_WINDOWS if w[0] in ("DRE_MTM_66m00_10min", "Vinnhorst_Potsdam_66m00_10min")]
