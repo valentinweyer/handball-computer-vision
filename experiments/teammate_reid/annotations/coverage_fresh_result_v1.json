@@ -1,0 +1,2890 @@
+{
+ "lock_sha256": "c0e6e1beb443c210d22fb72272c52deef9e2da5ba00ccb6afe69f776541fb4ab",
+ "labels_sha256": "f011e349feeaaf2c7e3b7a8035d9f6b53b6745f151419ce81675c2392a6b2f70",
+ "adjudication_sha256": null,
+ "erratum_sha256": "e7af6f90154369d7a66934646e99b5c0d8527d9516e2312aef974e5f1382aa94",
+ "erratum_team_override": {
+  "H060": 0,
+  "H064": 0,
+  "H066": 0,
+  "H067": 0,
+  "H069": 0,
+  "H071": 0,
+  "H078": 0,
+  "H080": 0
+ },
+ "verdict": "INCONCLUSIVE",
+ "coverage_target_met": true,
+ "relative_gain_correct": 0.15,
+ "paired": {
+  "added": {
+   "correct": 3
+  },
+  "lost": [],
+  "both_named_same": 38
+ },
+ "added_precision_one_sided_lower95_if_zero_errors": 0.3684031498640387,
+ "synthetic_unknowns": {
+  "v2": {
+   "trials": 37,
+   "abstained": 37
+  },
+  "candidate": {
+   "trials": 37,
+   "abstained": 37
+  }
+ },
+ "v2": {
+  "counts": {
+   "abstained": 330,
+   "unreadable": 16,
+   "correct": 20,
+   "mixed": 2
+  },
+  "new_correct_seconds": 169.59999999999997,
+  "coverage_seconds": 0.038440407395789404,
+  "coverage_segments": 0.05434782608695652,
+  "zero_known_correct": 20,
+  "precision_verified": 0.9090909090909091,
+  "precision_ci95_clustered": [
+   0.7333333333333333,
+   1.0
+  ]
+ },
+ "candidate": {
+  "counts": {
+   "abstained": 327,
+   "unreadable": 16,
+   "correct": 23,
+   "mixed": 2
+  },
+  "new_correct_seconds": 205.15839999999997,
+  "coverage_seconds": 0.04649983771620472,
+  "coverage_segments": 0.0625,
+  "zero_known_correct": 22,
+  "precision_verified": 0.92,
+  "precision_ci95_clustered": [
+   0.7727272727272727,
+   1.0
+  ]
+ },
+ "population": 368,
+ "zero_known_population": 363,
+ "unnamed_player_seconds": 4412.02399999999,
+ "quality_rule": "PASS only if: (a) zero verified errors (wrong known player, unknown named, mixed track, bench/non-player) among links the candidate adds or changes relative to v2; (b) synthetic-unknown false matches not higher than v2; (c) at least 5 added links verified correct. Any added verified error -> FAIL. Fewer than 5 verified added links, or more than half of added links unverifiable -> INCONCLUSIVE.",
+ "per_segment": {
+  "S114": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S115": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S117": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S116": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S118": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S121": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S142": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S119": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S124": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S120": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S122": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S123": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S125": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S128": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S129": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S135": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S126": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S127": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S130": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S137": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S131": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S132": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S133": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    1,
+    "21"
+   ],
+   "candidate_name": [
+    1,
+    "21"
+   ],
+   "changed": false
+  },
+  "S134": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S143": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S136": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S138": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S139": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S140": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S149": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S153": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S141": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S144": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S148": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S152": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S150": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S145": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S151": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S146": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S147": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S154": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S155": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S156": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S157": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S158": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S159": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S160": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S161": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S162": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S164": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S163": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S165": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S174": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S166": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S167": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S168": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S170": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S172": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S169": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S171": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S173": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S175": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S176": {
+   "v2": "mixed",
+   "candidate": "mixed",
+   "v2_name": [
+    0,
+    "8"
+   ],
+   "candidate_name": [
+    0,
+    "8"
+   ],
+   "changed": false
+  },
+  "S177": {
+   "v2": "mixed",
+   "candidate": "mixed",
+   "v2_name": [
+    0,
+    "14"
+   ],
+   "candidate_name": [
+    0,
+    "14"
+   ],
+   "changed": false
+  },
+  "S178": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S179": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S183": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S180": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S181": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S182": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S184": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S185": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S186": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S187": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "33"
+   ],
+   "candidate_name": [
+    0,
+    "33"
+   ],
+   "changed": false
+  },
+  "S188": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S189": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S190": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S191": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S192": {
+   "v2": "abstained",
+   "candidate": "correct",
+   "v2_name": null,
+   "candidate_name": [
+    0,
+    "8"
+   ],
+   "changed": true
+  },
+  "S193": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "33"
+   ],
+   "candidate_name": [
+    0,
+    "33"
+   ],
+   "changed": false
+  },
+  "S194": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S195": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S000": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S001": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S002": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S010": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S003": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    1,
+    "11"
+   ],
+   "candidate_name": [
+    1,
+    "11"
+   ],
+   "changed": false
+  },
+  "S008": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S004": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S005": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S006": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    1,
+    "11"
+   ],
+   "candidate_name": [
+    1,
+    "11"
+   ],
+   "changed": false
+  },
+  "S007": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S009": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S017": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S011": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S012": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S013": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S014": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S015": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S016": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S018": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S019": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S020": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S021": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S022": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S036": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "19"
+   ],
+   "candidate_name": [
+    0,
+    "19"
+   ],
+   "changed": false
+  },
+  "S023": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S028": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S024": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S025": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S029": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S039": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S026": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S027": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S040": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S030": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S031": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S032": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S033": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "19"
+   ],
+   "candidate_name": [
+    0,
+    "19"
+   ],
+   "changed": false
+  },
+  "S034": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S041": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S035": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S037": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S038": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S042": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S050": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S043": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S044": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S045": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S046": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S047": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S048": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S049": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S051": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S052": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S053": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S054": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S055": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S056": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S057": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S058": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S059": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S060": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S063": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S069": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S061": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S062": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S070": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S073": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S066": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "23"
+   ],
+   "candidate_name": [
+    0,
+    "23"
+   ],
+   "changed": false
+  },
+  "S064": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S074": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S065": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S071": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S067": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S075": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S068": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S076": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S072": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "23"
+   ],
+   "candidate_name": [
+    0,
+    "23"
+   ],
+   "changed": false
+  },
+  "S077": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S078": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S079": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "23"
+   ],
+   "candidate_name": [
+    0,
+    "23"
+   ],
+   "changed": false
+  },
+  "S080": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S081": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S082": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S083": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S084": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S090": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S099": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S085": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S087": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S086": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S088": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S089": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S091": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S092": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S093": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S094": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S095": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S096": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S097": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S100": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S098": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S101": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S102": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S103": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S104": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S105": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S106": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S107": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S108": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S109": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S110": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S111": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S112": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "13"
+   ],
+   "candidate_name": [
+    0,
+    "13"
+   ],
+   "changed": false
+  },
+  "S113": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "19"
+   ],
+   "candidate_name": [
+    0,
+    "19"
+   ],
+   "changed": false
+  },
+  "S196": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S202": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S210": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S197": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S203": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S198": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S212": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S199": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S200": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S204": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S201": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S205": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S206": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S214": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S225": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S207": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S208": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S209": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S211": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S213": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S215": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S216": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S217": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S218": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S219": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S220": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S221": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S222": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "44"
+   ],
+   "candidate_name": [
+    0,
+    "44"
+   ],
+   "changed": false
+  },
+  "S226": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S229": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S233": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S223": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S224": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    1,
+    "39"
+   ],
+   "candidate_name": [
+    1,
+    "39"
+   ],
+   "changed": false
+  },
+  "S227": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S230": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S228": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S235": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S231": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S242": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S232": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S234": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S236": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S237": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S243": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S238": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S239": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S244": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "44"
+   ],
+   "candidate_name": [
+    0,
+    "44"
+   ],
+   "changed": false
+  },
+  "S240": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S241": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S245": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S246": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S247": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S248": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S249": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S260": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S250": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S251": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S252": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S253": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S261": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S254": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "22"
+   ],
+   "candidate_name": [
+    0,
+    "22"
+   ],
+   "changed": false
+  },
+  "S255": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S256": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S257": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S258": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S259": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S262": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S263": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S264": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S265": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S266": {
+   "v2": "abstained",
+   "candidate": "correct",
+   "v2_name": null,
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": true
+  },
+  "S267": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S281": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S276": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S270": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S268": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S269": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S271": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S272": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S273": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S277": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S274": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S275": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S286": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S278": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S279": {
+   "v2": "abstained",
+   "candidate": "correct",
+   "v2_name": null,
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": true
+  },
+  "S287": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S280": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S282": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S283": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S284": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S285": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S288": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S289": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S294": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S290": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S291": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S301": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S302": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S292": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S293": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S295": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S296": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S297": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S298": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S299": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S300": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S303": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S307": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S305": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S304": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S306": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S308": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S321": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    1,
+    "22"
+   ],
+   "candidate_name": [
+    1,
+    "22"
+   ],
+   "changed": false
+  },
+  "S309": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S326": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S333": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S310": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S311": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S312": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S313": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S317": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S322": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S314": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S315": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S316": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S318": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S319": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S320": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S323": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S324": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S325": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S327": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S328": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S329": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S330": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S331": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S334": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S332": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S335": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S336": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S337": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S338": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S339": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S340": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S341": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S342": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S343": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S344": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S345": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S346": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S347": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S348": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S349": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S350": {
+   "v2": "unreadable",
+   "candidate": "unreadable",
+   "v2_name": [
+    0,
+    "6"
+   ],
+   "candidate_name": [
+    0,
+    "6"
+   ],
+   "changed": false
+  },
+  "S351": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S354": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "7"
+   ],
+   "candidate_name": [
+    0,
+    "7"
+   ],
+   "changed": false
+  },
+  "S352": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S355": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S353": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S356": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S357": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S358": {
+   "v2": "correct",
+   "candidate": "correct",
+   "v2_name": [
+    0,
+    "10"
+   ],
+   "candidate_name": [
+    0,
+    "10"
+   ],
+   "changed": false
+  },
+  "S359": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S360": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S361": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S362": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S363": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S364": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S365": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S367": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  },
+  "S366": {
+   "v2": "abstained",
+   "candidate": "abstained",
+   "v2_name": null,
+   "candidate_name": null,
+   "changed": false
+  }
+ }
+}

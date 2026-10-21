@@ -1,0 +1,421 @@
+{
+ "labeller": "assistant (Claude), blind full-resolution strips and target-box zooms, 2026-10-21; NOT a human label",
+ "protocol": "locked/coverage_v1.json fresh_test; labelled before any decision was opened; codes shuffled (queue_SEALED.json); DOUBT notes mark items proposed for user adjudication",
+ "labels": {
+  "H000": {
+   "team": 0,
+   "number": null,
+   "note": "white, running along boards, no number visible"
+  },
+  "H001": {
+   "team": 1,
+   "number": null,
+   "note": "black camo; no number readable; 4333-4411 box on heads in a crowd (possible drift), DOUBT"
+  },
+  "H002": {
+   "team": 0,
+   "number": null,
+   "flag": "mixed",
+   "majority_number": "8",
+   "note": "bald red #8 (8 on chest 12664/12941) for ~19.8 s; from ~13065 (last ~0.6 s) box slides onto a black team1 player falling in a collision. Tail switch -> mixed. DOUBT for user (short tail)"
+  },
+  "H003": {
+   "team": 0,
+   "number": null,
+   "note": "white, dark hair, small number on shorts maybe 18 or 10, not readable; blue player occludes 5267-5294"
+  },
+  "H004": {
+   "team": 0,
+   "number": "22",
+   "note": "22 clear on back 5771-5791; 5860 box lower on a dark-haired player, maybe same; 5870-5880 camera cut"
+  },
+  "H005": {
+   "team": null,
+   "number": null,
+   "flag": "not_a_player",
+   "note": "referee (light-blue shirt, black shorts, long beard) throughout"
+  },
+  "H006": {
+   "team": 1,
+   "number": null,
+   "note": "bald blue player; chest number 23 or 25, not decidable at full res; 4943/5109/5130 are broadcast close-ups where the box sits on crowd/white players. DOUBT for user"
+  },
+  "H007": {
+   "team": 1,
+   "number": null,
+   "note": "blond blue player; chest probably 22, not certain at full res; end tiles blurred/camera cut. DOUBT for user"
+  },
+  "H008": {
+   "team": 1,
+   "number": null,
+   "note": "green, front/side, no number readable; box leaves the player at the end (1381-1390)"
+  },
+  "H009": {
+   "team": 0,
+   "number": "7",
+   "note": "7 on chest and shorts, clear"
+  },
+  "H010": {
+   "team": 1,
+   "number": null,
+   "note": "green, blond, knee brace; no number readable; 1609-1640 camera cut"
+  },
+  "H011": {
+   "team": 0,
+   "number": "6",
+   "note": "blond white player, 6 on back at 7900 and on shorts"
+  },
+  "H012": {
+   "team": 0,
+   "number": null,
+   "note": "white, short dark-blond hair; shorts number not readable at full res"
+  },
+  "H013": {
+   "team": 0,
+   "number": null,
+   "note": "white, long dark hair, knee sleeve; no number readable"
+  },
+  "H014": {
+   "team": 0,
+   "number": "44",
+   "note": "44 on shorts at 8239 and 8351; several broadcast close-ups (8295, 8408, 8520) where box is on blur"
+  },
+  "H015": {
+   "team": 0,
+   "number": "7",
+   "note": "red #7 clear on chest throughout"
+  },
+  "H016": {
+   "team": 1,
+   "number": "70",
+   "note": "70 clear on back 5231-5276, bearded"
+  },
+  "H017": {
+   "team": 0,
+   "number": "44",
+   "note": "44 clear on chest/shorts; 5249 occluded by a blue player"
+  },
+  "H018": {
+   "team": 1,
+   "number": null,
+   "note": "green, knee brace; back number at 8872 blurred, not readable; 8887/8930 close-up/camera cut"
+  },
+  "H019": {
+   "team": 1,
+   "number": "70",
+   "note": "bearded blue player, 70 on chest 10342-10360"
+  },
+  "H020": {
+   "team": 0,
+   "number": null,
+   "note": "white, longer light-brown hair; no number readable (contact with blue #10 at 5267-5276)"
+  },
+  "H021": {
+   "team": 1,
+   "number": "3",
+   "note": "3 on chest 9902-9964; end tiles leave frame/camera cut"
+  },
+  "H022": {
+   "team": 0,
+   "number": "7",
+   "note": "black knee sleeves; 7 on chest/shorts visible at 10863-10870; bench celebration in front"
+  },
+  "H023": {
+   "team": 0,
+   "number": "10",
+   "note": "10 clear on chest throughout"
+  },
+  "H024": {
+   "team": 0,
+   "number": null,
+   "note": "slim dark-haired red player; number not visible (side views); start tiles crowded/blurred"
+  },
+  "H025": {
+   "team": 0,
+   "number": "7",
+   "note": "blond red #7, 7 on chest 5324-5346; 5378 box partly on a black player in front, 5389 camera cut, 5400 unclear"
+  },
+  "H026": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired camo player, 44 s; back 3891 partial (8? 9?), chest 4490 maybe 11; not decidable. DOUBT for user"
+  },
+  "H027": {
+   "team": 0,
+   "number": "7",
+   "note": "black knee sleeves, 7 on shorts 14302-14310; staff member in white in front"
+  },
+  "H028": {
+   "team": 1,
+   "number": "7",
+   "note": "green, 7 clear on back 9106-9163; 9182-9201 box partly off the player, 9220 camera cut"
+  },
+  "H029": {
+   "team": 0,
+   "number": null,
+   "note": "white, dark knee pads, side/profile, no number readable"
+  },
+  "H030": {
+   "team": 1,
+   "number": null,
+   "note": "blue with white headband, side views, no number readable"
+  },
+  "H031": {
+   "team": 1,
+   "number": "70",
+   "note": "bearded blue player, 70 on back 7581 and chest 7610; 7871-7900 collision/fall, box identity uncertain at the very end"
+  },
+  "H032": {
+   "team": 0,
+   "number": "10",
+   "note": "10 clear on chest/shorts 5136-5160; same dark-haired player through crowded 4901-5113 (box tight in a group)"
+  },
+  "H033": {
+   "team": 0,
+   "number": null,
+   "note": "white, short hair, black knee pads; no number visible; 3130 camera cut"
+  },
+  "H034": {
+   "team": 1,
+   "number": null,
+   "note": "green player by the boards 1-363 (number not readable); 415-570 the box sits on a blurred head in front of the crowd (close-up / drift)"
+  },
+  "H035": {
+   "team": 0,
+   "number": "6",
+   "note": "dark-haired red player, 6 on chest at 1701-1721; 1900-1920 leaves frame / camera cut"
+  },
+  "H036": {
+   "team": 1,
+   "number": "22",
+   "note": "blond blue player, black arm sleeve; 22 on chest moderately clear at full res (2262, 2309); 2324-2370 occlusion/close-ups"
+  },
+  "H037": {
+   "team": 0,
+   "number": "10",
+   "note": "10 on chest/shorts clear 10355-10360"
+  },
+  "H038": {
+   "team": 1,
+   "number": null,
+   "note": "green player, 51 s; back number at 9719 not readable (0/8/9?); no other number seen. DOUBT for user"
+  },
+  "H039": {
+   "team": 1,
+   "number": "5",
+   "note": "dark-skinned blue player with knee pads, 5 on chest 5841-5861; 5880 #39 passes in front of the box (brief occlusion), 5960 blur; rest same player"
+  },
+  "H040": {
+   "team": null,
+   "number": null,
+   "flag": "not_a_player",
+   "note": "box on the advertising board / spectators, no player inside"
+  },
+  "H041": {
+   "team": 1,
+   "number": null,
+   "note": "bald green player at the side line/bench area, 48 s; no number readable; 871 occluded by a white player, 981 another green player passes in front"
+  },
+  "H042": {
+   "team": 1,
+   "number": null,
+   "note": "green, motion-blurred along boards; 4695-4707 camera cut; no number"
+  },
+  "H043": {
+   "team": 0,
+   "number": "7",
+   "note": "7 clear on back 6718, black leggings"
+  },
+  "H044": {
+   "team": 1,
+   "number": "3",
+   "note": "dark-haired blue player, 3 on chest at 931 (moderately clear); counter-attack run 962-1054; 1085-1100 crowded at the end (box overlaps a white player, likely same blue player behind)"
+  },
+  "H045": {
+   "team": 1,
+   "number": "39",
+   "note": "39 clear on back"
+  },
+  "H046": {
+   "team": 0,
+   "number": "33",
+   "note": "33 clear on chest"
+  },
+  "H047": {
+   "team": 0,
+   "number": "6",
+   "note": "blond white player, 6 clear on back"
+  },
+  "H048": {
+   "team": 1,
+   "number": null,
+   "note": "blond blue player, black arm sleeve, standing side-on; back number only partially visible (first digit 2?), not readable. DOUBT for user"
+  },
+  "H049": {
+   "team": 0,
+   "number": null,
+   "flag": "mixed",
+   "majority_number": "14",
+   "note": "red #14 (14 on chest 12757) for ~8 s, then the box ends on black team1 #80 (12830-12840, 80 clear). Tail switch -> mixed. DOUBT for user (short tail)"
+  },
+  "H050": {
+   "team": 0,
+   "number": "7",
+   "note": "7 clear on chest/shorts, black knee sleeves; 840 box drifts off at the end"
+  },
+  "H051": {
+   "team": 0,
+   "number": "10",
+   "note": "dark-haired white player, 10 on chest at 14433-14439 (moderately clear)"
+  },
+  "H052": {
+   "team": 0,
+   "number": "6",
+   "note": "blond white defender, 6 on shorts visible 501-615 and 844 (moderately clear); 920 on the floor after a foul, same player"
+  },
+  "H053": {
+   "team": 0,
+   "number": null,
+   "note": "blond white player, back number only partially visible (maybe 6), not readable; 7099-7110 camera cut"
+  },
+  "H054": {
+   "team": 0,
+   "number": "10",
+   "note": "10 clear on chest/shorts; 11016-11040 blur/camera cut"
+  },
+  "H055": {
+   "team": 1,
+   "number": null,
+   "note": "green attacker, back number 1x blurred (13/15/18?), not readable; 6571 another green player passes in front; 6640 cut"
+  },
+  "H056": {
+   "team": 0,
+   "number": "6",
+   "note": "blond white #6, 6 on chest/shorts 10983-11008; 11024-11040 camera cut"
+  },
+  "H057": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "bald green (team1) player 4651-4948 (number not readable), then from ~4986 the box moves onto a dark-haired white Wetzlar player (5023-5060). Switch -> mixed"
+  },
+  "H058": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired green player, no number readable; 1959 cut; 1980 white #10 in front"
+  },
+  "H059": {
+   "team": 0,
+   "number": null,
+   "note": "white player standing at the boards; small chest number maybe 2, not certain at full res; 7087-7100 broadcast graphic/cut. DOUBT for user"
+  },
+  "H060": {
+   "team": 1,
+   "number": null,
+   "note": "white Wetzlar: back shows 19 clearly 13661-13813; from 13839 two white players side by side, then front views 13864-13940 of a dark-haired player whose chest reads more like 14 than 19. Possible switch, not decidable. DOUBT for user"
+  },
+  "H061": {
+   "team": 0,
+   "number": null,
+   "flag": "mixed",
+   "note": "red Melsungen field player running 12448-12505 (number not visible), then 12561-12730 box on a seated staff/bench person in a red erima T-shirt. Player -> staff switch: mixed"
+  },
+  "H062": {
+   "team": 1,
+   "number": null,
+   "flag": "mixed",
+   "note": "bald green player 13661-13738, celebration hug 13753-13799, then box on a dark-haired green player with captain armband 13815-13830. Switch -> mixed"
+  },
+  "H063": {
+   "team": 0,
+   "number": "7",
+   "note": "blond red #7, 7 clear on chest 9044/9561/9734; 9302 crowded, 9820 cut"
+  },
+  "H064": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired white Wetzlar player, 27 s; chest reads 23 at 9557 but 11-like at 9124/9248 (blurred); 9618-9680 crowded with other white players. Either 23 throughout or a switch. DOUBT for user"
+  },
+  "H065": {
+   "team": 1,
+   "number": null,
+   "note": "bald green player with knee strap, no number visible (front/side/back without readable digits)"
+  },
+  "H066": {
+   "team": 1,
+   "number": "23",
+   "note": "dark-haired white Wetzlar player, 23 on chest 8257-8502 (moderately clear at full res); 8600 pile-up at the end"
+  },
+  "H067": {
+   "team": 1,
+   "number": null,
+   "note": "bearded white Wetzlar player, front view, no number readable"
+  },
+  "H068": {
+   "team": 0,
+   "number": null,
+   "note": "red Melsungen player, 28 s, mostly blurred side views; chest at 13129 two digits, perhaps 33, not certain. DOUBT for user"
+  },
+  "H069": {
+   "team": 1,
+   "number": "9",
+   "note": "white Wetzlar player, 9 on chest at 5378 (moderately clear); 5331-5355 tangled with a green attacker; later tiles same light-brown-haired player, 5566-5590 blur/cut"
+  },
+  "H070": {
+   "team": 0,
+   "number": null,
+   "note": "white Erlangen player; front 7541-7704 dark-haired (chest digit unclear), back 7769 maybe 14, 7900 lighter-haired player with 77 on back. Possible switch in the crowded 7802-7867 phase; not decidable. DOUBT for user"
+  },
+  "H071": {
+   "team": 1,
+   "number": null,
+   "note": "curly dark-haired white Wetzlar player; back shows a partial 8 (first digit hidden?) at 4270, chest unreadable; 4301-4320 cut. DOUBT for user"
+  },
+  "H072": {
+   "team": 0,
+   "number": null,
+   "note": "white Erlangen player sprinting, motion blur; 7225-7230 crowded with #10 in front; no number"
+  },
+  "H073": {
+   "team": 0,
+   "number": null,
+   "note": "blond long-haired white player, front view, chest digit not readable"
+  },
+  "H074": {
+   "team": 0,
+   "number": null,
+   "note": "blond white player raising arm, side/front, no number readable"
+  },
+  "H075": {
+   "team": null,
+   "number": null,
+   "flag": "mixed",
+   "note": "green Magdeburg player (back number maybe 7, blurred) 1711-2008; then after a foul the box sits on white Wetzlar #19 (2045-2119, 19 clear on back). Switch -> mixed"
+  },
+  "H076": {
+   "team": 0,
+   "number": "44",
+   "note": "44 clear on chest/shorts 9966-10028"
+  },
+  "H077": {
+   "team": 0,
+   "number": "7",
+   "note": "blond red player, black leggings, 7 on chest 6768-6819 (moderately clear); 6895-6920 blur/cut"
+  },
+  "H078": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired white Wetzlar player; chest two digits at 4482-4497, 19 or 14, not decidable; 4540 box at the frame edge. DOUBT for user"
+  },
+  "H079": {
+   "team": 0,
+   "number": "8",
+   "note": "bald bearded red #8, 8 on chest 14727/14999; 14571-14649 Loewen #80 in front of him (occlusion), 14804 referee in front"
+  },
+  "H080": {
+   "team": 1,
+   "number": "23",
+   "note": "dark-haired white Wetzlar player, 23 on chest 10060-10109 (moderately clear at full res); 10158-10280 crowded, same player"
+  }
+ }
+}

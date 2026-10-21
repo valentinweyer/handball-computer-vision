@@ -1,0 +1,410 @@
+{
+ "items": [
+  {
+   "review_id": "S349",
+   "group": "random",
+   "code": "H000"
+  },
+  {
+   "review_id": "S133",
+   "group": "named",
+   "code": "H001"
+  },
+  {
+   "review_id": "S176",
+   "group": "named",
+   "code": "H002"
+  },
+  {
+   "review_id": "S243",
+   "group": "named",
+   "code": "H003"
+  },
+  {
+   "review_id": "S254",
+   "group": "named",
+   "code": "H004"
+  },
+  {
+   "review_id": "S161",
+   "group": "random",
+   "code": "H005"
+  },
+  {
+   "review_id": "S238",
+   "group": "random",
+   "code": "H006"
+  },
+  {
+   "review_id": "S348",
+   "group": "random",
+   "code": "H007"
+  },
+  {
+   "review_id": "S009",
+   "group": "random",
+   "code": "H008"
+  },
+  {
+   "review_id": "S354",
+   "group": "named",
+   "code": "H009"
+  },
+  {
+   "review_id": "S012",
+   "group": "random",
+   "code": "H010"
+  },
+  {
+   "review_id": "S279",
+   "group": "named",
+   "code": "H011"
+  },
+  {
+   "review_id": "S199",
+   "group": "random",
+   "code": "H012"
+  },
+  {
+   "review_id": "S113",
+   "group": "named",
+   "code": "H013"
+  },
+  {
+   "review_id": "S295",
+   "group": "random",
+   "code": "H014"
+  },
+  {
+   "review_id": "S185",
+   "group": "named",
+   "code": "H015"
+  },
+  {
+   "review_id": "S245",
+   "group": "random",
+   "code": "H016"
+  },
+  {
+   "review_id": "S244",
+   "group": "named",
+   "code": "H017"
+  },
+  {
+   "review_id": "S067",
+   "group": "random",
+   "code": "H018"
+  },
+  {
+   "review_id": "S317",
+   "group": "random",
+   "code": "H019"
+  },
+  {
+   "review_id": "S242",
+   "group": "random",
+   "code": "H020"
+  },
+  {
+   "review_id": "S307",
+   "group": "random",
+   "code": "H021"
+  },
+  {
+   "review_id": "S332",
+   "group": "named",
+   "code": "H022"
+  },
+  {
+   "review_id": "S324",
+   "group": "named",
+   "code": "H023"
+  },
+  {
+   "review_id": "S187",
+   "group": "named",
+   "code": "H024"
+  },
+  {
+   "review_id": "S140",
+   "group": "named",
+   "code": "H025"
+  },
+  {
+   "review_id": "S131",
+   "group": "random",
+   "code": "H026"
+  },
+  {
+   "review_id": "S351",
+   "group": "random",
+   "code": "H027"
+  },
+  {
+   "review_id": "S073",
+   "group": "random",
+   "code": "H028"
+  },
+  {
+   "review_id": "S200",
+   "group": "random",
+   "code": "H029"
+  },
+  {
+   "review_id": "S228",
+   "group": "random",
+   "code": "H030"
+  },
+  {
+   "review_id": "S281",
+   "group": "random",
+   "code": "H031"
+  },
+  {
+   "review_id": "S237",
+   "group": "named",
+   "code": "H032"
+  },
+  {
+   "review_id": "S222",
+   "group": "named",
+   "code": "H033"
+  },
+  {
+   "review_id": "S003",
+   "group": "named",
+   "code": "H034"
+  },
+  {
+   "review_id": "S121",
+   "group": "random",
+   "code": "H035"
+  },
+  {
+   "review_id": "S214",
+   "group": "random",
+   "code": "H036"
+  },
+  {
+   "review_id": "S318",
+   "group": "named",
+   "code": "H037"
+  },
+  {
+   "review_id": "S075",
+   "group": "random",
+   "code": "H038"
+  },
+  {
+   "review_id": "S252",
+   "group": "random",
+   "code": "H039"
+  },
+  {
+   "review_id": "S264",
+   "group": "random",
+   "code": "H040"
+  },
+  {
+   "review_id": "S006",
+   "group": "named",
+   "code": "H041"
+  },
+  {
+   "review_id": "S043",
+   "group": "random",
+   "code": "H042"
+  },
+  {
+   "review_id": "S266",
+   "group": "named",
+   "code": "H043"
+  },
+  {
+   "review_id": "S211",
+   "group": "random",
+   "code": "H044"
+  },
+  {
+   "review_id": "S224",
+   "group": "named",
+   "code": "H045"
+  },
+  {
+   "review_id": "S193",
+   "group": "named",
+   "code": "H046"
+  },
+  {
+   "review_id": "S248",
+   "group": "named",
+   "code": "H047"
+  },
+  {
+   "review_id": "S321",
+   "group": "named",
+   "code": "H048"
+  },
+  {
+   "review_id": "S177",
+   "group": "named",
+   "code": "H049"
+  },
+  {
+   "review_id": "S205",
+   "group": "named",
+   "code": "H050"
+  },
+  {
+   "review_id": "S358",
+   "group": "named",
+   "code": "H051"
+  },
+  {
+   "review_id": "S203",
+   "group": "named",
+   "code": "H052"
+  },
+  {
+   "review_id": "S270",
+   "group": "named",
+   "code": "H053"
+  },
+  {
+   "review_id": "S334",
+   "group": "named",
+   "code": "H054"
+  },
+  {
+   "review_id": "S054",
+   "group": "random",
+   "code": "H055"
+  },
+  {
+   "review_id": "S336",
+   "group": "named",
+   "code": "H056"
+  },
+  {
+   "review_id": "S042",
+   "group": "random",
+   "code": "H057"
+  },
+  {
+   "review_id": "S018",
+   "group": "random",
+   "code": "H058"
+  },
+  {
+   "review_id": "S271",
+   "group": "random",
+   "code": "H059"
+  },
+  {
+   "review_id": "S092",
+   "group": "random",
+   "code": "H060"
+  },
+  {
+   "review_id": "S174",
+   "group": "random",
+   "code": "H061"
+  },
+  {
+   "review_id": "S093",
+   "group": "random",
+   "code": "H062"
+  },
+  {
+   "review_id": "S165",
+   "group": "named",
+   "code": "H063"
+  },
+  {
+   "review_id": "S072",
+   "group": "named",
+   "code": "H064"
+  },
+  {
+   "review_id": "S014",
+   "group": "random",
+   "code": "H065"
+  },
+  {
+   "review_id": "S066",
+   "group": "named",
+   "code": "H066"
+  },
+  {
+   "review_id": "S112",
+   "group": "named",
+   "code": "H067"
+  },
+  {
+   "review_id": "S178",
+   "group": "random",
+   "code": "H068"
+  },
+  {
+   "review_id": "S051",
+   "group": "random",
+   "code": "H069"
+  },
+  {
+   "review_id": "S278",
+   "group": "named",
+   "code": "H070"
+  },
+  {
+   "review_id": "S033",
+   "group": "named",
+   "code": "H071"
+  },
+  {
+   "review_id": "S275",
+   "group": "random",
+   "code": "H072"
+  },
+  {
+   "review_id": "S261",
+   "group": "named",
+   "code": "H073"
+  },
+  {
+   "review_id": "S350",
+   "group": "named",
+   "code": "H074"
+  },
+  {
+   "review_id": "S017",
+   "group": "random",
+   "code": "H075"
+  },
+  {
+   "review_id": "S312",
+   "group": "random",
+   "code": "H076"
+  },
+  {
+   "review_id": "S149",
+   "group": "random",
+   "code": "H077"
+  },
+  {
+   "review_id": "S036",
+   "group": "named",
+   "code": "H078"
+  },
+  {
+   "review_id": "S192",
+   "group": "named",
+   "code": "H079"
+  },
+  {
+   "review_id": "S079",
+   "group": "named",
+   "code": "H080"
+  }
+ ],
+ "seed": 20261021
+}

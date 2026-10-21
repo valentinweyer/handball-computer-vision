@@ -133,6 +133,16 @@ def cmd_score() -> dict:
     assert json.loads(sealed.read_text())["lock_sha256"] == _sha(LOCK)
     queue = {it["review_id"]: it for it in json.loads((OUT / "queue_SEALED.json").read_text())["items"]}
     labels = _frozen(OUT / "assistant_labels_v1.json")
+    # A frozen erratum may remap only the anonymous team id of labelled items (the strips
+    # carry no team reference); numbers and flags are never touched.
+    erratum_path = OUT / "assistant_labels_v1_erratum.json"
+    erratum = None
+    if erratum_path.exists():
+        sha = erratum_path.with_suffix(".sha256")
+        assert sha.exists() and sha.read_text().split()[0] == _sha(erratum_path), "erratum is not frozen"
+        erratum = json.loads(erratum_path.read_text())
+        labels = {c: ({**l, "team": erratum["team_override"][c]} if c in erratum["team_override"] else l)
+                  for c, l in labels.items()}
     adj_path = OUT / "user_adjudication_v1.json"
     adj = _frozen(adj_path) if adj_path.exists() else {}
     bank = Bank("higher")
@@ -206,7 +216,9 @@ def cmd_score() -> dict:
     gain = (s_c["counts"].get("correct", 0) - s_v2["counts"].get("correct", 0)) / max(1, s_v2["counts"].get("correct", 0))
     n = verified_added
     result = {"lock_sha256": _sha(LOCK), "labels_sha256": _sha(OUT / "assistant_labels_v1.json"),
-              "adjudication_sha256": _sha(adj_path) if adj else None, "verdict": verdict,
+              "adjudication_sha256": _sha(adj_path) if adj else None,
+              "erratum_sha256": _sha(erratum_path) if erratum else None,
+              "erratum_team_override": erratum["team_override"] if erratum else None, "verdict": verdict,
               "coverage_target_met": gain >= 0.10, "relative_gain_correct": gain,
               "paired": {"added": dict(added_out), "lost": [(r, per[r]["v2"]) for r in lost],
                          "both_named_same": sum(1 for p in per.values() if not p["changed"] and p["v2_name"] is not None)},

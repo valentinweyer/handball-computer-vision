@@ -1,0 +1,42 @@
+{
+ "Magdeburg_Wetzlar_66m00_10min": {
+  "reviewer": "assistant visual review (Claude), 2026-10-21 -- not an independent human annotator",
+  "method": "All identity contact sheets of this fresh-test window inspected before any coverage_v1 / split_v2 decision was run on it (locked/coverage_v1.json procedure step 2); suspect fragments re-inspected at enlarged crop size (every crop of the fragment).",
+  "excluded": {},
+  "excluded_identities": {},
+  "reviewed_identities": 14,
+  "reviewed_fragments": 55,
+  "notes": [
+   "team0 #10 F8 (track 178, 11111-11970): ends in a timeout huddle; from ~11735 #10 is drinking behind a staff member in black, partly occluded. Same player throughout, kept.",
+   "team0 #19 F0 (track 23, 2331-2960): first ~30 crops are side views without a visible number; same curly-haired player with knee sleeve as the later #19 crops (19 faintly visible at 2555). Kept.",
+   "team1 #14 F0 (track 64) and #20 F2 (track 96, crop 5845 occluded by a staff member) re-inspected enlarged: consistent, kept."
+  ]
+ },
+ "Melsungen_Loewen_66m00_10min": {
+  "reviewer": "assistant visual review (Claude), 2026-10-21 -- not an independent human annotator",
+  "method": "All identity contact sheets of this fresh-test window inspected before any coverage_v1 / split_v2 decision was run on it (locked/coverage_v1.json procedure step 2); suspect fragments re-inspected at enlarged crop size (every crop of the fragment).",
+  "excluded": {},
+  "excluded_identities": {},
+  "reviewed_identities": 15,
+  "reviewed_fragments": 81,
+  "notes": [
+   "Track 52 carries three players in turn (team0 #7 2901-3640, #14 3711-4560, #8 4671-5670); mining split it at the switches and each fragment, re-inspected enlarged, holds one player. Kept.",
+   "team0 #6 F2 (track 103, 6900-7870): same dark-haired #6 in front of the red boards after 7380. Kept.",
+   "team1 #78 F1 (track 91): starts with #78 sitting on the floor (78 on the shorts). #78 F2 and #80 F1 (crop 1635 is a hands-on-head close-up) re-inspected enlarged: consistent, kept."
+  ]
+ },
+ "Stuttgart_Erlangen_66m00_10min": {
+  "reviewer": "assistant visual review (Claude), 2026-10-21 -- not an independent human annotator",
+  "method": "All identity contact sheets of this fresh-test window inspected before any coverage_v1 / split_v2 decision was run on it (locked/coverage_v1.json procedure step 2); suspect fragments re-inspected at enlarged crop size (every crop of the fragment).",
+  "excluded": {},
+  "excluded_identities": {},
+  "reviewed_identities": 18,
+  "reviewed_fragments": 62,
+  "notes": [
+   "Production bundle mined as locked (court in view 0.663; the no-court-pause run exists but is not used for the locked test).",
+   "team0 #22 F3 (track 218): crop 8095 is occluded by a bald head in front; 8275-8295 show 22 on the shorts. Kept.",
+   "team1 #19 F0 (track 223) and #22 (tracks 222/269/355) are both blond and look alike; they are co-present (8941-9330) and #19 shows 19 on shorts and back. Kept; a look-alike pair worth watching in the decisions.",
+   "team1 #39 F4-F6 re-inspected enlarged: all #39 (F5 crop 7065 mostly a bench head). Kept."
+  ]
+ }
+}

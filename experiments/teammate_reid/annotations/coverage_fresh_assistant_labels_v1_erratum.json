@@ -1,0 +1,16 @@
+{
+ "applies_to": "assistant_labels_v1.json sha256 f011e349feeaaf2c7e3b7a8035d9f6b53b6745f151419ce81675c2392a6b2f70",
+ "what": "team field only; numbers, flags and notes unchanged",
+ "why": "Team ids are anonymous per-video clusters. The fresh-test strips carried no team reference, and for Magdeburg-Wetzlar the labeller wrote white Wetzlar players as team 1 (H013 was written as 0, so the labels were internally inconsistent). The gallery fixes the mapping independently of any decision: Magdeburg-Wetzlar gallery cluster 0 torso mean BGR (151,115,109) = white Wetzlar, cluster 1 (70,78,60) = green Magdeburg; the same check confirms Melsungen (0 red, 1 dark) and Stuttgart (0 white, 1 blue), where no label needed changing.",
+ "discovered": "2026-10-21, after freezing the labels, when the decisions were opened to select items for user adjudication. Disclosed in the report.",
+ "team_override": {
+  "H060": 0,
+  "H064": 0,
+  "H066": 0,
+  "H067": 0,
+  "H069": 0,
+  "H071": 0,
+  "H078": 0,
+  "H080": 0
+ }
+}
