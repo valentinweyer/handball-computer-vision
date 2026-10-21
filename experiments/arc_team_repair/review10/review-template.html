@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ARC tracking review</title>
+<style>body{font:17px system-ui;margin:30px auto;max-width:1200px;padding:0 18px;background:#14181d;color:#eef2f7}video{width:100%;background:black}button,select,textarea{font:inherit;padding:10px;margin:5px 5px 5px 0;background:#252e39;color:white;border:1px solid #627086;border-radius:6px}button{cursor:pointer}textarea{width:95%;height:60px}small{color:#bac4d0}section{margin-top:20px}#done{color:#90dfb1}</style>
+<h1>ARC tracking review</h1>
+<p>Follow the highlighted people through the encounter. <b>A</b> is original ARC; <b>B</b> adds team repair. Some cases are unchanged controls. Judge whether each ID follows the same person; visible jersey numbers can help.</p>
+<p>For bench players, off-court people, or footage where you cannot follow the person confidently, use the corresponding option. SAM2 and number predictions are not ground truth.</p>
+<section><button id="previous">Previous</button><select id="cases"></select><button id="next">Next</button><span id="done"></span></section>
+<p id="info"></p><video id="video" controls playsinline preload="metadata"></video>
+<section><label>Your verdict <select id="verdict"><option value="">Not reviewed</option><option value="b_better">B better — repair helps</option><option value="a_better">A better — repair damages tracking</option><option value="both_correct">Both correct / equivalent</option><option value="both_wrong">Both wrong / unresolved identity error</option><option value="uncertain">Uncertain</option><option value="out_of_scope">Bench or off-court / out of scope</option></select></label>
+<p><textarea id="notes" placeholder="Optional: what happens, which person, and at what time"></textarea></p>
+<button id="export">Download my reviews</button><small>Saved in this browser on this device. Download the JSON file to share your answers.</small></section>
+<script>
+const items=__ITEMS__,fps=__FPS__,key='arc-review:'+location.pathname;
+let answers={};try{answers=JSON.parse(localStorage.getItem(key)||'{}')}catch(e){}
+const $=id=>document.getElementById(id),cases=$('cases');
+items.forEach((x,i)=>{let o=document.createElement('option');o.value=i;o.textContent=x.id;cases.appendChild(o)});
+function progress(){$('done').textContent=Object.values(answers).filter(a=>a.verdict).length+' / '+items.length+' reviewed'}
+function show(){if(!items.length){$('info').textContent='No eligible review events were found. See the experiment report.';return}const x=items[+cases.value],a=answers[x.id]||{};$('video').src=x.video;$('info').textContent=x.id+' · video time '+(x.start/fps).toFixed(1)+'–'+(x.end/fps).toFixed(1)+' seconds · highlighted IDs '+x.focus.join(', ');$('verdict').value=a.verdict||'';$('notes').value=a.notes||'';progress()}
+function save(){if(!items.length)return;const x=items[+cases.value];answers[x.id]={verdict:$('verdict').value,notes:$('notes').value};localStorage.setItem(key,JSON.stringify(answers));progress()}
+cases.onchange=show;$('verdict').onchange=save;$('notes').oninput=save;
+$('previous').onclick=()=>{cases.value=Math.max(0,+cases.value-1);show()};$('next').onclick=()=>{cases.value=Math.min(items.length-1,+cases.value+1);show()};
+$('export').onclick=()=>{save();let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({scope:'human event review; not overall tracking accuracy',answers},null,2)],{type:'application/json'}));a.download='arc-review-answers.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)};show();
+</script></html>
