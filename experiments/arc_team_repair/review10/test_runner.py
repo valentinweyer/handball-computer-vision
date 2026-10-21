@@ -19,7 +19,9 @@ def test_gate_requires_bundle_completion_and_no_active_inference(tmp_path, monke
     assert driver.gate(p)
     (work / "timings.json").write_text(json.dumps({"track": 20, "bundle": 1}))
     assert driver.gate(p) == []
-    monkeypatch.setattr(driver.subprocess, "check_output", lambda *a, **k: "python -m scripts.process_video x.mp4\n")
+    monkeypatch.setattr(driver.subprocess, "check_output", lambda *a, **k: "bash bash -c 'python -m scripts.process_video x.mp4'\n")
+    assert driver.gate(p) == []
+    monkeypatch.setattr(driver.subprocess, "check_output", lambda *a, **k: "python python -m scripts.process_video x.mp4\n")
     assert driver.gate(p)
 
 

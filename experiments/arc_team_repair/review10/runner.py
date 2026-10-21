@@ -29,9 +29,10 @@ def sha(path):
 def gate(protocol):
     """Wait for the two authorized dependencies, including their bundle stage."""
     reasons = []
-    processes = subprocess.check_output(["ps", "-eo", "args"], text=True).splitlines()
+    processes = subprocess.check_output(["ps", "-eo", "comm=,args="], text=True).splitlines()
     for line in processes:
-        if any("-m " + name + " " in line for name in
+        command, _, arguments = line.strip().partition(" ")
+        if command.startswith("python") and any("-m " + name + " " in arguments for name in
                ("scripts.process_video", "scripts.render_full_pipeline")):
             reasons.append("inference process still active: " + line[:220])
     for work in protocol["wait_for"]:
