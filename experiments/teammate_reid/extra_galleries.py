@@ -17,7 +17,8 @@ the number-vouched fragments of the adjacent windows (`heldout.EXTRA_DEV_WINDOWS
   not review either); fragments behind new names are listed for inspection.
 
     python -m experiments.teammate_reid.extra_galleries            # gallery-cap grid
-    python -m experiments.teammate_reid.extra_galleries variants   # size-robust variants
+    python -m experiments.teammate_reid.extra_galleries variants   # size-robust variants, all mined matches
+    python -m experiments.teammate_reid.extra_galleries variants-v1   # the same on Kiel and Eisenach only
 
 Gallery size is a confound: top-3 scoring over more crops raises every candidate's score
 against a gate set on one window, so each comparison is also run with a fixed crop budget
@@ -26,6 +27,7 @@ per identity (`cap`, crops picked evenly over match time).
 from __future__ import annotations
 
 import json
+import re
 from collections import Counter
 from pathlib import Path
 
@@ -40,7 +42,6 @@ from experiments.teammate_reid.heldout import EXTRA_DEV_WINDOWS
 LOCK = Path(__file__).parent / "locked/coverage_v1.json"
 EXTRA_RUNS = stage2.RUNS / "extra_dev"
 OUT = stage2.RUNS / "extra_galleries"
-MAIN_START = 66 * 60   # the 66:00 windows; extra windows start before or after it
 FAR = 10 ** 7
 # Size-robust scoring (fixed before any run): the reference gallery size is the order of a
 # 10-minute window's gallery per player (66:00 medians: Kiel 168, Eisenach 74 crops), and
@@ -68,17 +69,31 @@ def team_map(main_colour: dict, extra_colour: dict) -> dict:
     return {0: 0, 1: 1} if keep <= swap else {0: 1, 1: 0}
 
 
-class ExtendedBank(Bank):
-    """The `test_v1` store restricted to the matches with extra windows; with `extra=True`
-    the extra windows' vouched fragments are added to those matches' galleries."""
+def mined_windows(matches=None) -> dict:
+    """match -> extra windows that have been mined (optionally only the given matches)."""
+    out: dict = {}
+    for name, match, *_ in EXTRA_DEV_WINDOWS:
+        if (EXTRA_RUNS / name / "fragments.json").exists() and (matches is None or match in matches):
+            out.setdefault(match, []).append(name)
+    return out
 
-    def __init__(self, extra: bool, cap: int | None = None, new_only: bool = False, scoring: str = "top3"):
-        super().__init__("test_v1")
+
+def _start_min(name: str) -> int:
+    """Window start in minutes from its name (`..._86m00_10min`); the Kiel bundle name has none: 66."""
+    m = re.search(r"_(\d+)m00_", name)
+    return int(m.group(1)) if m else 66
+
+
+class ExtendedBank(Bank):
+    """A development store (`test_v1` or `final`) restricted to the matches with mined extra
+    windows; with `extra=True` their vouched fragments are added to those matches' galleries."""
+
+    def __init__(self, extra: bool, cap: int | None = None, new_only: bool = False, scoring: str = "top3",
+                 bank: str = "test_v1", matches=None):
+        super().__init__(bank)
         assert scoring in SCORINGS
         self.cap, self.new_only, self.scoring = cap, new_only, scoring
-        windows: dict = {}
-        for name, match, *_ in EXTRA_DEV_WINDOWS:
-            windows.setdefault(match, []).append(name)
+        windows = {m: w for m, w in mined_windows(matches).items() if m in self.galleries}
         self.segments = {r: s for r, s in self.segments.items() if s["match"] in windows}
         self.population = len(self.segments)
         self.seconds = sum(s["duration_s"] for s in self.segments.values())
@@ -90,8 +105,9 @@ class ExtendedBank(Bank):
 
     def _add(self, match: str, names: list) -> None:
         from experiments.teammate_reid.benchmark import load_reviewed
-        stage2.configure("test_v1")
+        stage2.configure(self.name)
         main_dir = stage2.GALLERY_RESULTS[match]
+        main_start = _start_min(stage2.SPECS[match].name)
         main = self.galleries[match]
         main_colour = {t: torso_bgr(main_dir, [c for f in main if f["team"] == t for c in f["crop_ids"]][:300])
                        for t in (0, 1)}
@@ -108,7 +124,7 @@ class ExtendedBank(Bank):
             self.alignment[name] = {"map": mapping, "main_bgr": {t: v.round(1).tolist() for t, v in main_colour.items()},
                                     "extra_bgr": {t: v.round(1).tolist() for t, v in colour.items()}}
             raw = np.load(res / "features_sportsreid_vitb16.npz")["raw"]
-            before = int(name.split("_")[-2].split("m")[0]) * 60 < MAIN_START
+            before = _start_min(name) < main_start
             by_frag: dict = {}
             for c in crops:
                 by_frag.setdefault(c["fragment"], []).append(c["crop_id"])
@@ -217,72 +233,110 @@ class ExtendedBank(Bank):
                 s["copresence"][ident] = {**iou_summary(ious), "frag_overlap_frames": 0}
 
 
-VERIFY = OUT / "verify"     # blind assistant labels of names no earlier reference covered (frozen)
+VERIFY_ROUNDS = (OUT / "verify", OUT / "verify2")   # blind assistant labels of names no earlier reference covered
 CAPS = (None, 150, 100)
+V1_MATCHES = ("Kiel-Lemgo", "Eisenach-Hamburg")      # the first two matches (cap grid)
+BANKS = ("test_v1", "final")
+ERRORS = ("wrong", "unknown_named", "mixed")
 
 
 def references_with_verify() -> tuple:
-    """Earlier references (human > adjudicated > assistant, `coverage2_eval`), plus the frozen
-    blind labels of this check for segments none of them covers. Controls are not added."""
-    from experiments.teammate_reid.coverage2_eval import reference, references
+    """Earlier references (human > adjudicated > assistant, `coverage2_eval`), plus every frozen
+    verification round of this check for segments none of them covers. Controls are not added."""
     import hashlib
-    refs = references()
-    labels_path = VERIFY / "assistant_labels_v1.json"
-    sha = labels_path.with_suffix(".sha256").read_text().split()[0]
-    assert sha == hashlib.sha256(labels_path.read_bytes()).hexdigest(), "verification labels not frozen"
-    labels = json.loads(labels_path.read_text())["labels"]
-    for it in json.loads((VERIFY / "queue_SEALED.json").read_text())["items"]:
-        if it["group"] != "target":
+    from experiments.teammate_reid.coverage2_eval import reference, references
+    refs, shas = references(), {}
+    for vdir in VERIFY_ROUNDS:
+        labels_path = vdir / "assistant_labels_v1.json"
+        if not labels_path.exists():
             continue
-        a = labels[it["code"]]
-        refs.setdefault(("test_v1", it["review_id"]), []).append(
-            {"source": "assistant_extra_v1", "truth": (a["team"], a["number"]) if a.get("number") else None,
-             "flag": a.get("flag")})
+        sha = labels_path.with_suffix(".sha256").read_text().split()[0]
+        assert sha == hashlib.sha256(labels_path.read_bytes()).hexdigest(), f"{labels_path} not frozen"
+        shas[vdir.name] = sha
+        labels = json.loads(labels_path.read_text())["labels"]
+        for it in json.loads((vdir / "queue_SEALED.json").read_text())["items"]:
+            if it["group"] != "target":
+                continue
+            a = labels[it["code"]]
+            refs.setdefault((it.get("bank", "test_v1"), it["review_id"]), []).append(
+                {"source": f"assistant_extra_{vdir.name}",
+                 "truth": (a["team"], a["number"]) if a.get("number") else None, "flag": a.get("flag")})
 
     def ref(key):
         r = reference(refs, key)
         if r is None:
-            extra = [x for x in refs.get(key, []) if x["source"] == "assistant_extra_v1"]
+            extra = [x for x in refs.get(key, []) if x["source"].startswith("assistant_extra")]
             r = extra[0] if extra else None
         return r
-    return refs, ref, sha
+    return refs, ref, shas
 
 
-def main() -> None:
-    from experiments.teammate_reid.coverage2_eval import outcome, reference
-    from experiments.teammate_reid.coverage2_stress import synthetic_unknowns
+def _rules() -> dict:
     lock = json.loads(LOCK.read_text())
     rules = {"v2": Rule(**lock["baseline"]["rule"]), "coverage_v1": Rule(**lock["candidate"]["rule"])}
     assert all(r.emb == "raw" and r.tier2 is None and r.lone_strict is None for r in rules.values())
-    refs, ref, sha = references_with_verify()
-    report: dict = {"verify_labels_sha256": sha, "grid": {}}
+    return rules
+
+
+def _score(banks: list, rule, refs, ref, per: dict, tag: str) -> dict:
+    """Outcomes over several stores: totals, per match, newly correct time, synthetic unknowns."""
+    from experiments.teammate_reid.coverage2_eval import outcome, reference
+    from experiments.teammate_reid.coverage2_stress import synthetic_unknowns
+    c, secs, syn, by_match = Counter(), 0.0, Counter(), {}
+    for bank in banks:
+        for rid, seg in bank.segments.items():
+            d = decide(bank, rid, rule)
+            o = outcome(bank, rid, d["name"], ref((bank.name, rid)))
+            c[o] += 1
+            by_match.setdefault(seg["match"], Counter())[o] += 1
+            secs += seg["duration_s"] * (1 - seg["baseline_shown"]) if o == "correct" else 0.0
+            per.setdefault(f"{bank.name}|{rid}", {})[tag] = {"name": d["name"], "outcome": o}
+        syn.update(synthetic_unknowns(bank, rule, refs, reference))
+        for m, cm in _syn_by_match(bank, rule, refs, reference).items():
+            by_match.setdefault(m, Counter()).update(cm)
+    e = sum(c[x] for x in ERRORS)
+    return {"counts": dict(c), "errors": e, "precision": c["correct"] / max(1, c["correct"] + e),
+            "newly_correct_seconds": round(secs, 1), "synthetic_unknowns": dict(syn),
+            "by_match": {m: dict(v) for m, v in sorted(by_match.items())}}
+
+
+def _syn_by_match(bank, rule, refs, reference) -> dict:
+    """Synthetic false matches per match (same procedure as `coverage2_stress.synthetic_unknowns`)."""
+    from experiments.teammate_reid.coverage2_stress import synthetic_unknowns
+    out = {}
+    for match in sorted({s["match"] for s in bank.segments.values()}):
+        keep = bank.segments
+        bank.segments = {r: s for r, s in keep.items() if s["match"] == match}
+        r = synthetic_unknowns(bank, rule, refs, reference)
+        bank.segments = keep
+        out[match] = Counter({"syn_trials": r["trials"], "syn_false_match": r.get("false_match", 0)})
+    return out
+
+
+def main() -> None:
+    """Gallery-cap grid on the first two matches (Kiel, Eisenach), top-3 scoring."""
+    rules = _rules()
+    refs, ref, shas = references_with_verify()
+    report: dict = {"verify_labels_sha256": shas, "grid": {}}
     per: dict = {}
-    errs = ("wrong", "unknown_named", "mixed")
     for cap in CAPS:
-        banks = {"base": ExtendedBank(extra=False, cap=cap), "extra": ExtendedBank(extra=True, cap=cap)}
+        banks = {"base": ExtendedBank(extra=False, cap=cap, matches=V1_MATCHES),
+                 "extra": ExtendedBank(extra=True, cap=cap, matches=V1_MATCHES)}
         if cap is None:
             report.update(alignment=banks["extra"].alignment, added=banks["extra"].added,
                           population=banks["base"].population, seconds=banks["base"].seconds)
         for bname, bank in banks.items():
             for rname, rule in rules.items():
-                c, secs = Counter(), 0.0
-                for rid, seg in bank.segments.items():
-                    d = decide(bank, rid, rule)
-                    o = outcome(bank, rid, d["name"], ref(("test_v1", rid)))
-                    c[o] += 1
-                    secs += seg["duration_s"] * (1 - seg["baseline_shown"]) if o == "correct" else 0.0
-                    per.setdefault(rid, {})[f"{cap}|{bname}|{rname}"] = {"name": d["name"], "outcome": o}
-                e = sum(c[x] for x in errs)
-                report["grid"][f"cap={cap}|{bname}|{rname}"] = {
-                    "counts": dict(c), "errors": e, "precision": c["correct"] / max(1, c["correct"] + e),
-                    "newly_correct_seconds": round(secs, 1),
-                    "synthetic_unknowns": dict(synthetic_unknowns(bank, rule, refs, reference))}
-                print(f"cap={cap} {bname} {rname}: {report['grid'][f'cap={cap}|{bname}|{rname}']}", flush=True)
+                row = _score([bank], rule, refs, ref, per, f"{cap}|{bname}|{rname}")
+                report["grid"][f"cap={cap}|{bname}|{rname}"] = row
+                print(f"cap={cap} {bname} {rname}: correct={row['counts'].get('correct', 0)} errors={row['errors']} "
+                      f"synthFM={row['synthetic_unknowns'].get('false_match', 0)}/{row['synthetic_unknowns']['trials']}",
+                      flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "result.json").write_text(json.dumps({**report, "per_segment": per}, indent=1, default=str))
 
 
-VARIANTS = {   # name -> ExtendedBank options; each is scored on the 66:00 galleries and with the extra windows
+VARIANTS = {   # name -> ExtendedBank options; each is scored on the window's galleries and with the extra windows
     "locked_top3": {},
     "new_players_only": {"new_only": True},
     "frac_top": {"scoring": "frac"},
@@ -290,43 +344,42 @@ VARIANTS = {   # name -> ExtendedBank options; each is scored on the 66:00 galle
 }
 
 
-def variants() -> dict:
-    """Size-robust variants: correct names, errors and synthetic false matches, base vs extra."""
-    from experiments.teammate_reid.coverage2_eval import outcome, reference
-    from experiments.teammate_reid.coverage2_stress import synthetic_unknowns
-    lock = json.loads(LOCK.read_text())
-    rules = {"v2": Rule(**lock["baseline"]["rule"]), "coverage_v1": Rule(**lock["candidate"]["rule"])}
-    refs, ref, sha = references_with_verify()
-    errs = ("wrong", "unknown_named", "mixed")
-    report: dict = {"verify_labels_sha256": sha, "ref_size": REF_SIZE, "frac": FRAC, "results": {}}
+def variants(matches=None, out_name: str = "variants.json") -> dict:
+    """Size-robust variants over every development match with mined extra windows (both stores):
+    correct names, errors, newly correct time and synthetic false matches, base vs extra, per match."""
+    rules = _rules()
+    refs, ref, shas = references_with_verify()
+    report: dict = {"verify_labels_sha256": shas, "ref_size": REF_SIZE, "frac": FRAC,
+                    "matches": mined_windows(matches), "results": {}}
     per: dict = {}
     for vname, opts in VARIANTS.items():
         for extra in (False, True):
             if not extra and opts.get("new_only"):
                 continue   # identical to locked_top3 base
-            bank = ExtendedBank(extra=extra, **opts)
+            banks = [ExtendedBank(extra=extra, bank=b, matches=matches, **opts) for b in BANKS]
+            banks = [b for b in banks if b.segments]
+            if extra and vname == "locked_top3":
+                report["added"] = {m: a for b in banks for m, a in b.added.items()}
+                report["alignment"] = {w: a for b in banks for w, a in b.alignment.items()}
             for rname, rule in rules.items():
-                c, secs = Counter(), 0.0
-                for rid, seg in bank.segments.items():
-                    d = decide(bank, rid, rule)
-                    o = outcome(bank, rid, d["name"], ref(("test_v1", rid)))
-                    c[o] += 1
-                    secs += seg["duration_s"] * (1 - seg["baseline_shown"]) if o == "correct" else 0.0
-                    per.setdefault(rid, {})[f"{vname}|{extra}|{rname}"] = {"name": d["name"], "outcome": o}
-                e = sum(c[x] for x in errs)
-                row = {"counts": dict(c), "errors": e, "precision": c["correct"] / max(1, c["correct"] + e),
-                       "newly_correct_seconds": round(secs, 1),
-                       "synthetic_unknowns": dict(synthetic_unknowns(bank, rule, refs, reference))}
-                report["results"][f"{vname}|{'extra' if extra else 'base'}|{rname}"] = row
-                print(f"{vname:17s} {'extra' if extra else 'base ':5s} {rname:11s} correct={c['correct']:2d} "
-                      f"errors={e} unreadable={c['unreadable']:2d} unlabelled={c['unlabelled']} "
-                      f"newly={secs:5.0f}s synthFM={row['synthetic_unknowns'].get('false_match', 0)}/"
-                      f"{row['synthetic_unknowns']['trials']}", flush=True)
+                tag = f"{vname}|{'extra' if extra else 'base'}|{rname}"
+                row = _score(banks, rule, refs, ref, per, tag)
+                report["results"][tag] = row
+                c = row["counts"]
+                print(f"{vname:17s} {'extra' if extra else 'base ':5s} {rname:11s} correct={c.get('correct', 0):3d} "
+                      f"errors={row['errors']} unreadable={c.get('unreadable', 0):3d} unlabelled={c.get('unlabelled', 0)} "
+                      f"newly={row['newly_correct_seconds']:5.0f}s synthFM={row['synthetic_unknowns'].get('false_match', 0)}/"
+                      f"{row['synthetic_unknowns'].get('trials', 0)}", flush=True)
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / "variants.json").write_text(json.dumps({**report, "per_segment": per}, indent=1, default=str))
+    (OUT / out_name).write_text(json.dumps({**report, "per_segment": per}, indent=1, default=str))
     return report
 
 
 if __name__ == "__main__":
     import sys
-    variants() if sys.argv[1:] == ["variants"] else main()
+    if sys.argv[1:] == ["variants"]:
+        variants()
+    elif sys.argv[1:] == ["variants-v1"]:
+        variants(V1_MATCHES, "variants_v1.json")
+    else:
+        main()
