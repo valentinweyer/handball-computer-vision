@@ -1,0 +1,474 @@
+{
+ "labeller": "human",
+ "exported_at": "2026-10-19T16:00:07.780Z",
+ "labels": {
+  "S251": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S034": {
+   "team": null,
+   "number": "",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S015": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S167": {
+   "team": "0",
+   "number": "13",
+   "flag": null,
+   "note": ""
+  },
+  "S095": {
+   "team": "0",
+   "number": "44",
+   "flag": null,
+   "note": ""
+  },
+  "S126": {
+   "team": null,
+   "number": "44",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S053": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S272": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S089": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S036": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S106": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S210": {
+   "team": null,
+   "number": "51",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S265": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S010": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S200": {
+   "team": null,
+   "number": "51",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S060": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S028": {
+   "team": null,
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S280": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S288": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S181": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S255": {
+   "team": null,
+   "number": "51",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S140": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S023": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S289": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S301": {
+   "team": "0",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S076": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S069": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S088": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S191": {
+   "team": "0",
+   "number": "78",
+   "flag": null,
+   "note": ""
+  },
+  "S185": {
+   "team": "0",
+   "number": "25",
+   "flag": null,
+   "note": ""
+  },
+  "S045": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S305": {
+   "team": "1",
+   "number": "24",
+   "flag": null,
+   "note": ""
+  },
+  "S066": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S044": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S284": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S025": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S132": {
+   "team": "0",
+   "number": "52",
+   "flag": null,
+   "note": ""
+  },
+  "S263": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S094": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S268": {
+   "team": "0",
+   "number": "61",
+   "flag": null,
+   "note": ""
+  },
+  "S061": {
+   "team": "1",
+   "number": "61",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S266": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S270": {
+   "team": "1",
+   "number": "24",
+   "flag": null,
+   "note": ""
+  },
+  "S077": {
+   "team": "0",
+   "number": "24",
+   "flag": "mixed",
+   "note": ""
+  },
+  "S107": {
+   "team": null,
+   "number": "24",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S057": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S081": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S295": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S298": {
+   "team": "1",
+   "number": "28",
+   "flag": null,
+   "note": ""
+  },
+  "S271": {
+   "team": "0",
+   "number": "93",
+   "flag": null,
+   "note": ""
+  },
+  "S303": {
+   "team": "0",
+   "number": "61",
+   "flag": null,
+   "note": ""
+  },
+  "S097": {
+   "team": null,
+   "number": "61",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S283": {
+   "team": "0",
+   "number": "44",
+   "flag": null,
+   "note": ""
+  },
+  "S055": {
+   "team": "0",
+   "number": "44",
+   "flag": null,
+   "note": ""
+  },
+  "S147": {
+   "team": "1",
+   "number": "44",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S242": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S093": {
+   "team": "0",
+   "number": "99",
+   "flag": null,
+   "note": ""
+  },
+  "S262": {
+   "team": "1",
+   "number": "35",
+   "flag": null,
+   "note": ""
+  },
+  "S092": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S281": {
+   "team": "0",
+   "number": "61",
+   "flag": null,
+   "note": ""
+  },
+  "S184": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S302": {
+   "team": "0",
+   "number": "53",
+   "flag": null,
+   "note": ""
+  },
+  "S121": {
+   "team": "0",
+   "number": "44",
+   "flag": null,
+   "note": ""
+  },
+  "S115": {
+   "team": "0",
+   "number": "99",
+   "flag": null,
+   "note": ""
+  },
+  "S033": {
+   "team": "1",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S170": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S226": {
+   "team": "0",
+   "number": "8",
+   "flag": null,
+   "note": ""
+  },
+  "S067": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S306": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S246": {
+   "team": "0",
+   "number": "61",
+   "flag": null,
+   "note": ""
+  },
+  "S124": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S206": {
+   "team": "1",
+   "number": "31",
+   "flag": null,
+   "note": ""
+  },
+  "S205": {
+   "team": "1",
+   "number": "8",
+   "flag": null,
+   "note": ""
+  },
+  "S013": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S179": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S004": {
+   "team": null,
+   "number": "4",
+   "flag": "unclear",
+   "note": ""
+  },
+  "S267": {
+   "team": "0",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S110": {
+   "team": null,
+   "number": "4",
+   "flag": "unclear",
+   "note": ""
+  }
+ }
+}

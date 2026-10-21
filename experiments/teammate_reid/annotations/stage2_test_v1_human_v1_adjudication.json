@@ -1,0 +1,25 @@
+{
+ "labeller": "human",
+ "kind": "adjudication, NOT blind (made after unsealing)",
+ "created_at": "2026-10-19T20:44:33",
+ "labels": {
+  "S023": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": "adjudicated: user confirmed after seeing the matcher's answer and video close-ups"
+  },
+  "S283": {
+   "team": "0",
+   "number": "21",
+   "flag": null,
+   "note": "adjudicated: user confirmed after seeing the matcher's answer and video close-ups"
+  },
+  "S306": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": "adjudicated: user confirmed after seeing the matcher's answer and video close-ups"
+  }
+ }
+}

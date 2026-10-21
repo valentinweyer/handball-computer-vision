@@ -1,0 +1,138 @@
+{
+ "labeller": "human",
+ "exported_at": "2026-10-19T18:29:49.856Z",
+ "labels": {
+  "S089": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S036": {
+   "team": "0",
+   "number": "52",
+   "flag": null,
+   "note": ""
+  },
+  "S106": {
+   "team": "0",
+   "number": "52",
+   "flag": null,
+   "note": ""
+  },
+  "S210": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S265": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S010": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S200": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S060": {
+   "team": "1",
+   "number": "23",
+   "flag": null,
+   "note": ""
+  },
+  "S028": {
+   "team": "0",
+   "number": "41",
+   "flag": null,
+   "note": ""
+  },
+  "S280": {
+   "team": "1",
+   "number": "4",
+   "flag": null,
+   "note": ""
+  },
+  "S288": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S181": {
+   "team": "1",
+   "number": "33",
+   "flag": null,
+   "note": ""
+  },
+  "S255": {
+   "team": null,
+   "number": "",
+   "flag": "not_a_player",
+   "note": ""
+  },
+  "S140": {
+   "team": "1",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S023": {
+   "team": "0",
+   "number": "24",
+   "flag": null,
+   "note": ""
+  },
+  "S289": {
+   "team": "0",
+   "number": "22",
+   "flag": null,
+   "note": ""
+  },
+  "S301": {
+   "team": "0",
+   "number": "61",
+   "flag": null,
+   "note": ""
+  },
+  "S076": {
+   "team": "1",
+   "number": "21",
+   "flag": null,
+   "note": ""
+  },
+  "S069": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S088": {
+   "team": "1",
+   "number": "6",
+   "flag": null,
+   "note": ""
+  },
+  "S044": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  },
+  "S094": {
+   "team": "1",
+   "number": "51",
+   "flag": null,
+   "note": ""
+  }
+ }
+}
