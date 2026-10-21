@@ -113,6 +113,20 @@ EXTRA_DEV_WINDOWS = [
     ("Eisenach_Hamburg_76m00_10min", "Eisenach-Hamburg", "eval/2026-06-07_1284788_Eisenach_Hamburg.mp4",
      "detector-unseen"),
 ]
+# Second batch (2026-10-21): the other five development matches, two windows each, so the
+# gallery-size variants can be compared leave-one-match-out. Starts checked for live play on
+# 30-second timelines of the full broadcasts. Bielefeld: half-time ~73:30-84:00, signal lost at
+# 108:00, so 62:00 (first half) and 96:00. All others: 56:00 and 76:00 around the 66:00 window.
+EXTRA_DEV_WINDOWS_2 = [
+    (f"{prefix}_{start}m00_10min", match, src, "detector-unseen")
+    for prefix, match, src, starts in [
+        ("VfL_GM_Loewen", "Gummersbach-Loewen", "eval/2026-06-07_1284786_VfL_GM_Loewen.mp4", (56, 76)),
+        ("Saarlouis_Muenster", "Saarlouis-Muenster", FINAL_WINDOWS[0][2], (56, 76)),
+        ("Bielefeld_Aurich", "Bielefeld-Aurich", FINAL_WINDOWS[1][2], (62, 96)),
+        ("BalingenII_Erlangen", "BalingenII-Erlangen", FINAL_WINDOWS[2][2], (56, 76)),
+        ("Wuerzburg_Regensburg", "Wuerzburg-Regensburg", FINAL_WINDOWS[3][2], (56, 76))]
+    for start in starts]
+EXTRA_DEV_WINDOWS += EXTRA_DEV_WINDOWS_2
 # Reserve: DEV_WINDOWS cut on 2026-10-19 but never processed, mined or inspected.
 # Kept sealed as the next independent test once the higher-league bank is spent.
 RESERVE_WINDOWS = [w for w in DEV_WINDOWS if w[0] in ("DRE_MTM_66m00_10min", "Vinnhorst_Potsdam_66m00_10min")]
