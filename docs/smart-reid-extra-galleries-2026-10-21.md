@@ -144,3 +144,43 @@ PYTHONPATH=src:. $PY -m experiments.teammate_reid.extra_galleries   # grid -> ru
 Labels, queue and a summary of the result are archived in
 `experiments/teammate_reid/annotations/extra_galleries_*`. The extra windows
 are registered as `heldout.EXTRA_DEV_WINDOWS` (`run.py --set extra_dev`).
+
+## Step 1: making the score robust to gallery size (2026-10-21)
+
+Three variants, each fixed before it was run (`extra_galleries.py variants`;
+reference size 120 crops per player, the order of a 10-minute gallery):
+
+- **new players only**: extra footage adds only players with no gallery in the
+  window. Existing players keep their 66:00 gallery, so no score changes.
+- **frac top**: the mean of the best 2.5% of a player's crops, at least 3, in
+  place of the top 3.
+- **partition**: the gallery, in match time, is split into interleaved subsets of
+  about 120 crops each. The top-3 score is averaged over the subsets.
+
+Below, every variant is compared with the **current locked system** (top 3,
+66:00 galleries). The figures are for v2, with coverage_v1 in brackets.
+
+| variant | correct | errors | synthetic FM | newly correct time | names gained / lost vs current |
+| --- | ---: | ---: | ---: | ---: | --- |
+| current (66:00, top 3) | 50 (58) | 3 (3) | 2/56 | 534 s (671 s) | n/a |
+| extra footage, top 3 | 67 (79) | 3 (4) | **7/56** | 814 s (987 s) | +17 / 0 |
+| **new players only** | **55 (63)** | **3 (3)** | **2/56** | **720 s (857 s)** | **+5 / 0** (all #91; 5 more #91 unreadable) |
+| frac top, extra | 56 (67) | 3 (4) | 2/56 | 748 s (920 s) | +10 / −4 |
+| partition, extra | 54 (63) | 3 (4) | 2/56 | 697 s (845 s) | +9 / −5 |
+
+**Findings.**
+
+- **All three bring synthetic FM back to the current rate** (2/56).
+- **New players only is strictly additive.** It changes no existing decision. It
+  names only the player the window could not know (#91): +10% correct names,
+  +35% newly correct time, no new error and no lost name.
+- **Frac top and partition** do use the extra views of known players. They gain
+  9–10 names but lose 4–5 names the current system had right, and under
+  coverage_v1 they bring back the known mixed segment S039. Net, they are about
+  the same as new players only, with churn.
+- **These differences are 1–5 names on two matches,** inside the noise.
+
+**Carry forward.** New players only is the primary option: the simplest
+mechanism, and on this data it cannot make an existing name worse. Frac top is
+the secondary option. Choose between them on leave-one-match-out over more
+development matches (step 2) before anything is locked.
