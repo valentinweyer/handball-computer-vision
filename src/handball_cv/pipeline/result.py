@@ -49,7 +49,8 @@ TABLES = {
 }
 
 # Copied into the bundle under these names.
-FILES = {"video": "video.mp4", "masks": "masks.npz", "team_model": "team_model.pkl"}
+FILES = {"video": "video.mp4", "masks": "masks.npz", "team_model": "team_model.pkl",
+         "local_tracks": "local_tracks.npz"}
 
 
 def sha256(path: Path, chunk: int = 1 << 24) -> str:

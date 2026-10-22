@@ -94,13 +94,14 @@ def build_parser() -> argparse.ArgumentParser:
         default=ROOT / "models/prtreid/prtreid-soccernet-baseline.pth.tar",
     )
     parser.add_argument(
-        "--tracker", choices=("sam2", "mcbyte"), default="sam2",
-        help="SAM2 with periodic detector reprompting wins on all three clips "
-             "scored against ground truth -- 93.8/89.2/98.9%% correct, against "
-             "81.5/86.7/95.9%% for the best box tracker on each; see "
-             "docs/tracking-evaluation.md section 8. It costs ~1s/frame against "
-             "McByte's ~0.1s and needs --number-detections and a sam2 checkout",
+        "--tracker", choices=("sam2", "mcbyte", "arc"), default="sam2",
+        help="SAM2 remains the default. ARC is an opt-in box tracker requiring "
+             "a verified every-frame detection cache and explicit local assets",
     )
+    parser.add_argument("--arc-root", type=Path, default=ROOT / "arcsort-upstream")
+    parser.add_argument("--arc-weights", type=Path, default=ROOT / "models/arc/sports_model.pth.tar-60")
+    parser.add_argument("--arc-device", choices=("cpu", "cuda"), default="cpu",
+                        help="ARC OSNet device; native association always runs on CPU")
     parser.add_argument(
         "--number-detections", type=Path, default=None,
         help="cached number-detector npz; required by --tracker sam2, which "
@@ -108,7 +109,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--geometry-cache", type=Path, default=None,
-        help="sam2 only; npz of per-frame boxes/ids/masks. Written on every run "
+        help="sam2/arc; npz of per-frame boxes/ids and optional masks. Written on every run "
              "and replayed by --redraw. Defaults to <output stem>_geometry.npz",
     )
     parser.add_argument(
@@ -134,7 +135,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--check-every", type=int, default=10, help="sam2 only")
     parser.add_argument(
         "--reads-cache", type=Path, default=None,
-        help="sam2 only; JSON of per-frame reader output. Written on the first run "
+        help="sam2/arc; JSON of per-frame reader output. Written on the first run "
              "and replayed on later ones, so changing the voting rules does not "
              "re-pay for the reader. Defaults to <output stem>_reads.json",
     )
@@ -187,7 +188,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--no-video", action="store_true",
-        help="sam2 only: track and read numbers, write the run JSON, reads and "
+        help="sam2/arc: track and read numbers, write the run JSON, reads and "
              "geometry, but draw and encode nothing -- the extraction pass",
     )
     return parser
@@ -835,36 +836,50 @@ def render(args: argparse.Namespace) -> dict:
 
 
 def render_sam2(args: argparse.Namespace) -> dict:
-    """Same overlay, driven by SAM2 + periodic reprompting instead of McByte.
+    """Cached SAM2/ARC pipeline with shared identity, OCR, geometry and output.
 
-    Numbers come from a cached number-detector npz rather than the live
-    Roboflow class-4 head: this path exists to review the measured-best
-    tracker end to end, and re-running a hosted detector per frame would make
-    the render depend on network state for no benefit -- the cache is the same
-    detector's output.
+    SAM2 supplies masks; ARC supplies boxes and independent native local IDs.
+    Both consume locally cached number detections, without a hosted detector.
     """
-    sam2_upstream = Path(os.getenv("SAM2_UPSTREAM_DIR", ROOT / "sam2-upstream"))
-    if not sam2_upstream.is_dir():
-        raise FileNotFoundError(
-            "Needs an external facebookresearch/sam2 checkout. Set SAM2_UPSTREAM_DIR "
-            "before running --tracker sam2."
-        )
-    sys.path.insert(0, str(sam2_upstream))
-    from handball_cv.tracking.sam2_driver import drive_sam2
+    if args.tracker == "sam2":
+        sam2_upstream = Path(os.getenv("SAM2_UPSTREAM_DIR", ROOT / "sam2-upstream"))
+        if not sam2_upstream.is_dir():
+            raise FileNotFoundError(
+                "Needs an external facebookresearch/sam2 checkout. Set SAM2_UPSTREAM_DIR "
+                "before running --tracker sam2."
+            )
+        sys.path.insert(0, str(sam2_upstream))
+        from handball_cv.tracking.sam2_driver import drive_sam2
 
     if args.number_detections is None:
-        raise ValueError("--tracker sam2 requires --number-detections (a cached npz)")
+        if args.tracker == "arc":
+            args.number_detections = args.detections
+        else:
+            raise ValueError("--tracker sam2 requires --number-detections (a cached npz)")
 
     source = args.video.resolve()
     cache = load_detection_cache(args.detections)
     number_cache = load_detection_cache(args.number_detections)
     team_model = TeamModel.load(args.team_model, device=args.device)
     info = sv.VideoInfo.from_video_path(str(source))
+    if args.tracker == "arc":
+        from handball_cv.tracking.arc import ArcDriver, ArcTracker, load_arc_cache
+        from handball_cv.pipeline.scan import detection_stride_guard
+        cache = load_arc_cache(args.detections, info.total_frames)
+        with np.load(args.number_detections, allow_pickle=False) as data:
+            number_cache = {k: data[k] for k in data.files}
+        if len(number_cache["offsets"]) != info.total_frames + 1:
+            raise ValueError("number cache does not cover the input video")
+        detection_stride_guard(int(number_cache.get("stride", 1)), args.ocr_every)
+        arc_tracker = ArcTracker(args.arc_root, args.arc_weights, args.arc_device)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     preview_path = args.output.with_name(f"{args.output.stem}_preview.jpg")
 
-    ocr_model, read_with_qwen = build_ocr_model(args)
-    read = build_reader(args, ocr_model, read_with_qwen)
+    numbers_enabled = args.tracker == "sam2" or args.numbers != "off"
+    read = None
+    if numbers_enabled:
+        ocr_model, read_with_qwen = build_ocr_model(args)
+        read = build_reader(args, ocr_model, read_with_qwen)
     roster = load_roster(args.roster)
     voter = NumberVoter()
 
@@ -893,17 +908,27 @@ def render_sam2(args: argparse.Namespace) -> dict:
         if not writer.isOpened():
             raise RuntimeError(f"could not open video writer: {args.output}")
 
-    track_manager, _seed_boxes, frames = drive_sam2(
-        source, lambda idx: person_detections(cache, idx), team_model,
-        checkpoint=args.checkpoint, check_every=args.check_every,
-        frame_cache_dir=args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem),
-        goalkeeper_class_id=GOALKEEPER_CLASS_ID,
-        desc=f"full pipeline sam2 {source.stem}",
-        reid_encoder=build_reid_encoder(args),
-        prefetch_frames=4,
-        frame_source=args.frame_source,
-        court_in_view=court_in_view_fn(args.court_in_view),
-    )
+    if args.tracker == "arc":
+        track_manager = ArcDriver(arc_tracker, IdentityManager(
+            team_model, goalkeeper_class_id=GOALKEEPER_CLASS_ID,
+            reid_encoder=build_reid_encoder(args),
+        ))
+        frames = track_manager.frames(
+            source, lambda idx: person_detections(cache, idx),
+            court_in_view_fn(args.court_in_view),
+        )
+    else:
+        track_manager, _seed_boxes, frames = drive_sam2(
+            source, lambda idx: person_detections(cache, idx), team_model,
+            checkpoint=args.checkpoint, check_every=args.check_every,
+            frame_cache_dir=args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem),
+            goalkeeper_class_id=GOALKEEPER_CLASS_ID,
+            desc=f"full pipeline sam2 {source.stem}",
+            reid_encoder=build_reid_encoder(args),
+            prefetch_frames=4,
+            frame_source=args.frame_source,
+            court_in_view=court_in_view_fn(args.court_in_view),
+        )
     registry = track_manager.registry
 
     # Reader output is by far the most expensive part of this render (a Qwen call
@@ -971,13 +996,19 @@ def render_sam2(args: argparse.Namespace) -> dict:
         ]
         resolver.begin_frame(player_ids)
 
-        if result.frame_idx % args.ocr_every == 0 and len(player_ids):
+        if numbers_enabled and result.frame_idx % args.ocr_every == 0 and len(player_ids):
             number_xyxy = number_detections(number_cache, result.frame_idx)
             if len(number_xyxy):
                 ocr_frames += 1
-                pairs = unique_pairs(match_numbers_to_players(
-                    masks, number_xyxy, frame_rgb.shape, reject_ambiguous=True,
-                ))
+                if args.tracker == "arc":
+                    from handball_cv.tracking.arc import number_box_pairs
+                    pairs = unique_pairs(number_box_pairs(
+                        result.boxes, result.detection_boxes, number_xyxy,
+                    ))
+                else:
+                    pairs = unique_pairs(match_numbers_to_players(
+                        masks, number_xyxy, frame_rgb.shape, reject_ambiguous=True,
+                    ))
                 pairs = [
                     (p, n) for p, n in pairs
                     if readable_number_crop(frame_rgb, number_xyxy[n])
@@ -1059,6 +1090,11 @@ def render_sam2(args: argparse.Namespace) -> dict:
     print(f"[geometry] wrote {geometry_path} "
           f"({geometry_path.stat().st_size / 1e6:.1f} MB) -- redraw with --redraw")
 
+    arc_report = {}
+    if args.tracker == "arc":
+        local_path = args.output.with_name(args.output.stem + "_local_tracks.npz")
+        track_manager.save_local_tracks(local_path)
+        arc_report = {"arc": arc_tracker.provenance, "local_tracks": str(local_path)}
     everyone = list(registry.live.values()) + registry.retired
     result_dict = {
         "source": str(source),
@@ -1066,8 +1102,8 @@ def render_sam2(args: argparse.Namespace) -> dict:
         "preview": str(preview_path),
         "geometry_cache": str(geometry_path),
         "extras": str(extras_path),
-        "frame_source": args.frame_source,
-        "tracker": "sam2",
+        "frame_source": "video" if args.tracker == "arc" else args.frame_source,
+        "tracker": args.tracker,
         "reid_embedding": args.reid_embedding,
         # Two different recognisers are both called "parseq" -- docTR's
         # reimplementation (`--reader doctr --doctr-arch parseq`, 0.622 on the
@@ -1077,7 +1113,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
             f"doctr:{args.doctr_arch}" if args.reader == "doctr" else args.reader
         ),
         "frames": frames_written,
-        "numbers_enabled": True,
+        "numbers_enabled": numbers_enabled,
         "ocr_frames": ocr_frames,
         "ocr_reads": ocr_reads,
         "rejected_number_crops": rejected_crops,
@@ -1091,6 +1127,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         # failure after the fact, without re-running it.
         "lifecycle_events": track_manager.events,
         "reid_decisions": registry.reid_log,
+        **arc_report,
     }
     args.output.with_suffix(".json").write_text(json.dumps(result_dict, indent=2, default=_json_default))
     return result_dict
@@ -1206,9 +1243,15 @@ def redraw(args: argparse.Namespace) -> dict:
     # off the video would differ from the render everywhere, and the difference
     # would swamp the label change it is supposed to isolate. `ensure_frame_cache`
     # is the tracker's own accessor and needs no SAM2 checkout to call.
-    frame_files = ensure_frame_cache(
-        source, args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem)
-    )
+    video_frames = None
+    if run.get("tracker") == "arc":
+        from handball_cv.video import VideoFrames
+        video_frames = VideoFrames(source)
+        frame_files = None
+    else:
+        frame_files = ensure_frame_cache(
+            source, args.frame_cache_dir or (ROOT / "data/cache/frames" / source.stem)
+        )
     # Only the frames the tracking pass recorded: it consumes frame 0 to seed
     # SAM2 and never renders it, so redrawing every frame would emit one extra
     # and shift everything after it.
@@ -1216,7 +1259,8 @@ def redraw(args: argparse.Namespace) -> dict:
     preview = None
     frames_written = labelled = 0
     for frame_idx in tqdm(wanted, desc=f"redraw {source.stem}"):
-        frame_bgr = cv2.imread(str(frame_files[frame_idx]))
+        frame_bgr = (cv2.cvtColor(video_frames.rgb(frame_idx), cv2.COLOR_RGB2BGR)
+                     if video_frames is not None else cv2.imread(str(frame_files[frame_idx])))
         geo = cache.frame(frame_idx)
         labels = backfilled_labels(
             by_player, frame_idx, geo.player_ids, geo.color_index,
@@ -1268,7 +1312,7 @@ def main() -> None:
     if args.redraw:
         runner = redraw
     else:
-        runner = render_sam2 if args.tracker == "sam2" else render
+        runner = render_sam2 if args.tracker in ("sam2", "arc") else render
     print(json.dumps(runner(args), indent=2))
 
 

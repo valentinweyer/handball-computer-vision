@@ -71,6 +71,10 @@ class GeometryCache:
         packed = []
         rects = []
         for mask in masks:
+            if mask is None:
+                rects.append((0, 0, 0, 0))
+                packed.append(np.zeros(0, dtype=np.uint8))
+                continue
             x0, y0, w, h = _crop_rect(mask)
             rects.append((x0, y0, w, h))
             packed.append(

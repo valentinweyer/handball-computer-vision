@@ -50,8 +50,8 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
 
-def stage_outputs(work: Path) -> dict:
-    return {
+def stage_outputs(work: Path, tracker: str = "sam2") -> dict:
+    outputs = {
         "prepare": [work / "meta.json"],
         "scan": [work / "detections.npz", work / "keypoints.json", work / "motion.json"],
         "teams": [work / "team.pkl"],
@@ -61,6 +61,9 @@ def stage_outputs(work: Path) -> dict:
                   work / "track_extras.npz", work / "court_in_view.npy"],
         "bundle": [],  # always rebuilt: seconds, and the inputs may have changed
     }
+    if tracker == "arc":
+        outputs["track"].append(work / "track_local_tracks.npz")
+    return outputs
 
 
 def clear_from(stage: str, outputs: dict) -> None:
@@ -101,6 +104,17 @@ def save_court_in_view(work: Path, meta: dict) -> Path:
     return path
 
 
+def validate_tracker_resume(work: Path, tracker: str, arc: dict | None, *, force=None) -> None:
+    """Do not silently bundle a different tracker's completed work."""
+    run_path = work / "track.json"
+    if not run_path.is_file() or force in ("prepare", "scan", "teams", "track"):
+        return
+    previous = json.loads(run_path.read_text())
+    if previous.get("tracker") != tracker or (tracker == "arc" and previous.get("arc") != arc):
+        raise ValueError("completed tracking outputs use a different tracker/config; "
+                         "choose a fresh --work and --out, or explicitly --force track")
+
+
 def main() -> None:
     from scripts.export_detector import DEFAULT_OUTPUT as DETECTOR_WEIGHTS
     from scripts.render_court_view import DEFAULT_WEIGHTS as COURT_WEIGHTS
@@ -116,14 +130,32 @@ def main() -> None:
     parser.add_argument("--check-every", type=int, default=CHECK_EVERY_DEFAULT)
     parser.add_argument("--ocr-every", type=int, default=OCR_EVERY_N_FRAMES)
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--tracker", choices=("sam2", "arc"), default="sam2")
+    parser.add_argument("--arc-root", type=Path, default=ROOT / "arcsort-upstream")
+    parser.add_argument("--arc-weights", type=Path, default=ROOT / "models/arc/sports_model.pth.tar-60")
+    parser.add_argument("--arc-device", choices=("cpu", "cuda"), default="cpu")
     args = parser.parse_args()
 
     source = args.video.resolve()
-    work = (args.work or ROOT / "data/interim" / source.stem).resolve()
-    out = (args.out or ROOT / "runs/bundles" / source.stem).resolve()
+    stem = source.stem + ("_arc" if args.tracker == "arc" else "")
+    work = (args.work or ROOT / "data/interim" / stem).resolve()
+    out = (args.out or ROOT / "runs/bundles" / stem).resolve()
+    expected_arc = None
+    if args.tracker == "arc":
+        from handball_cv.tracking.arc import assets, import_arc
+        expected_arc = {**assets(args.arc_root, args.arc_weights),
+                        "appearance_device": args.arc_device}
+        import_arc(args.arc_root)  # fail before scanning if optional dependencies are missing
+    validate_tracker_resume(work, args.tracker, expected_arc, force=args.force)
+    manifest_path = out / "manifest.json"
+    if manifest_path.is_file():
+        old_tracker = json.loads(manifest_path.read_text()).get("models", {}).get("tracker")
+        if old_tracker is not None and old_tracker != args.tracker:
+            raise ValueError("--out contains another tracker's bundle; choose a fresh --out")
     work.mkdir(parents=True, exist_ok=True)
-    detection_stride_guard(DETECT_STRIDE, args.check_every, args.ocr_every)
-    outputs = stage_outputs(work)
+    detect_stride = 1 if args.tracker == "arc" else DETECT_STRIDE
+    detection_stride_guard(detect_stride, args.check_every, args.ocr_every)
+    outputs = stage_outputs(work, args.tracker)
     if args.force:
         clear_from(args.force, outputs)
     timings_path = work / "timings.json"
@@ -145,6 +177,10 @@ def main() -> None:
         timed("prepare", started)
     meta = json.loads((work / "meta.json").read_text())
     video_path = Path(meta["video"])
+    if args.tracker == "arc" and (work / "detections.npz").is_file():
+        from handball_cv.tracking.arc import require_dense_cache
+        with np.load(work / "detections.npz", allow_pickle=False) as cached:
+            require_dense_cache(cached, meta["frames"])
     log(f"{video_path.name}: {meta['frames']} frames, {meta['width']}x{meta['height']} @ {meta['fps']:g} fps")
 
     # ── scan ──
@@ -160,7 +196,7 @@ def main() -> None:
         court_model = load_court_keypoints(args.court_weights, device=args.device) if need_court else None
         scanned = scan_video(
             VideoFrames(video_path, count=meta["frames"]), detector=detector, court_model=court_model,
-            motion=need_court, detect_stride=DETECT_STRIDE, threshold=DETECT_THRESHOLD,
+            motion=need_court, detect_stride=detect_stride, threshold=DETECT_THRESHOLD,
             detector_id=str(args.detector), desc="scan",
         )
         if need_detections:
@@ -175,7 +211,10 @@ def main() -> None:
 
     with np.load(work / "detections.npz", allow_pickle=False) as data:
         detections = {k: data[k] for k in data.files}
-    if int(detections["stride"]) != DETECT_STRIDE:
+    if args.tracker == "arc":
+        from handball_cv.tracking.arc import require_dense_cache
+        require_dense_cache(detections, meta["frames"])
+    if int(detections["stride"]) != detect_stride:
         detection_stride_guard(int(detections["stride"]), args.check_every, args.ocr_every)
 
     # ── teams ──
@@ -194,12 +233,16 @@ def main() -> None:
         # Each stage's GPU models are freed by running the tracker in its own process,
         # with the same entry point and flags a SAM2 render uses.
         command = [sys.executable, "-m", "scripts.render_full_pipeline", str(video_path),
-                   "--tracker", "sam2", "--detections", str(work / "detections.npz"),
+                   "--tracker", args.tracker, "--detections", str(work / "detections.npz"),
                    "--number-detections", str(work / "detections.npz"),
                    "--team-model", str(work / "team.pkl"), "--output", str(work / "track.mp4"),
                    "--frame-source", "video", "--no-video", "--device", args.device,
                    "--court-in-view", str(save_court_in_view(work, meta)),
                    "--check-every", str(args.check_every), "--ocr-every", str(args.ocr_every)]
+        if args.tracker == "arc":
+            command.extend(["--arc-root", str(args.arc_root.resolve()),
+                            "--arc-weights", str(args.arc_weights.resolve()),
+                            "--arc-device", args.arc_device])
         env = {**os.environ, "SAM2_UPSTREAM_DIR": os.environ.get("SAM2_UPSTREAM_DIR", str(ROOT / "sam2-upstream"))}
         with (work / "track.log").open("w") as log_file:
             completed = subprocess.run(command, cwd=ROOT, env=env, stdout=log_file, stderr=subprocess.STDOUT)

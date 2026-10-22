@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+arc = ["lap>=0.5.12", "loguru>=0.7", "pyyaml>=6.0"]
 pipeline = [
     "easyocr==1.7.2",
     "hydra-core>=1.3",

@@ -72,8 +72,8 @@ def main() -> None:
     args = parser.parse_args()
 
     run = json.loads(args.run.read_text())
-    if run.get("tracker") != "sam2":
-        raise SystemExit(f"{args.run}: only sam2 runs carry a geometry cache")
+    if not run.get("geometry_cache"):
+        raise SystemExit(f"{args.run}: run has no geometry cache")
     video_path = Path(run["source"])
     geometry_path = args.geometry or Path(run["geometry_cache"])
     work = args.work or ROOT / "data/interim" / video_path.stem
@@ -141,9 +141,13 @@ def build_bundle(run: dict, video: VideoFrames, video_path: Path, geometry_path:
         },
         "provenance": {**provenance, "git_commit": git_commit()},
     }
-    write_bundle(out, built,
-                 files={"video": video_path, "masks": geometry_path, "team_model": team_model_path},
-                 info=info)
+    files = {"video": video_path, "masks": geometry_path, "team_model": team_model_path}
+    if run.get("local_tracks"):
+        files["local_tracks"] = Path(run["local_tracks"])
+    if run.get("arc"):
+        info["parameters"]["arc"] = run["arc"]
+        info["parameters"]["mask_kind"] = "absent; box tracker"
+    write_bundle(out, built, files=files, info=info)
     print(f"bundle -> {out}")
     for name, frame in built.items():
         print(f"  {name:<11} {len(frame):>7} rows")
