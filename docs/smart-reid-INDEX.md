@@ -44,6 +44,7 @@ Development reports, with no test spent:
 - `smart-reid-coverage-2026-10-20.md`
 - `smart-reid-coverage2-2026-10-20.md`
 - `smart-reid-extra-galleries-2026-10-21.md` (more of the match as gallery: real recall gain on all 7 dev matches; no size-robust variant is error-free, nothing lockable)
+- `smart-reid-ceiling-2026-10-22.md` (63% of unnamed time belongs to players with a window gallery, against ~8–10% named today; the gate, not gallery availability, is the limit)
 
 ## Label provenance (kept apart everywhere)
 
