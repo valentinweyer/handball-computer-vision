@@ -1,0 +1,62 @@
+{
+ "locked_at": "2026-10-22",
+ "plan": "docs/smart-reid-finetune-plan-2026-10-22.md (v2, approved by the user 2026-10-22)",
+ "purpose": "appearance adapter on frozen SportsReID; passes only if the gain on unseen teams is real and seen teams gain no more",
+ "split": {
+  "A_train": ["Balingen-Kiel", "Berlin-BHC", "Lemgo-Magdeburg", "Goeppingen-Leipzig", "Ludwigshafen-Wetzlar",
+              "RNL-SGF", "Dresden-Melsungen", "Vinnhorst-Potsdam"],
+  "A_note": "train/ videos only; Dresden-Melsungen and Vinnhorst-Potsdam were the smart re-ID reserve, released for training by the user 2026-10-22",
+  "B_inner_validation": ["Altenholz-Luebeck", "Pforzheim-Bietigheim"],
+  "B_use": "pilot run and gate recalibration only; never decides a pass bar",
+  "C_seen_new_match": {"Kiel-Lemgo": ["Kiel", "Lemgo"], "Magdeburg-Wetzlar": ["Magdeburg", "Wetzlar"],
+                       "Melsungen-Loewen": ["Melsungen", "Loewen"], "Gummersbach-Loewen": ["Loewen"]},
+  "D_unseen_test": {"Eisenach-Hamburg": ["Eisenach", "Hamburg"], "Stuttgart-Erlangen": ["Stuttgart", "Erlangen"],
+                    "Saarlouis-Muenster": ["Saarlouis", "Muenster"], "Bielefeld-Aurich": ["Bielefeld", "Aurich"],
+                    "Wuerzburg-Regensburg": ["Wuerzburg", "Regensburg"], "Gummersbach-Loewen": ["Gummersbach"]},
+  "excluded": {
+   "BalingenII-Erlangen": "second team of Balingen (A): shared players possible; default exclusion",
+   "e.mp4 (train/)": "ASV Hamm against a white-blue team, possibly Muenster (D): overlap not ruled out",
+   "Melsungen-Berlin, BHC-FrischAuf": "not processed for smart re-ID; would only add to C"
+  },
+  "windows": "A, B: the mined smart re-ID window(s) per match; C, D: every mined window of the match (main and extra)",
+  "time_blocks": "A windows: frames in the first 2/3 of each window are training, the last 1/3 is the seen same-match block (never trained)"
+ },
+ "model": {
+  "encoder": "sportsreid_vitb16 (frozen)",
+  "input_mask": "strict (digits and torso-and-shorts band hidden)",
+  "adapter": "residual low-rank: y = l2n(x + U V^T x), rank 16, U initialised to 0",
+  "views_per_crop": 3,
+  "augment": "original; horizontal mirror; random crop jitter 8% + brightness/contrast/saturation jitter 0.15, seeded"
+ },
+ "training": {
+  "loss": "supervised contrastive within one match (temperature 0.1); positives = same match identity, other fragment, >= 50 frames apart; negatives = teammates (weight 1.0) and opponents (weight 0.3)",
+  "anchor": "lambda 1.0 * mean ||y - l2n(x)||^2",
+  "batch": "one match, 8 identities x 8 crops",
+  "crop_cap_per_identity": 200,
+  "optimizer": "AdamW lr 1e-3, weight decay 1e-4",
+  "epochs": 30,
+  "seed": 0,
+  "pilot": "one run evaluated only on B and A's time blocks; changes after it only for defects, recorded; C and D untouched before the frozen run"
+ },
+ "benchmark": {
+  "protocol": "split_v2 benchmark: queries = vouched fragments, gallery both_notrack, query crops spread8, top-3 mean per crop, mean over 8, halves guard, min_sep 50 frames; unknowns natural + synthetic (own identity removed)",
+  "conditions": "base = frozen SportsReID on strict crops; adapter = same crops through the adapter; identical rows",
+  "M": "max coverage of known queries over the two-gate grid (score floor x margin) subject to known precision >= 0.95 and unknown false-match rate <= 0.03, on the pooled rows of a group",
+  "delta": "M(adapter) - M(base), per group",
+  "groups": {"unseen": "D teams", "seen_new_match": "C seen teams", "seen_same_match": "A time blocks", "training_material": "A training blocks (report only)"},
+  "G": "delta(seen_new_match) - delta(unseen)",
+  "ci": "95% bootstrap clustered by team, recomputing both gates per replicate, 2000 replicates, seed 0"
+ },
+ "pass": {
+  "P1": "delta(unseen) > 0 and its lower 95% bound > 0",
+  "P2": "G <= max(0.01, 0.25 * delta(unseen)) and the upper 95% bound of G <= 0.04",
+  "P3": "unknown false-match rate on D at the adapter's M operating point <= base rate at base's M operating point + 0.01",
+  "any_fail": "stop, report, discard the adapter"
+ },
+ "system_check_if_pass": {
+  "variants": {"a": "adapted strict score alone", "b": "mean of raw score and adapted strict score"},
+  "gate": "recalibrated on B with the split_v2 calibration procedure",
+  "evaluation": "Stage 2 populations of D against existing references; newly named unreferenced segments -> blind assistant queue with controls, frozen before scoring",
+  "lock_bar": "newly correct player-time on D >= +25% relative to split_v2, added-link precision >= 0.95, synthetic unknown false-match rate <= 3%"
+ }
+}

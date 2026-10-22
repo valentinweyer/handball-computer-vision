@@ -127,8 +127,9 @@ EXTRA_DEV_WINDOWS_2 = [
         ("Wuerzburg_Regensburg", "Wuerzburg-Regensburg", FINAL_WINDOWS[3][2], (56, 76))]
     for start in starts]
 EXTRA_DEV_WINDOWS += EXTRA_DEV_WINDOWS_2
-# Reserve: DEV_WINDOWS cut on 2026-10-19 but never processed, mined or inspected.
-# Kept sealed as the next independent test once the higher-league bank is spent.
+# Former reserve: DEV_WINDOWS cut on 2026-10-19, never processed for smart re-ID until 2026-10-22,
+# when the user released both as adapter TRAINING data (locked/finetune_v1.json, split A).
+# They are no longer an independent test.
 RESERVE_WINDOWS = [w for w in DEV_WINDOWS if w[0] in ("DRE_MTM_66m00_10min", "Vinnhorst_Potsdam_66m00_10min")]
 WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS,
                "final": FINAL_WINDOWS, "higher": HIGHER_WINDOWS}
