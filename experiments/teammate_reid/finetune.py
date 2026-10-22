@@ -84,7 +84,16 @@ def _tag(results: Path) -> str:
 def _alignment() -> dict:
     """window -> {extra cluster: main cluster}, from the extra-galleries torso-colour mapping."""
     path = RUNS / "extra_galleries/variants.json"
-    return {w: {int(k): int(v) for k, v in a["map"].items()} for w, a in json.loads(path.read_text())["alignment"].items()}
+    return {w.lower(): {int(k): int(v) for k, v in a["map"].items()}
+            for w, a in json.loads(path.read_text())["alignment"].items()}
+
+
+def _to_main(align: dict, results: Path, video: str) -> dict:
+    """Cluster mapping onto the match's main window: identity for a main window, the torso-colour
+    alignment for an extra window (which must exist: a silent identity would swap teams)."""
+    if "extra_dev" in results.parts:
+        return align[video.lower()]
+    return {0: 0, 1: 1}
 
 
 def load_window_sets(groups: tuple = ("A", "B", "C", "D")) -> list[dict]:
@@ -100,7 +109,7 @@ def load_window_sets(groups: tuple = ("A", "B", "C", "D")) -> list[dict]:
             out.append({"group": group, "match": match, "results": results, "video": video,
                         "fragments": fv, "crops": sorted((c for c in crops if c["fragment"] in keys),
                                                          key=lambda c: (c["frame"], c["crop_id"])),
-                        "to_main": align.get(video, {0: 0, 1: 1})})
+                        "to_main": _to_main(align, results, video)})
     return out
 
 
