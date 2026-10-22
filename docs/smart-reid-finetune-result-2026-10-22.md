@@ -17,7 +17,7 @@ bound. This is a failure to show parity, not evidence of bias.
 | --- | --- | --- | --- |
 | P1 | Δ_unseen > 0, lower 95% bound > 0 | Δ_unseen = **+0.184**, CI [+0.011, +0.243] | yes |
 | P2 | G ≤ max(0.01, ¼·Δ_unseen) **and** upper bound of G ≤ 0.04 | G = **−0.034** (≤ 0.046 holds), CI [−0.210, **+0.162**] | **no** |
-| P3 | Unknown FMR on D, adapter ≤ base + 0.01 | 0.0288 vs 0.0288 | yes |
+| P3 | Unknown FMR on D, adapter ≤ base + 0.01 | 0.0288 vs 0.0288 | yes, **but vacuous** (see Corrections) |
 
 The CIs come from a 2000-replicate bootstrap, clustered by team, with both gates
 recomputed in each replicate.
@@ -40,12 +40,12 @@ Notes:
 - **Rank-1 on the training material reaches 0.994.** The adapter fits its training
   crops almost perfectly. On new matches, rank-1 gains are the same for seen
   teams (+0.03) and unseen teams (+0.05).
-- **B goes the other way: M −0.059 while rank-1 rises.** It is 4 teams and 208
-  rows, so it is noisy. Still, of all the groups it is the plainest sign that the
-  gain is not uniform. B was the pilot group, so this was visible before the
-  frozen run. It is not a defect: the gate grid is built from quantiles of each
-  row set's own scores. The frozen run is identical to the pilot (same seed, same
-  numbers).
+- **B goes the other way: M −0.059 while rank-1 rises.** B was the pilot group,
+  so this was visible before the frozen run. The gate grid is built from quantiles
+  of each row set's own scores, so the grid is not the cause. The frozen run is
+  identical to the pilot (same seed, same numbers). The diagnosis is below (§B
+  diagnosis): the drop is a pooling and tail effect, and both B matches improve on
+  their own.
 
 Per-team Δ (`annotations/finetune_v1_parity.json`, `per_team`) ranges from −0.08
 to +0.29 in both groups. Individual teams have too few queries for single values
@@ -53,7 +53,8 @@ to mean much.
 
 ## Why P2 could not pass with this data
 
-G compares 7 seen with 11 unseen teams. Per-team Δ has a standard deviation of
+G compares 7 seen team instances (6 distinct teams, see Corrections) with 11
+unseen teams. Per-team Δ has a standard deviation of
 about 0.12 (seen) and 0.13 (unseen), so the bootstrap interval of G spans about
 0.37. The plan said openly that only
 gaps of about 3–4 points or more are detectable, which assumed a much tighter
@@ -104,5 +105,77 @@ Run outputs, logs and embeddings: `runs/smart-reid-shadow/finetune/`,
   attempt must be a new locked plan, with a parity test sized to the observed
   per-team spread. That means more C and D teams, or a different parity design,
   for example paired by team across matches.
-- **B moving the other way needs an explanation** before anything would go into
-  the system check.
+- **B is explained** (§B diagnosis). It does not argue against the adapter, but it
+  shows that M with a pooled gate is decided by a handful of unknowns.
+- **A failed further attempt on this footage would mean "insufficient evidence;
+  stop reusing C and D"**, not "fine-tuning is a dead end".
+
+## Corrections (after an external review of plan v3, 2026-10-22)
+
+The review found flaws in the v3 plan's evaluation design. Two of them also apply
+to this v1 result. The FAIL verdict is unchanged.
+
+1. **P3 was vacuous.**
+   - M only admits gates with unknown FMR ≤ 0.03. The bar allowed base + 0.01 =
+     0.0388. Every qualifying adapter gate therefore passes whenever base FMR is
+     at least 0.02.
+   - Both came out at 0.0288. That is the largest FMR the discrete unknown count
+     allows under 3%, not a measured equality.
+   - P3 says nothing about false names. An honest version fixes the gates
+     elsewhere, for example on B, and measures FMR on D at those gates.
+2. **Löwen was counted as two teams.**
+   - The team key is `match|cluster`, so Melsungen–Löwen and Gummersbach–Löwen
+     are separate bootstrap clusters. The seen group is 6 distinct teams, not 7.
+   - Match-level dependence was also ignored, because both teams of a match share
+     conditions.
+   - Both flaws make the CI of G too narrow, not too wide. P2 failed anyway.
+3. **M is a best-gate statistic on the evaluation rows.** It measures achievable
+   separation, not the performance of a gate calibrated elsewhere. It cannot be
+   averaged over teams or folds.
+4. **Training and evaluation positives differ slightly.**
+   - Training allows positives from another fragment of the *same track*, while
+     evaluation excludes the query's own track.
+   - They are 34 of 745 same-identity fragment pairs in A's train block (5%):
+     a mismatch, but a small one.
+
+## B diagnosis (B rows only, `finetune diag_b`, `annotations/finetune_v1_diag_b.json`)
+
+B has 102 known and 106 unknown queries (102 of them synthetic).
+
+| | Base | Adapter |
+| --- | ---: | ---: |
+| M, pooled over both matches | 0.304 | 0.245 |
+| M, precision bar only | 0.804 | 0.882 |
+| M, FMR bar only | 0.304 | 0.245 |
+| Rank-1 | 0.873 | 0.912 |
+| Score AUC, right against unknown | 0.770 | 0.809 |
+| Score AUC, right against wrong | 0.732 | 0.754 |
+| Margin AUC, right against unknown | 0.690 | 0.670 |
+| Margin AUC, right against wrong | 0.857 | 0.955 |
+| Unknowns vetoed by the halves guard | 20 | 30 |
+| **M, Altenholz–Lübeck alone** | 0.615 | **0.718** |
+| **M, Pforzheim–Bietigheim alone** | 0.206 | **0.270** |
+
+1. **FMR binds, precision does not.** With 106 unknowns, FMR ≤ 3% allows 3 false
+   accepts, so pooled M is set by the **4th-highest-scoring unknown**.
+2. **Those unknowns all come from Pforzheim.** It has the higher similarity level:
+   its median unknown score (base 0.764) is above Altenholz's median correct score
+   (0.742). The pooled gate must clear Pforzheim's top unknowns, which shuts out
+   most of Altenholz. The adapter lifts scores in both matches:
+   - Altenholz correct scores, median: 0.742 → 0.810;
+   - Pforzheim's top unknowns: 0.826 → 0.865.
+
+   The pooled gate moves from 0.798 to 0.852.
+3. **Each match improves on its own.** Per match, M rises in both, and score AUC
+   against unknowns rises when pooled. **So the B drop is not evidence that the
+   adapter pulls unknowns closer in general.**
+4. **Margin separation of unknowns gets slightly worse** (AUC 0.690 → 0.670).
+   That deserves attention in any gate design.
+5. **A hypothesis, not checked:** several of Pforzheim's top unknowns have high
+   margins (0.13–0.17). For a synthetic unknown, whose own identity is removed,
+   that can mean one player mined under two identities. If so, it is a data defect
+   that hurts base and adapter alike.
+
+Per-match M picks its gate on the same rows as the pooled M does, so both are
+optimistic in the same way. The comparison between them holds; the absolute
+values do not.

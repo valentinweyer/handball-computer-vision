@@ -1,5 +1,13 @@
 # Smart re-ID fine-tune: paired parity test (plan v3, draft for approval, 2026-10-22)
 
+> **Not run. Withdrawn after an external review (2026-10-22).**
+> - The fold-strength correction is unjustified: M is not additive.
+> - P3 is vacuous.
+> - Half-data folds cannot certify the full-data adapter.
+> - Löwen is counted twice.
+>
+> See the Corrections section in `smart-reid-finetune-result-2026-10-22.md`.
+
 Branch `prototype/smart-reid-shadow`, never merged. **Nothing runs until this is
 approved.** Once approved, the bars are frozen in `locked/finetune_v3.json`
 before any training.

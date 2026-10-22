@@ -460,5 +460,54 @@ def cmd_parity(reps: int = 2000) -> None:
     print("unseen delta", d_un, un_ci, "seen delta", d_seen)
 
 
+def _auc(pos: np.ndarray, neg: np.ndarray) -> float:
+    """P(pos > neg), ties count half."""
+    if not len(pos) or not len(neg):
+        return float("nan")
+    return float(((pos[:, None] > neg[None, :]).mean() + 0.5 * (pos[:, None] == neg[None, :]).mean()))
+
+
+def _diag(rows: list) -> dict:
+    a = Arrays(rows, halves=True)
+    sel = np.ones(len(rows), bool)
+    raw = np.array([r["score"] for r in rows], float)
+    wrong = a.known & ~a.right
+    out = {"n_known": int(a.known.sum()), "n_unknown": int((~a.known).sum()),
+           "n_synthetic": int(sum(r["synthetic_unknown"] for r in rows)), "rank1": float(a.right.sum() / a.known.sum()),
+           "halves_disagree": {"right": int(sum(r["halves_agree"] is False for r, x in zip(rows, a.right) if x)),
+                               "wrong": int(sum(r["halves_agree"] is False for r, x in zip(rows, wrong) if x)),
+                               "unknown": int(sum(r["halves_agree"] is False for r in rows if not r["known"]))}}
+    for name, kp, fmr in (("both", KP, FMR), ("precision_only", KP, 1.0), ("fmr_only", 0.0, FMR)):
+        g = a.choose(sel, kp, fmr)
+        s = a.stats(sel, np.array([g])) if g is not None else None
+        out[f"M_{name}"] = float(s["coverage"][0]) if s else 0.0
+        if name == "both" and s:
+            out["gate"] = [float(x) for x in g]
+            out["at_gate"] = {k: float(s[k][0]) for k in ("precision", "fmr", "accepted_known", "correct")}
+    for v, arr in (("score", raw), ("margin", a.margin)):
+        out[v] = {"right_vs_unknown_auc": _auc(arr[a.right], arr[~a.known]),
+                  "right_vs_wrong_auc": _auc(arr[a.right], arr[wrong]),
+                  "median": {k: float(np.median(arr[m])) if m.any() else None
+                             for k, m in (("right", a.right), ("wrong", wrong), ("unknown", ~a.known))}}
+    return out
+
+
+def cmd_diag_b() -> None:
+    """Why B loses M while rank-1 rises (plan v3 review, step 2). Reads B rows only."""
+    import torch
+    model = make_adapter()
+    model.load_state_dict(torch.load(OUT / "adapter.pt"))
+    windows = load_window_sets(("B",))
+    rep = {}
+    for scope, ws in [("B", windows)] + [(w["match"], [w]) for w in windows]:
+        rows = group_rows(ws, model, ("B",))
+        rep[scope] = {"base": _diag(rows["base"]), "adapter": _diag(rows["adapter"])}
+    (OUT / "diag_b.json").write_text(json.dumps(rep, indent=1))
+    print(json.dumps(rep["B"], indent=1))
+    for scope in rep:
+        print(scope, {c: (round(rep[scope][c]["M_both"], 3), round(rep[scope][c]["rank1"], 3)) for c in rep[scope]})
+
+
 if __name__ == "__main__":
-    {"encode": cmd_encode, "pilot": cmd_pilot, "train": cmd_train, "parity": cmd_parity}[sys.argv[1]]()
+    {"encode": cmd_encode, "pilot": cmd_pilot, "train": cmd_train, "parity": cmd_parity,
+     "diag_b": cmd_diag_b}[sys.argv[1]]()

@@ -1,0 +1,260 @@
+{
+ "B": {
+  "base": {
+   "n_known": 102,
+   "n_unknown": 106,
+   "n_synthetic": 102,
+   "rank1": 0.8725490196078431,
+   "halves_disagree": {
+    "right": 7,
+    "wrong": 9,
+    "unknown": 20
+   },
+   "M_both": 0.30392156862745096,
+   "gate": [
+    0.7975948822909388,
+    0.013120449822524497
+   ],
+   "at_gate": {
+    "precision": 0.96875,
+    "fmr": 0.02830188679245283,
+    "accepted_known": 32.0,
+    "correct": 31.0
+   },
+   "M_precision_only": 0.803921568627451,
+   "M_fmr_only": 0.30392156862745096,
+   "score": {
+    "right_vs_unknown_auc": 0.7701929192283231,
+    "right_vs_wrong_auc": 0.7320656871218669,
+    "median": {
+     "right": 0.7805662155151367,
+     "wrong": 0.7249211072921753,
+     "unknown": 0.7211906909942627
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.6898452406190375,
+    "right_vs_wrong_auc": 0.857389801210026,
+    "median": {
+     "right": 0.04713165760040283,
+     "wrong": 0.008514165878295898,
+     "unknown": 0.026248902082443237
+    }
+   }
+  },
+  "adapter": {
+   "n_known": 102,
+   "n_unknown": 106,
+   "n_synthetic": 102,
+   "rank1": 0.9117647058823529,
+   "halves_disagree": {
+    "right": 3,
+    "wrong": 5,
+    "unknown": 30
+   },
+   "M_both": 0.24509803921568626,
+   "gate": [
+    0.8516818161668449,
+    0.019506953913590006
+   ],
+   "at_gate": {
+    "precision": 0.9615384615384616,
+    "fmr": 0.02830188679245283,
+    "accepted_known": 26.0,
+    "correct": 25.0
+   },
+   "M_precision_only": 0.8823529411764706,
+   "M_fmr_only": 0.24509803921568626,
+   "score": {
+    "right_vs_unknown_auc": 0.8092919456279164,
+    "right_vs_wrong_auc": 0.7538829151732378,
+    "median": {
+     "right": 0.8301273584365845,
+     "wrong": 0.777283787727356,
+     "unknown": 0.7681017518043518
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.6699127612091702,
+    "right_vs_wrong_auc": 0.954599761051374,
+    "median": {
+     "right": 0.055539727210998535,
+     "wrong": 0.0058446526527404785,
+     "unknown": 0.030317991971969604
+    }
+   }
+  }
+ },
+ "Altenholz-Luebeck": {
+  "base": {
+   "n_known": 39,
+   "n_unknown": 42,
+   "n_synthetic": 39,
+   "rank1": 0.9230769230769231,
+   "halves_disagree": {
+    "right": 2,
+    "wrong": 1,
+    "unknown": 6
+   },
+   "M_both": 0.6153846153846154,
+   "gate": [
+    0.7259678593997297,
+    0.030926511205475907
+   ],
+   "at_gate": {
+    "precision": 1.0,
+    "fmr": 0.023809523809523808,
+    "accepted_known": 24.0,
+    "correct": 24.0
+   },
+   "M_precision_only": 0.8717948717948718,
+   "M_fmr_only": 0.6153846153846154,
+   "score": {
+    "right_vs_unknown_auc": 0.921957671957672,
+    "right_vs_wrong_auc": 0.9351851851851852,
+    "median": {
+     "right": 0.7421862781047821,
+     "wrong": 0.6478348970413208,
+     "unknown": 0.6866159439086914
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.6865079365079365,
+    "right_vs_wrong_auc": 0.8148148148148148,
+    "median": {
+     "right": 0.0609283447265625,
+     "wrong": 0.03134268522262573,
+     "unknown": 0.031998634338378906
+    }
+   }
+  },
+  "adapter": {
+   "n_known": 39,
+   "n_unknown": 42,
+   "n_synthetic": 39,
+   "rank1": 0.9487179487179487,
+   "halves_disagree": {
+    "right": 1,
+    "wrong": 1,
+    "unknown": 9
+   },
+   "M_both": 0.717948717948718,
+   "gate": [
+    0.7858456167681463,
+    0.0012578964233398438
+   ],
+   "at_gate": {
+    "precision": 1.0,
+    "fmr": 0.023809523809523808,
+    "accepted_known": 28.0,
+    "correct": 28.0
+   },
+   "M_precision_only": 0.9230769230769231,
+   "M_fmr_only": 0.717948717948718,
+   "score": {
+    "right_vs_unknown_auc": 0.9575289575289575,
+    "right_vs_wrong_auc": 1.0,
+    "median": {
+     "right": 0.8095259666442871,
+     "wrong": 0.6582323610782623,
+     "unknown": 0.7387249171733856
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.7277992277992278,
+    "right_vs_wrong_auc": 0.972972972972973,
+    "median": {
+     "right": 0.07368195056915283,
+     "wrong": 0.01588580012321472,
+     "unknown": 0.04317361116409302
+    }
+   }
+  }
+ },
+ "Pforzheim-Bietigheim": {
+  "base": {
+   "n_known": 63,
+   "n_unknown": 64,
+   "n_synthetic": 63,
+   "rank1": 0.8412698412698413,
+   "halves_disagree": {
+    "right": 5,
+    "wrong": 8,
+    "unknown": 14
+   },
+   "M_both": 0.20634920634920634,
+   "gate": [
+    0.8258138155115061,
+    0.00024062395095825195
+   ],
+   "at_gate": {
+    "precision": 1.0,
+    "fmr": 0.015625,
+    "accepted_known": 13.0,
+    "correct": 13.0
+   },
+   "M_precision_only": 0.7619047619047619,
+   "M_fmr_only": 0.20634920634920634,
+   "score": {
+    "right_vs_unknown_auc": 0.7900943396226415,
+    "right_vs_wrong_auc": 0.7924528301886793,
+    "median": {
+     "right": 0.8062614798545837,
+     "wrong": 0.7587733864784241,
+     "unknown": 0.7642330527305603
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.7143278301886793,
+    "right_vs_wrong_auc": 0.879245283018868,
+    "median": {
+     "right": 0.03836619853973389,
+     "wrong": 0.008148223161697388,
+     "unknown": 0.02069738507270813
+    }
+   }
+  },
+  "adapter": {
+   "n_known": 63,
+   "n_unknown": 64,
+   "n_synthetic": 63,
+   "rank1": 0.8888888888888888,
+   "halves_disagree": {
+    "right": 2,
+    "wrong": 4,
+    "unknown": 21
+   },
+   "M_both": 0.2698412698412698,
+   "gate": [
+    0.86404379482927,
+    7.18235969543457e-05
+   ],
+   "at_gate": {
+    "precision": 1.0,
+    "fmr": 0.015625,
+    "accepted_known": 17.0,
+    "correct": 17.0
+   },
+   "M_precision_only": 0.8571428571428571,
+   "M_fmr_only": 0.2698412698412698,
+   "score": {
+    "right_vs_unknown_auc": 0.7720424107142857,
+    "right_vs_wrong_auc": 0.7397959183673469,
+    "median": {
+     "right": 0.8457413613796234,
+     "wrong": 0.7928048372268677,
+     "unknown": 0.7946979999542236
+    }
+   },
+   "margin": {
+    "right_vs_unknown_auc": 0.6484375,
+    "right_vs_wrong_auc": 0.9413265306122449,
+    "median": {
+     "right": 0.04651176929473877,
+     "wrong": 0.005515336990356445,
+     "unknown": 0.02160140872001648
+    }
+   }
+  }
+ }
+}
