@@ -60,6 +60,7 @@ def run_sort(root, protocol):
             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
             features[f] = np.stack([colour_feature(rgb, b) for b in det.xyxy]) if len(det) else np.empty((0,128),np.float32)
             tracked = tracker.update(det)
+            tracked = tracked[tracked.tracker_id >= 0]
             for tid, box in zip(tracked.tracker_id, tracked.xyxy):
                 x1,y1,x2,y2 = box
                 lines.append(f'{f+1},{int(tid)},{x1:.6f},{y1:.6f},{x2-x1:.6f},{y2-y1:.6f},1,-1,-1,-1')
