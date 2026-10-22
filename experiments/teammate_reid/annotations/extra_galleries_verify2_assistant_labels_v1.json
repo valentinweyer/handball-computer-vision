@@ -1,0 +1,232 @@
+{
+ "labeller": "assistant (Claude), blind full-resolution strips with team reference crops and target zooms, 2026-10-22; NOT a human label",
+ "protocol": "extra-gallery development check, round 2 (all 7 development matches): 34 segments a variant named outside existing references + 10 seeded human-labelled controls, shuffled codes V000-V043; labelled without seeing names, items or bank membership",
+ "labels": {
+  "V000": {
+   "team": 0,
+   "number": "7",
+   "note": "red Balingen player; small chest 7 at 2103/2185 (zoomed); 1531-1940 near the sideline, same build and shorts, not separately verifiable; 2430 box on the board (lost)"
+  },
+  "V001": {
+   "team": 0,
+   "number": "34",
+   "note": "dark Wuerzburg player, red-blond hair; back 34 clear at 7911/7917; 7967-7980 box on the curtain (lost, no other person)"
+  },
+  "V002": {
+   "team": 1,
+   "number": "33",
+   "flag": "mixed",
+   "note": "blond blue Erlangen #33, chest 33 clear 4889-5514; at 5655-5670 (end, ~0.6 s) the box sits on blue #18's back while #33 is behind him: tail switch"
+  },
+  "V003": {
+   "team": 0,
+   "number": "7",
+   "note": "dark Wuerzburg player, short dark hair; chest 7 clear 4656-4709, back 7 at 4761; 4551-4630 behind white #11, same player"
+  },
+  "V004": {
+   "team": 1,
+   "number": "67",
+   "note": "brown-haired blue Erlangen player; back 67 at 6105/6115 (6125 looked like 61, the 7 is foreshortened), chest 67 at 6071-6616; 6670 tangle at the end, still a blue player"
+  },
+  "V005": {
+   "team": 0,
+   "number": "78",
+   "note": "blond yellow Gummersbach player; chest 78 clear 2736-2841; 2631-2675 tackle, same player; 2920 blurred close-up, consistent"
+  },
+  "V006": {
+   "team": 0,
+   "number": "9",
+   "note": "dark curly-haired red Balingen player; back 9 at 13954/14119, chest 9 at 13624/14202; 14450 box on the board (lost)"
+  },
+  "V007": {
+   "team": 1,
+   "number": "31",
+   "note": "dark-haired blue Loewen player, pink shoes; chest 31 at 11048-11089; 10881-11006 next to #27, box on the same pink-shoed player"
+  },
+  "V008": {
+   "team": 1,
+   "number": "8",
+   "note": "bearded red player (red = team 1 here); chest 8 clear 821-920"
+  },
+  "V009": {
+   "team": 1,
+   "number": "20",
+   "note": "bearded red player (team 1); back 20 at 821-884, chest 20 at 902-920"
+  },
+  "V010": {
+   "team": 0,
+   "number": "15",
+   "note": "dark-haired green Saarlouis player; chest 15 clear 12623-12710, back 15 at 12753/12775/12840"
+  },
+  "V011": {
+   "team": 1,
+   "number": null,
+   "note": "short blond-haired blue Loewen player; single back digit at 14364 is 5 or 8, not decidable; chest unreadable; 14169 half out of frame; 14520 blur (camera cut?)"
+  },
+  "V012": {
+   "team": 1,
+   "number": "33",
+   "note": "dark-haired white Regensburg player; back 33 at 7721/7793/7811, chest 33 at 7884; 7757 occluded by dark #7; 7830-7920 scrum, box top stays on #33's head (a curly-haired teammate in front at 7902-7910)"
+  },
+  "V013": {
+   "team": 1,
+   "number": "6",
+   "note": "dark-haired red player (team 1); chest 6 clear 1020-1060"
+  },
+  "V014": {
+   "team": 0,
+   "number": "99",
+   "note": "long-haired dark Wuerzburg player with glasses; back and chest 99 clear throughout"
+  },
+  "V015": {
+   "team": 0,
+   "number": null,
+   "note": "dark-haired striped Kiel player, black knee sleeve; chest digits at 11050/11054 maybe 21, not readable; 11077-11090 box on the crowd (camera move, lost)"
+  },
+  "V016": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired white Regensburg player running; back number blurred (two digits, not readable); 1721-1730 box on the curtain/bench (lost)"
+  },
+  "V017": {
+   "team": 0,
+   "number": "42",
+   "note": "dark-haired bearded red Balingen player; chest 42 clear 14930-14999; 14891-14911 at the frame edge, same player"
+  },
+  "V018": {
+   "team": 1,
+   "number": null,
+   "flag": "mixed",
+   "note": "blue Loewen players in a crowd; 5245-5277 the box is on #22 with a white arm sleeve (chest 22), but at 5212 it is on a blue #27 without sleeve and 5131 shows a bare arm; 5164-5229 tangle (5229 box on a yellow player's head); 5294-5310 lost. At least two blue players"
+  },
+  "V019": {
+   "team": 0,
+   "number": "37",
+   "note": "dark-haired green Saarlouis player, dark knee sleeves; chest 37 at 6061/6105/6283/6328, back 37 at 6150; 6506-6550 running, same build and knee sleeves"
+  },
+  "V020": {
+   "team": 0,
+   "number": "93",
+   "flag": "mixed",
+   "note": "red Balingen #93 (chest 93 at 2751/2781/2900/2930); in the 2840-2885 crowd the box is on a red back reading 65 or so and then on blue #18; at 2960 it is on a red back with 7/77 next to blue #33. Several switches in a crowd"
+  },
+  "V021": {
+   "team": 0,
+   "number": "77",
+   "note": "dark-haired bearded yellow Gummersbach player walking to and sitting on the bench; back 77 clear at 510-530; same seated player to 710"
+  },
+  "V022": {
+   "team": 1,
+   "number": null,
+   "note": "brown-haired white Regensburg player standing; chest digits look like 31 (or 30) at 5310, too small to be sure. DOUBT for user"
+  },
+  "V023": {
+   "team": 1,
+   "number": "33",
+   "note": "dark-haired white Regensburg player; back 33 at 7471 and 7617-7650, shorts 33 at 7487; 7504-7520 behind dark #67, same player with the ball"
+  },
+  "V024": {
+   "team": 0,
+   "number": "10",
+   "note": "short-haired dark Wuerzburg player; chest 10 at 5042/5085, shorts 10 at 5172/5259/5346; 4911-4998 consistent; 5216 a tiny box on a blurred shoe/floor (glitch, no other person)"
+  },
+  "V025": {
+   "team": 1,
+   "number": "6",
+   "note": "dark-haired red player (team 1); chest 6 at 1391-1925, back 6 at 2077 behind #8; 2190-2230 red crowd at the end, not verifiable"
+  },
+  "V026": {
+   "team": 1,
+   "number": null,
+   "note": "brown-haired red player at the bench side; single chest digit 5 or 6, not decidable; 8578-8600 leaves frame (lost). DOUBT for user"
+  },
+  "V027": {
+   "team": 0,
+   "number": "7",
+   "note": "short dark-haired dark Wuerzburg player; chest 7 clear 7496-7589, back 7 at 7650; 7481 behind white #11 and 7558 behind dark #67, same player"
+  },
+  "V028": {
+   "team": 0,
+   "number": "7",
+   "note": "dark-haired dark Wuerzburg player throwing then running back; back 7 at 9661/9671, chest 7 at 9730; 9750-9760 lost at the frame edge"
+  },
+  "V029": {
+   "team": 0,
+   "number": "15",
+   "note": "dark-haired green Saarlouis player; back 15 at 7477/7499/7521, chest 15 at 7565/7586; 7390 and 7630 box on blur/board (camera cut), no other person"
+  },
+  "V030": {
+   "team": 1,
+   "number": "32",
+   "note": "blond white Muenster player; chest and shorts 32 clear 3041-3400; 2961/3001 behind green #7, same player"
+  },
+  "V031": {
+   "team": 1,
+   "number": null,
+   "flag": "mixed",
+   "note": "frames 1-132: slim very short blond blue Loewen player, chest 6 at 1, back 6 at 99; after the 164-197 tangle (box on faces/yellow) 229-327 the box is on a stockier ginger-haired blue player whose back reads 2x (22?) at 295; 360 blur. Two different players, about half each"
+  },
+  "V032": {
+   "team": 1,
+   "number": null,
+   "note": "dark-haired bearded red player near the bench side; no number readable; 11528-11548 blurred, 11569 box on a dark object (camera move), 11590 two red players overlapping, not verifiable"
+  },
+  "V033": {
+   "team": 1,
+   "number": "21",
+   "note": "blond red Hamburg player; chest 21 clear 7801-7839; 7844-7860 black (camera cut)"
+  },
+  "V034": {
+   "team": 0,
+   "number": "42",
+   "flag": "mixed",
+   "note": "dark-haired red Balingen #42, chest 42 clear 47-371; 417-487 crowd and a player on the floor; at 510 (end, about 1 s) the box is on a different red player whose back reads 22: tail switch"
+  },
+  "V035": {
+   "team": 0,
+   "number": "13",
+   "note": "dark-haired green Saarlouis player; back 13 clear 1-146; fouled at 175, lies on the floor 204-291 (at 204 the box also spans white #42 standing over him); 320 black (cut)"
+  },
+  "V036": {
+   "team": 1,
+   "number": "77",
+   "note": "curly brown-haired bearded white Regensburg player, black arm sleeve; back 77 at 12311 (digits with top bars, read as 77 not 11), chest 77 small at 12365; same player throughout next to dark #99"
+  },
+  "V037": {
+   "team": 0,
+   "number": "76",
+   "note": "dark-haired dark Wuerzburg player; shorts 76 at 4271/4323, back 76 at 4305, chest 76 clear 4408-4460"
+  },
+  "V038": {
+   "team": 1,
+   "number": "32",
+   "note": "blond white Muenster player; chest and shorts 32 throughout 1891-2980; 2881 partly behind green #7"
+  },
+  "V039": {
+   "team": 1,
+   "number": "27",
+   "note": "dark-haired blue Loewen player; chest 27 clear at 6720/6797/6874/7106/7183; 6488-6565 behind yellow #41, 6411 and 7260 motion blur"
+  },
+  "V040": {
+   "team": 1,
+   "number": "25",
+   "note": "short-haired white Regensburg player; back 25 clear 3747-3793; 3824 box at the frame edge on legs, 3839-3855 tiny box on a shoe, 3870 on the curtain (lost)"
+  },
+  "V041": {
+   "team": 0,
+   "number": "4",
+   "flag": "mixed",
+   "note": "dark Aurich player, chest 4 at 6901-6958 in a team line-up; from 6977 the box is on a grey-clad official/staff member (bald, tracksuit) to 7072, then on a blue-clad person at 7091-7110. Player -> official switch"
+  },
+  "V042": {
+   "team": 1,
+   "number": "33",
+   "note": "blond curly blue Erlangen player; chest 33 clear 14055-14905, back 33 at 14810, shorts 33; 13961 behind a blue teammate, same player"
+  },
+  "V043": {
+   "team": 0,
+   "number": "22",
+   "note": "dark-haired red Balingen player; back 22 clear 6960-7017; 7036-7093 running counter, same player; 7112-7131 at the frame edge, 7150 cut"
+  }
+ }
+}

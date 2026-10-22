@@ -1,0 +1,1651 @@
+{
+ "verify_labels_sha256": {
+  "verify": "28c85af9d66715836bdb6d162ef47d9dd9c27ce0f6efde6660a3d24897db5381",
+  "verify2": "3ffc25cec81401d26597b11f3d05e7da172c0d7cc03bd644b5917f577392f669"
+ },
+ "ref_size": 120,
+ "frac": 0.025,
+ "matches": {
+  "Kiel-Lemgo": [
+   "Kiel_Lemgo_56m00_10min",
+   "Kiel_Lemgo_76m00_10min"
+  ],
+  "Eisenach-Hamburg": [
+   "Eisenach_Hamburg_57m00_9min",
+   "Eisenach_Hamburg_76m00_10min"
+  ],
+  "Gummersbach-Loewen": [
+   "VfL_GM_Loewen_56m00_10min",
+   "VfL_GM_Loewen_76m00_10min"
+  ],
+  "Saarlouis-Muenster": [
+   "Saarlouis_Muenster_56m00_10min",
+   "Saarlouis_Muenster_76m00_10min"
+  ],
+  "Bielefeld-Aurich": [
+   "Bielefeld_Aurich_62m00_10min",
+   "Bielefeld_Aurich_96m00_10min"
+  ],
+  "BalingenII-Erlangen": [
+   "BalingenII_Erlangen_56m00_10min",
+   "BalingenII_Erlangen_76m00_10min"
+  ],
+  "Wuerzburg-Regensburg": [
+   "Wuerzburg_Regensburg_56m00_10min",
+   "Wuerzburg_Regensburg_76m00_10min"
+  ]
+ },
+ "results": {
+  "locked_top3|base|v2": {
+   "counts": {
+    "unreadable": 33,
+    "abstained": 833,
+    "correct": 100,
+    "mixed": 2,
+    "unknown_named": 2,
+    "wrong": 1
+   },
+   "errors": 5,
+   "precision": 0.9523809523809523,
+   "newly_correct_seconds": 1169.8,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 125,
+    "false_match": 5
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 151,
+     "correct": 8,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 171,
+     "correct": 17,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 97,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 29,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 77,
+     "unreadable": 5,
+     "correct": 3,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 11,
+     "abstained": 48,
+     "correct": 21,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 1
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 229,
+     "correct": 5,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 60,
+     "correct": 17,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "locked_top3|base|coverage_v1": {
+   "counts": {
+    "unreadable": 37,
+    "abstained": 810,
+    "correct": 119,
+    "mixed": 2,
+    "unknown_named": 2,
+    "wrong": 1
+   },
+   "errors": 5,
+   "precision": 0.9596774193548387,
+   "newly_correct_seconds": 1446.1,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 125,
+    "false_match": 5
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 149,
+     "correct": 10,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 170,
+     "correct": 18,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 94,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 32,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 75,
+     "unreadable": 6,
+     "correct": 4,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 14,
+     "abstained": 40,
+     "correct": 26,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 1
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 227,
+     "correct": 7,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 55,
+     "correct": 22,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "locked_top3|extra|v2": {
+   "counts": {
+    "unreadable": 58,
+    "abstained": 745,
+    "correct": 153,
+    "mixed": 9,
+    "unknown_named": 4,
+    "wrong": 2
+   },
+   "errors": 15,
+   "precision": 0.9107142857142857,
+   "newly_correct_seconds": 1951.3,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 118,
+    "false_match": 13
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 142,
+     "mixed": 3,
+     "correct": 14,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 3
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 162,
+     "correct": 19,
+     "unreadable": 5,
+     "wrong": 1,
+     "mixed": 4,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 80,
+     "unknown_named": 2,
+     "unreadable": 23,
+     "correct": 37,
+     "syn_trials": 31,
+     "syn_false_match": 3
+    },
+    "Gummersbach-Loewen": {
+     "mixed": 1,
+     "abstained": 69,
+     "unreadable": 6,
+     "correct": 7,
+     "unknown_named": 2,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 19,
+     "abstained": 31,
+     "correct": 30,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 4
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 218,
+     "correct": 16,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 43,
+     "unreadable": 4,
+     "correct": 30,
+     "syn_trials": 22,
+     "syn_false_match": 3
+    }
+   }
+  },
+  "locked_top3|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 64,
+    "abstained": 711,
+    "correct": 179,
+    "mixed": 10,
+    "unknown_named": 5,
+    "wrong": 2
+   },
+   "errors": 17,
+   "precision": 0.9132653061224489,
+   "newly_correct_seconds": 2316.9,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 118,
+    "false_match": 13
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 139,
+     "mixed": 3,
+     "correct": 17,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 3
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 161,
+     "correct": 20,
+     "unreadable": 5,
+     "wrong": 1,
+     "mixed": 4,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 72,
+     "unknown_named": 2,
+     "unreadable": 23,
+     "correct": 44,
+     "mixed": 1,
+     "syn_trials": 31,
+     "syn_false_match": 3
+    },
+    "Gummersbach-Loewen": {
+     "mixed": 1,
+     "abstained": 64,
+     "unreadable": 8,
+     "correct": 9,
+     "unknown_named": 3,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 23,
+     "abstained": 22,
+     "correct": 35,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 4
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 218,
+     "correct": 16,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 35,
+     "unreadable": 4,
+     "correct": 38,
+     "syn_trials": 22,
+     "syn_false_match": 3
+    }
+   }
+  },
+  "new_players_only|extra|v2": {
+   "counts": {
+    "unreadable": 38,
+    "abstained": 815,
+    "correct": 111,
+    "mixed": 3,
+    "unknown_named": 2,
+    "wrong": 2
+   },
+   "errors": 7,
+   "precision": 0.940677966101695,
+   "newly_correct_seconds": 1484.6,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 126,
+    "false_match": 5
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 149,
+     "correct": 10,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 170,
+     "correct": 17,
+     "unreadable": 2,
+     "mixed": 2,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 97,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 29,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 77,
+     "unreadable": 5,
+     "correct": 3,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 16,
+     "abstained": 38,
+     "correct": 26,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 1
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 224,
+     "correct": 9,
+     "unreadable": 1,
+     "wrong": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 60,
+     "correct": 17,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "new_players_only|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 43,
+    "abstained": 793,
+    "correct": 128,
+    "mixed": 3,
+    "unknown_named": 2,
+    "wrong": 2
+   },
+   "errors": 7,
+   "precision": 0.9481481481481482,
+   "newly_correct_seconds": 1753.3,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 126,
+    "false_match": 5
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 147,
+     "correct": 12,
+     "wrong": 1,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 169,
+     "correct": 18,
+     "unreadable": 2,
+     "mixed": 2,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 94,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 32,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 75,
+     "unreadable": 6,
+     "correct": 4,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 20,
+     "abstained": 29,
+     "correct": 31,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 1
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 224,
+     "correct": 9,
+     "unreadable": 1,
+     "wrong": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 55,
+     "correct": 22,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "frac_top|base|v2": {
+   "counts": {
+    "unreadable": 32,
+    "abstained": 846,
+    "correct": 89,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.956989247311828,
+   "newly_correct_seconds": 1090.9,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 126,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 154,
+     "correct": 6,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 175,
+     "correct": 13,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 100,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 26,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 77,
+     "unreadable": 5,
+     "correct": 3,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 10,
+     "abstained": 50,
+     "correct": 20,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 229,
+     "correct": 5,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 61,
+     "correct": 16,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "frac_top|base|coverage_v1": {
+   "counts": {
+    "unreadable": 35,
+    "abstained": 827,
+    "correct": 105,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.963302752293578,
+   "newly_correct_seconds": 1355.7,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 126,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 152,
+     "correct": 8,
+     "syn_trials": 15,
+     "syn_false_match": 1
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 174,
+     "correct": 14,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 98,
+     "unknown_named": 2,
+     "unreadable": 14,
+     "correct": 28,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 75,
+     "unreadable": 6,
+     "correct": 4,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 12,
+     "abstained": 43,
+     "correct": 25,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 228,
+     "correct": 6,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 57,
+     "correct": 20,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "frac_top|extra|v2": {
+   "counts": {
+    "unreadable": 46,
+    "abstained": 799,
+    "correct": 119,
+    "mixed": 4,
+    "unknown_named": 3
+   },
+   "errors": 7,
+   "precision": 0.9444444444444444,
+   "newly_correct_seconds": 1550.2,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 127,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 147,
+     "mixed": 2,
+     "correct": 11,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 176,
+     "correct": 11,
+     "unreadable": 3,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 95,
+     "unknown_named": 2,
+     "unreadable": 17,
+     "correct": 28,
+     "syn_trials": 31,
+     "syn_false_match": 2
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 73,
+     "unreadable": 6,
+     "correct": 5,
+     "unknown_named": 1,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 17,
+     "abstained": 35,
+     "correct": 28,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 222,
+     "correct": 12,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 51,
+     "unreadable": 2,
+     "correct": 24,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "frac_top|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 51,
+    "abstained": 770,
+    "correct": 142,
+    "mixed": 5,
+    "unknown_named": 3
+   },
+   "errors": 8,
+   "precision": 0.9466666666666667,
+   "newly_correct_seconds": 1898.9,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 127,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 144,
+     "mixed": 2,
+     "correct": 14,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 175,
+     "correct": 12,
+     "unreadable": 3,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 88,
+     "unknown_named": 2,
+     "unreadable": 17,
+     "correct": 34,
+     "mixed": 1,
+     "syn_trials": 31,
+     "syn_false_match": 2
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 69,
+     "unreadable": 8,
+     "correct": 7,
+     "unknown_named": 1,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 20,
+     "abstained": 27,
+     "correct": 33,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 222,
+     "correct": 12,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 45,
+     "unreadable": 2,
+     "correct": 30,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "partition|base|v2": {
+   "counts": {
+    "abstained": 858,
+    "unreadable": 30,
+    "correct": 79,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.9518072289156626,
+   "newly_correct_seconds": 850.6,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 127,
+    "false_match": 3
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 154,
+     "correct": 6,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 180,
+     "correct": 8,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 102,
+     "unknown_named": 2,
+     "unreadable": 13,
+     "correct": 25,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 77,
+     "unreadable": 5,
+     "correct": 3,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "abstained": 52,
+     "unreadable": 9,
+     "correct": 19,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 232,
+     "correct": 2,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 61,
+     "correct": 16,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "partition|base|coverage_v1": {
+   "counts": {
+    "abstained": 841,
+    "unreadable": 33,
+    "correct": 93,
+    "mixed": 2,
+    "unknown_named": 2
+   },
+   "errors": 4,
+   "precision": 0.9587628865979382,
+   "newly_correct_seconds": 1084.6,
+   "synthetic_unknowns": {
+    "trials": 130,
+    "abstained": 127,
+    "false_match": 3
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 153,
+     "correct": 7,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 179,
+     "correct": 9,
+     "unreadable": 2,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 100,
+     "unknown_named": 2,
+     "unreadable": 13,
+     "correct": 27,
+     "syn_trials": 31,
+     "syn_false_match": 1
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 75,
+     "unreadable": 6,
+     "correct": 4,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "abstained": 45,
+     "unreadable": 11,
+     "correct": 24,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 232,
+     "correct": 2,
+     "unreadable": 1,
+     "syn_trials": 7,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 57,
+     "correct": 20,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "partition|extra|v2": {
+   "counts": {
+    "unreadable": 41,
+    "abstained": 822,
+    "correct": 102,
+    "mixed": 4,
+    "unknown_named": 2
+   },
+   "errors": 6,
+   "precision": 0.9444444444444444,
+   "newly_correct_seconds": 1268.2,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 127,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 150,
+     "mixed": 2,
+     "correct": 8,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 183,
+     "unreadable": 3,
+     "correct": 4,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 96,
+     "unknown_named": 2,
+     "unreadable": 16,
+     "correct": 28,
+     "syn_trials": 31,
+     "syn_false_match": 2
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 74,
+     "unreadable": 6,
+     "correct": 5,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 13,
+     "abstained": 41,
+     "correct": 26,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 224,
+     "correct": 10,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 54,
+     "unreadable": 2,
+     "correct": 21,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  },
+  "partition|extra|coverage_v1": {
+   "counts": {
+    "unreadable": 45,
+    "abstained": 799,
+    "correct": 120,
+    "mixed": 5,
+    "unknown_named": 2
+   },
+   "errors": 7,
+   "precision": 0.9448818897637795,
+   "newly_correct_seconds": 1548.6,
+   "synthetic_unknowns": {
+    "trials": 131,
+    "abstained": 127,
+    "false_match": 4
+   },
+   "by_match": {
+    "BalingenII-Erlangen": {
+     "abstained": 148,
+     "mixed": 2,
+     "correct": 10,
+     "syn_trials": 15,
+     "syn_false_match": 0
+    },
+    "Bielefeld-Aurich": {
+     "abstained": 182,
+     "correct": 5,
+     "unreadable": 3,
+     "mixed": 1,
+     "syn_trials": 24,
+     "syn_false_match": 0
+    },
+    "Eisenach-Hamburg": {
+     "abstained": 91,
+     "unknown_named": 2,
+     "unreadable": 16,
+     "correct": 32,
+     "mixed": 1,
+     "syn_trials": 31,
+     "syn_false_match": 2
+    },
+    "Gummersbach-Loewen": {
+     "abstained": 71,
+     "unreadable": 7,
+     "correct": 7,
+     "syn_trials": 6,
+     "syn_false_match": 0
+    },
+    "Kiel-Lemgo": {
+     "unreadable": 16,
+     "abstained": 33,
+     "correct": 31,
+     "mixed": 1,
+     "syn_trials": 25,
+     "syn_false_match": 0
+    },
+    "Saarlouis-Muenster": {
+     "abstained": 224,
+     "correct": 10,
+     "unreadable": 1,
+     "syn_trials": 8,
+     "syn_false_match": 0
+    },
+    "Wuerzburg-Regensburg": {
+     "abstained": 50,
+     "unreadable": 2,
+     "correct": 25,
+     "syn_trials": 22,
+     "syn_false_match": 2
+    }
+   }
+  }
+ },
+ "added": {
+  "Kiel-Lemgo": {
+   "fragments": 152,
+   "crops": 4826,
+   "new_identities": [
+    "Kiel-Lemgo|extra|team0|#11",
+    "Kiel-Lemgo|extra|team0|#24",
+    "Kiel-Lemgo|extra|team0|#48",
+    "Kiel-Lemgo|extra|team0|#91"
+   ],
+   "extended_identities": [
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#21",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#22",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#4",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#53",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#61",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#7",
+    "Kiel-Lemgo|kiel_lemgo_10min|team0|#93",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#23",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#24",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#25",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#28",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#3",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#35",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#4",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#41",
+    "Kiel-Lemgo|kiel_lemgo_10min|team1|#8"
+   ]
+  },
+  "Eisenach-Hamburg": {
+   "fragments": 145,
+   "crops": 3499,
+   "new_identities": [
+    "Eisenach-Hamburg|extra|team0|#14",
+    "Eisenach-Hamburg|extra|team1|#11"
+   ],
+   "extended_identities": [
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#11",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#22",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#3",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#41",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#44",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#52",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#6",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#74",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team0|#99",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#13",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#2",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#21",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#23",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#33",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#4",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#5",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#51",
+    "Eisenach-Hamburg|eisenach_hamburg_66m00_10min|team1|#6"
+   ]
+  },
+  "Gummersbach-Loewen": {
+   "fragments": 165,
+   "crops": 4435,
+   "new_identities": [
+    "Gummersbach-Loewen|extra|team0|#11",
+    "Gummersbach-Loewen|extra|team0|#41",
+    "Gummersbach-Loewen|extra|team1|#1",
+    "Gummersbach-Loewen|extra|team1|#15",
+    "Gummersbach-Loewen|extra|team1|#6",
+    "Gummersbach-Loewen|extra|team1|#7"
+   ],
+   "extended_identities": [
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#13",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#24",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#25",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#77",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#78",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#8",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team0|#80",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#14",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#20",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#22",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#27",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#30",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#31",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#5",
+    "Gummersbach-Loewen|vfl_gm_loewen_66m00_10min|team1|#8"
+   ]
+  },
+  "Saarlouis-Muenster": {
+   "fragments": 81,
+   "crops": 1333,
+   "new_identities": [
+    "Saarlouis-Muenster|extra|team0|#14",
+    "Saarlouis-Muenster|extra|team0|#17",
+    "Saarlouis-Muenster|extra|team0|#33",
+    "Saarlouis-Muenster|extra|team1|#32",
+    "Saarlouis-Muenster|extra|team1|#42",
+    "Saarlouis-Muenster|extra|team1|#76",
+    "Saarlouis-Muenster|extra|team1|#77"
+   ],
+   "extended_identities": [
+    "Saarlouis-Muenster|saarlouis_muenster_66m00_10min|team0|#13",
+    "Saarlouis-Muenster|saarlouis_muenster_66m00_10min|team0|#15",
+    "Saarlouis-Muenster|saarlouis_muenster_66m00_10min|team0|#37",
+    "Saarlouis-Muenster|saarlouis_muenster_66m00_10min|team1|#29",
+    "Saarlouis-Muenster|saarlouis_muenster_66m00_10min|team1|#66"
+   ]
+  },
+  "Bielefeld-Aurich": {
+   "fragments": 132,
+   "crops": 3999,
+   "new_identities": [
+    "Bielefeld-Aurich|extra|team0|#4",
+    "Bielefeld-Aurich|extra|team0|#9",
+    "Bielefeld-Aurich|extra|team1|#11",
+    "Bielefeld-Aurich|extra|team1|#13",
+    "Bielefeld-Aurich|extra|team1|#19",
+    "Bielefeld-Aurich|extra|team1|#27",
+    "Bielefeld-Aurich|extra|team1|#43"
+   ],
+   "extended_identities": [
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#10",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#17",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#21",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#29",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#7",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#81",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team0|#97",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#14",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#18",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#20",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#23",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#36",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#6",
+    "Bielefeld-Aurich|bielefeld_aurich_86m00_10min|team1|#8"
+   ]
+  },
+  "BalingenII-Erlangen": {
+   "fragments": 96,
+   "crops": 2786,
+   "new_identities": [
+    "BalingenII-Erlangen|extra|team0|#5",
+    "BalingenII-Erlangen|extra|team0|#6",
+    "BalingenII-Erlangen|extra|team0|#9",
+    "BalingenII-Erlangen|extra|team1|#14",
+    "BalingenII-Erlangen|extra|team1|#18",
+    "BalingenII-Erlangen|extra|team1|#43",
+    "BalingenII-Erlangen|extra|team1|#67"
+   ],
+   "extended_identities": [
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team0|#10",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team0|#19",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team0|#22",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team0|#42",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team0|#77",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team1|#10",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team1|#13",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team1|#15",
+    "BalingenII-Erlangen|balingenii_erlangen_66m00_10min|team1|#33"
+   ]
+  },
+  "Wuerzburg-Regensburg": {
+   "fragments": 156,
+   "crops": 3444,
+   "new_identities": [
+    "Wuerzburg-Regensburg|extra|team0|#33",
+    "Wuerzburg-Regensburg|extra|team1|#23",
+    "Wuerzburg-Regensburg|extra|team1|#6"
+   ],
+   "extended_identities": [
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#10",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#18",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#34",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#67",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#7",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#76",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#9",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team0|#99",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#13",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#21",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#25",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#26",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#33",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#77",
+    "Wuerzburg-Regensburg|wuerzburg_regensburg_66m00_10min|team1|#9"
+   ]
+  }
+ },
+ "alignment": {
+  "Kiel_Lemgo_56m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     172.5,
+     149.5,
+     143.1
+    ],
+    "1": [
+     142.0,
+     93.3,
+     76.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     178.2,
+     155.7,
+     149.8
+    ],
+    "1": [
+     148.3,
+     97.8,
+     78.4
+    ]
+   }
+  },
+  "Kiel_Lemgo_76m00_10min": {
+   "map": {
+    "0": 1,
+    "1": 0
+   },
+   "main_bgr": {
+    "0": [
+     172.5,
+     149.5,
+     143.1
+    ],
+    "1": [
+     142.0,
+     93.3,
+     76.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     141.1,
+     93.4,
+     77.6
+    ],
+    "1": [
+     169.0,
+     147.4,
+     140.4
+    ]
+   }
+  },
+  "Eisenach_Hamburg_57m00_9min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     103.5,
+     73.5,
+     68.0
+    ],
+    "1": [
+     70.4,
+     54.1,
+     91.0
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     109.6,
+     79.8,
+     72.1
+    ],
+    "1": [
+     71.0,
+     56.2,
+     91.3
+    ]
+   }
+  },
+  "Eisenach_Hamburg_76m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     103.5,
+     73.5,
+     68.0
+    ],
+    "1": [
+     70.4,
+     54.1,
+     91.0
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     104.3,
+     76.8,
+     73.3
+    ],
+    "1": [
+     71.0,
+     56.4,
+     95.8
+    ]
+   }
+  },
+  "VfL_GM_Loewen_56m00_10min": {
+   "map": {
+    "0": 1,
+    "1": 0
+   },
+   "main_bgr": {
+    "0": [
+     82.6,
+     140.4,
+     144.5
+    ],
+    "1": [
+     131.8,
+     79.3,
+     65.4
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     130.7,
+     77.1,
+     63.9
+    ],
+    "1": [
+     75.5,
+     141.4,
+     145.9
+    ]
+   }
+  },
+  "VfL_GM_Loewen_76m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     82.6,
+     140.4,
+     144.5
+    ],
+    "1": [
+     131.8,
+     79.3,
+     65.4
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     80.9,
+     139.9,
+     145.3
+    ],
+    "1": [
+     129.4,
+     74.8,
+     62.9
+    ]
+   }
+  },
+  "Saarlouis_Muenster_56m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     101.8,
+     118.0,
+     52.4
+    ],
+    "1": [
+     162.4,
+     115.6,
+     104.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     96.4,
+     113.4,
+     52.3
+    ],
+    "1": [
+     166.3,
+     118.9,
+     104.3
+    ]
+   }
+  },
+  "Saarlouis_Muenster_76m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     101.8,
+     118.0,
+     52.4
+    ],
+    "1": [
+     162.4,
+     115.6,
+     104.3
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     103.4,
+     119.8,
+     55.3
+    ],
+    "1": [
+     158.9,
+     113.9,
+     104.2
+    ]
+   }
+  },
+  "Bielefeld_Aurich_62m00_10min": {
+   "map": {
+    "0": 1,
+    "1": 0
+   },
+   "main_bgr": {
+    "0": [
+     67.0,
+     61.6,
+     67.8
+    ],
+    "1": [
+     74.0,
+     49.7,
+     115.8
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     75.1,
+     53.2,
+     109.4
+    ],
+    "1": [
+     72.8,
+     65.2,
+     68.4
+    ]
+   }
+  },
+  "Bielefeld_Aurich_96m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     67.0,
+     61.6,
+     67.8
+    ],
+    "1": [
+     74.0,
+     49.7,
+     115.8
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     73.3,
+     64.1,
+     67.4
+    ],
+    "1": [
+     79.0,
+     54.5,
+     118.4
+    ]
+   }
+  },
+  "BalingenII_Erlangen_56m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     72.6,
+     64.4,
+     129.5
+    ],
+    "1": [
+     71.1,
+     52.5,
+     55.6
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     73.8,
+     64.6,
+     132.0
+    ],
+    "1": [
+     72.5,
+     54.3,
+     57.7
+    ]
+   }
+  },
+  "BalingenII_Erlangen_76m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     72.6,
+     64.4,
+     129.5
+    ],
+    "1": [
+     71.1,
+     52.5,
+     55.6
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     65.7,
+     59.4,
+     122.6
+    ],
+    "1": [
+     71.4,
+     51.1,
+     54.7
+    ]
+   }
+  },
+  "Wuerzburg_Regensburg_56m00_10min": {
+   "map": {
+    "0": 0,
+    "1": 1
+   },
+   "main_bgr": {
+    "0": [
+     53.2,
+     64.5,
+     60.6
+    ],
+    "1": [
+     148.5,
+     151.2,
+     141.7
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     61.9,
+     62.7,
+     59.4
+    ],
+    "1": [
+     153.8,
+     156.1,
+     148.8
+    ]
+   }
+  },
+  "Wuerzburg_Regensburg_76m00_10min": {
+   "map": {
+    "0": 1,
+    "1": 0
+   },
+   "main_bgr": {
+    "0": [
+     53.2,
+     64.5,
+     60.6
+    ],
+    "1": [
+     148.5,
+     151.2,
+     141.7
+    ]
+   },
+   "extra_bgr": {
+    "0": [
+     143.7,
+     145.4,
+     143.1
+    ],
+    "1": [
+     58.3,
+     60.6,
+     57.7
+    ]
+   }
+  }
+ }
+}

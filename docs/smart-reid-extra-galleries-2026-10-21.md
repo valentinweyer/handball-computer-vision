@@ -184,3 +184,112 @@ Below, every variant is compared with the **current locked system** (top 3,
 mechanism, and on this data it cannot make an existing name worse. Frac top is
 the secondary option. Choose between them on leave-one-match-out over more
 development matches (step 2) before anything is locked.
+
+## Step 2: all seven development matches (2026-10-22)
+
+**Extra footage.** Ten more gallery-only windows, processed with production
+`process_video` (main checkout d0fea4d) and mined automatically
+(`run_extra_windows2.sh`, about 14.5 GPU hours):
+
+| Match | Windows | Court in view |
+| --- | --- | --- |
+| Gummersbach–Löwen | 56:00, 76:00 | 1.00, 0.99 |
+| Saarlouis–Münster | 56:00, 76:00 | 0.74, 0.82 |
+| Balingen II–Erlangen | 56:00, 76:00 | 1.00, 1.00 |
+| Würzburg–Regensburg | 56:00, 76:00 | 0.90, 0.80 |
+| Bielefeld–Aurich | 62:00, 96:00 (main window 86:00) | 0.99, 1.00 |
+
+All 14 extra windows mapped one to one onto their main window's team clusters
+by torso colour. New players from extra footage: 4–7 per match. Existing
+players with a bigger gallery: 5–18 per match.
+
+**Population.** All seven development populations (both Stage 2 stores,
+`test_v1` and `final`). The variants were fixed in step 1 and not changed.
+
+**Reference.** As before, plus a second blind assistant round, `verify2`:
+
+- the 34 segments any variant named that no earlier reference covered, plus
+  10 seeded controls from your labels;
+- shuffled codes V000–V043, full-resolution strips with team reference crops,
+  target-box zooms for doubtful frames;
+- frozen before rescoring: `annotations/extra_galleries_verify2_assistant_labels_v1.json`,
+  sha256 `3ffc25ce…`. These are assistant labels, **not human ground truth**.
+
+On the controls I agree with you on all 6 I could read. I could not read 3. On
+one (S181, Gummersbach), you labelled #33. I flagged it mixed, reading a #22
+with a white arm sleeve at the end and a #27 earlier. Your label stands in the
+reference.
+
+### Results (v2, coverage_v1 in brackets)
+
+| variant | correct | errors | synthetic FM | newly correct time | vs current: gained / lost / added errors |
+| --- | ---: | ---: | ---: | ---: | --- |
+| current (window only, top 3) | 100 (119) | 5 (5) | 5/130 | 1,170 s (1,446 s) | n/a |
+| extra footage, top 3 | 153 (179) | 15 (17) | **13/131** | 1,951 s (2,317 s) | +53 / 0 / **+10** |
+| new players only | 111 (128) | 7 (7) | 5/131 | 1,485 s (1,753 s) | +11 / 0 / +2 |
+| frac top, extra | 119 (142) | 7 (8) | 4/131 | 1,550 s (1,899 s) | +31 / −12 / +3 |
+| partition, extra | 102 (120) | 6 (7) | 4/131 | 1,268 s (1,549 s) | +26 / −24 / +2 |
+
+Per match, v2, gained / lost / added errors:
+
+| match | new players only | frac top |
+| --- | --- | --- |
+| Kiel | +5 / 0 / 0 | +8 / −1 / 0 |
+| Eisenach | 0 / 0 / 0 | +2 / −3 / 0 |
+| Gummersbach | 0 / 0 / 0 | +2 / 0 / 1 |
+| Saarlouis | +4 / 0 / 1 | +8 / −1 / 0 |
+| Bielefeld | 0 / 0 / 1 | 0 / −6 / 0 |
+| Balingen II | +2 / 0 / 0 | +4 / −1 / 2 |
+| Würzburg | 0 / 0 / 0 | +7 / 0 / 0 |
+
+**The added errors.**
+
+- New players only:
+  - **Saarlouis S551**: a clear #15 named #17. #17 exists only in the
+    76:00 window, as one fragment with 47 reads of 17, so the gallery is
+    genuine. This is a teammate look-alike match that beat #15's own gallery.
+  - **Bielefeld S255**: Aurich #4, then the box moves onto a staff member in
+    a grey tracksuit (mixed).
+- Frac top: two mixed segments in Balingen II (#42 with a tail onto #22, and
+  #33 with a tail onto #18), plus one unknown named in Gummersbach (#5).
+- Extra footage with top 3 adds 10 errors, mostly mixed tails and unknowns in
+  Bielefeld, Balingen II and Gummersbach. Its synthetic FM stays at 13/131
+  (10%).
+
+### Verdict (development only)
+
+- **More footage is a real recall lever on all seven matches.** It adds
+  +11 to +31 verified-correct names. Kiel, Saarlouis and Würzburg gain most.
+- **The two-match finding "new players only is strictly additive" does not
+  hold.** Over seven matches it gains 11 names and loses none, but it adds
+  2 errors: one wrong player and one mixed track. That is an added-link
+  precision of 11/13 = 0.85, below the 0.95 criterion. The mechanism: a new
+  identity from extra footage also competes for segments of players who
+  already have a gallery.
+- **Frac top** gives more names (+31), but it changes 12 names that were
+  correct into abstentions, collapses Bielefeld (−6), and adds 3 errors.
+  Added-link precision is 31/34 = 0.91.
+- **All size-robust variants hold synthetic FM at the current rate**
+  (4–5/131). Uncapped top 3 does not (13/131).
+- **Nothing here is lockable.** Choosing between new players only and frac
+  top needs a utility that weighs correct names against errors. That utility
+  was not fixed before these results, so I do not pick one now. Mixed tails
+  remain the main error class, as in every earlier test.
+
+Possible next steps (development only, not started):
+
+- Hold new identities from extra footage to the stricter lone-candidate gate,
+  or require a margin over every existing gallery, to stop the S551 type of
+  error.
+- Fix a utility (for example, correct names minus *k* × errors) before
+  comparing variants again with leave-one-match-out.
+
+### Data
+
+```bash
+runs/smart-reid-shadow/run_extra_windows2.sh      # 10 windows, production process_video + mining (done)
+PYTHONPATH=src:. $PY -m experiments.teammate_reid.extra_galleries variants   # -> extra_galleries/variants.json
+```
+
+The pre-verification scoring is kept as `extra_galleries/variants_all7_preverify2.json`,
+and the earlier two-match result as `variants_kiel_eisenach_2026-10-21.json`.

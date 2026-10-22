@@ -1,0 +1,269 @@
+{
+ "items": [
+  {
+   "bank": "final",
+   "review_id": "S021",
+   "group": "control",
+   "code": "V000"
+  },
+  {
+   "bank": "final",
+   "review_id": "S622",
+   "group": "target",
+   "code": "V001"
+  },
+  {
+   "bank": "final",
+   "review_id": "S068",
+   "group": "target",
+   "code": "V002"
+  },
+  {
+   "bank": "final",
+   "review_id": "S601",
+   "group": "target",
+   "code": "V003"
+  },
+  {
+   "bank": "final",
+   "review_id": "S079",
+   "group": "target",
+   "code": "V004"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S163",
+   "group": "target",
+   "code": "V005"
+  },
+  {
+   "bank": "final",
+   "review_id": "S148",
+   "group": "target",
+   "code": "V006"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S206",
+   "group": "control",
+   "code": "V007"
+  },
+  {
+   "bank": "final",
+   "review_id": "S171",
+   "group": "target",
+   "code": "V008"
+  },
+  {
+   "bank": "final",
+   "review_id": "S169",
+   "group": "control",
+   "code": "V009"
+  },
+  {
+   "bank": "final",
+   "review_id": "S551",
+   "group": "target",
+   "code": "V010"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S221",
+   "group": "target",
+   "code": "V011"
+  },
+  {
+   "bank": "final",
+   "review_id": "S619",
+   "group": "target",
+   "code": "V012"
+  },
+  {
+   "bank": "final",
+   "review_id": "S174",
+   "group": "control",
+   "code": "V013"
+  },
+  {
+   "bank": "final",
+   "review_id": "S649",
+   "group": "target",
+   "code": "V014"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S288",
+   "group": "control",
+   "code": "V015"
+  },
+  {
+   "bank": "final",
+   "review_id": "S592",
+   "group": "control",
+   "code": "V016"
+  },
+  {
+   "bank": "final",
+   "review_id": "S159",
+   "group": "target",
+   "code": "V017"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S181",
+   "group": "control",
+   "code": "V018"
+  },
+  {
+   "bank": "final",
+   "review_id": "S430",
+   "group": "target",
+   "code": "V019"
+  },
+  {
+   "bank": "final",
+   "review_id": "S032",
+   "group": "target",
+   "code": "V020"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S151",
+   "group": "target",
+   "code": "V021"
+  },
+  {
+   "bank": "final",
+   "review_id": "S607",
+   "group": "target",
+   "code": "V022"
+  },
+  {
+   "bank": "final",
+   "review_id": "S614",
+   "group": "target",
+   "code": "V023"
+  },
+  {
+   "bank": "final",
+   "review_id": "S603",
+   "group": "target",
+   "code": "V024"
+  },
+  {
+   "bank": "final",
+   "review_id": "S188",
+   "group": "control",
+   "code": "V025"
+  },
+  {
+   "bank": "final",
+   "review_id": "S287",
+   "group": "control",
+   "code": "V026"
+  },
+  {
+   "bank": "final",
+   "review_id": "S616",
+   "group": "target",
+   "code": "V027"
+  },
+  {
+   "bank": "final",
+   "review_id": "S624",
+   "group": "target",
+   "code": "V028"
+  },
+  {
+   "bank": "final",
+   "review_id": "S457",
+   "group": "target",
+   "code": "V029"
+  },
+  {
+   "bank": "final",
+   "review_id": "S394",
+   "group": "target",
+   "code": "V030"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S142",
+   "group": "target",
+   "code": "V031"
+  },
+  {
+   "bank": "final",
+   "review_id": "S313",
+   "group": "target",
+   "code": "V032"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S076",
+   "group": "control",
+   "code": "V033"
+  },
+  {
+   "bank": "final",
+   "review_id": "S001",
+   "group": "target",
+   "code": "V034"
+  },
+  {
+   "bank": "final",
+   "review_id": "S355",
+   "group": "target",
+   "code": "V035"
+  },
+  {
+   "bank": "final",
+   "review_id": "S648",
+   "group": "target",
+   "code": "V036"
+  },
+  {
+   "bank": "final",
+   "review_id": "S596",
+   "group": "target",
+   "code": "V037"
+  },
+  {
+   "bank": "final",
+   "review_id": "S382",
+   "group": "target",
+   "code": "V038"
+  },
+  {
+   "bank": "test_v1",
+   "review_id": "S188",
+   "group": "target",
+   "code": "V039"
+  },
+  {
+   "bank": "final",
+   "review_id": "S595",
+   "group": "target",
+   "code": "V040"
+  },
+  {
+   "bank": "final",
+   "review_id": "S255",
+   "group": "target",
+   "code": "V041"
+  },
+  {
+   "bank": "final",
+   "review_id": "S152",
+   "group": "target",
+   "code": "V042"
+  },
+  {
+   "bank": "final",
+   "review_id": "S089",
+   "group": "target",
+   "code": "V043"
+  }
+ ],
+ "seed": 20261022
+}

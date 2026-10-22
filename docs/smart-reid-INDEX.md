@@ -43,7 +43,7 @@ Development reports, with no test spent:
 - `teammate-reid-prototype-2026-10-18.md` (the original benchmark)
 - `smart-reid-coverage-2026-10-20.md`
 - `smart-reid-coverage2-2026-10-20.md`
-- `smart-reid-extra-galleries-2026-10-21.md` (more of the match as gallery: +15–34% correct, synthetic FM too high with the locked gate)
+- `smart-reid-extra-galleries-2026-10-21.md` (more of the match as gallery: real recall gain on all 7 dev matches; no size-robust variant is error-free, nothing lockable)
 
 ## Label provenance (kept apart everywhere)
 
