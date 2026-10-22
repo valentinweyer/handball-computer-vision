@@ -1,8 +1,16 @@
-# Smart re-ID: fine-tuning plan without player bias (draft for approval, 2026-10-22)
+# Smart re-ID: fine-tuning plan without player bias (draft v2 for approval, 2026-10-22)
 
 Branch `prototype/smart-reid-shadow`, never merged. **Nothing in this plan runs
-until it is approved.** The pass bars in §6 are proposals. Once approved, they
+until it is approved.** The pass bars (§6) are proposals. Once approved, they
 are frozen in a lock file before any training.
+
+Changes from v1:
+
+- **New split.** Training uses only the `train/` videos. Evaluation and test use
+  only the `eval/` videos.
+- **Test teams never appear in training.** Matches that share teams with
+  training are evaluated as **seen teams in a new match**.
+- **The rotating team groups are dropped.**
 
 ## 1. Goal and condition
 
@@ -12,11 +20,14 @@ named (`smart-reid-ceiling-2026-10-22.md`). In 81% of those cases the right
 player is already ranked first. The gate abstains because the scores of right
 and wrong candidates overlap. Better-separated scores are the lever.
 
-**Condition, from you.** The model will run on every good-quality handball
-match, Bundesliga and lower leagues, so players from training will come back
-at inference time. A model that works better on seen players or teams than on
-unseen ones is biased and is discarded. **Parity between seen and unseen teams
-is the main pass bar, not a side check.**
+**Condition, from you.**
+
+- The model will run on every good-quality handball match, so players from
+  training will come back at inference time.
+- A model that works better on seen players or teams than on unseen ones is
+  biased and is discarded.
+- **Parity between seen and unseen teams is the main pass bar.**
+- **No test team may appear in training.**
 
 ## 2. Design principle: make memorising useless and hard, then measure it
 
@@ -25,77 +36,104 @@ is the main pass bar, not a side check.**
 | No identity head | Never classify "this is player 417". |
 | Training only within a match | One player at another moment versus his own teammates in the same match. The loss rewards only relative order within the match. |
 | No identity across matches | The same player in two matches gets two unrelated labels. |
-| Frozen backbone, tiny adapter | Low-rank residual projection on the 512-d SportsReID embeddings, `x + U·Vᵀ·x` at rank 16. About 16k parameters, too few to store hundreds of individuals. |
-| Anchor to the base model | An extra loss term keeps adapted embeddings close to the original ones, so the change stays a small, general correction. |
-| Breadth over depth | Crops per identity are capped, so no player dominates. |
-| No jersey shortcuts | Input crops use the **strict mask**: numbers, names and the torso-and-shorts band hidden (as in the jersey-independence rule). What remains is head, limbs, build and shoes. |
-| Rotating held-out teams | The parity test, §5. |
+| Frozen backbone, tiny adapter | Low-rank residual projection on the 512-d SportsReID embeddings, `x + U·Vᵀ·x` at rank 16. About 16k parameters. |
+| Anchor to the base model | An extra loss term keeps adapted embeddings close to the original ones. |
+| Breadth over depth | Crops per identity are capped. |
+| No jersey shortcuts | Strict mask: numbers, names and the torso-and-shorts band hidden. |
 
-## 3. Data
+## 3. Split (by team, along the video folders)
 
-**Training pool: development only.** 15 matches, all mined automatically
-(number-vouched fragments):
+Teams linked by shared matches decide the split. Training comes only from
+`train/`. Everything in `eval/` sharing a team with training is evaluated as
+"seen teams, new match". It is never trained on.
 
-- the 8 split-v1 tuning matches:
-  - Balingen–Kiel
-  - Berlin–BHC
-  - Lemgo–Magdeburg
-  - Göppingen–Leipzig
-  - Ludwigshafen–Wetzlar
-  - RNL–SGF
-  - Altenholz–Lübeck
-  - Pforzheim–Bietigheim
-- Kiel–Lemgo (56:00 and 76:00)
-- Eisenach–Hamburg (3 windows)
-- Gummersbach–Löwen (3 windows)
-- Saarlouis–Münster (3 windows)
-- Bielefeld–Aurich (3 windows)
-- Balingen II–Erlangen (3 windows)
-- Würzburg–Regensburg (3 windows)
+**A. Training (adapter), `train/` only:**
 
-That is about 25 windows, each with 5–18 vouched identities per match window.
+| Match | Status |
+| --- | --- |
+| Balingen–Kiel (BAL–THW) | mined (`dev/`) |
+| Berlin–BHC | mined (`dev/`) |
+| Lemgo–Magdeburg (TBV–SCM) | mined (`dev_b/`) |
+| Göppingen–Leipzig (FAG–LEI) | mined (`dev_b/`) |
+| Ludwigshafen–Wetzlar | mined (`fresh/`) |
+| Löwen–Flensburg (RNL–SGF) | mined (`fresh/`) |
+| Dresden–Melsungen (DRE–MTM) | **not processed yet**; it was the reserve |
+| Vinnhorst–Potsdam | **not processed yet**; it was the reserve |
 
-**Excluded from training:**
+That is 8 matches and 16 teams. For more crops per team, extra windows of these
+matches can be processed (about 2–2.5 GPU hours each). That gives more crops
+per player, not more teams.
 
-- **The higher bank** (Melsungen–Löwen, Magdeburg–Wetzlar, Stuttgart–Erlangen).
-  It stays test data. It also **cannot serve as an unseen test**: Magdeburg,
-  Wetzlar and Löwen all play in development matches.
-- **The reserve** (DRE–MTM, Vinnhorst–Potsdam): the final test, §8.
+**B. Inner validation (not trained on, not test), `train/`:**
 
-**Two time blocks per window:**
+| Match | Role |
+| --- | --- |
+| Altenholz–Lübeck | mined (`sealed/`) |
+| Pforzheim–Bietigheim | mined (`sealed/`) |
 
-- the first 2/3 of each window is **training**;
-- the last 1/3 is **seen evaluation**: the same players, never trained on.
+These 4 teams are unseen by the adapter. They are used only for the pilot run
+and for recalibrating the gate (§7). They never decide the pass bars.
 
-**Team groups.** Teams that appear in several matches link those matches into
-one block:
+**C. Seen teams in a new match, `eval/`, never trained on:**
 
-- Kiel / Lemgo / Balingen / Magdeburg: Balingen–Kiel, Kiel–Lemgo,
-  Lemgo–Magdeburg, and Balingen II–Erlangen as a precaution;
-- Löwen: RNL–SGF, Gummersbach–Löwen.
+| Match | Seen teams | Unseen team |
+| --- | --- | --- |
+| Kiel–Lemgo | Kiel, Lemgo | n/a |
+| Magdeburg–Wetzlar | Magdeburg, Wetzlar | n/a |
+| Melsungen–Löwen | Melsungen, Löwen | n/a |
+| Gummersbach–Löwen | Löwen | Gummersbach |
+| Melsungen–Berlin (not processed) | Melsungen, Berlin | n/a |
+| BHC–Frisch Auf (not processed for smart re-ID) | BHC, Göppingen | n/a |
 
-The remaining 9 matches stand alone. The blocks are distributed over **5
-groups** of about equal size. A team is always entirely in one group. Step 0
-checks the complete team list, including whether "MTM" from the reserve appears
-in development.
+**D. Unseen teams (test), `eval/`, no team in training:**
+
+| Match | Level |
+| --- | --- |
+| Eisenach–Hamburg | Bundesliga |
+| Stuttgart–Erlangen (HC Erlangen) | Bundesliga |
+| Saarlouis–Münster | lower league |
+| Bielefeld–Aurich | lower league |
+| Würzburg–Regensburg | lower league |
+| Gummersbach (the team, from C) | Bundesliga |
+
+That is 11 unseen teams, mixed across leagues. All are already processed and
+have Stage 2 populations: your labels for Eisenach, Gummersbach and the four
+lower-league matches, only assistant labels for Stuttgart.
+
+**Excluded:**
+
+- Balingen II–Erlangen-Bruck. It is a second team of Balingen (training), so
+  shared players are possible. It joins D if you confirm the rosters do not
+  overlap.
+- `e.mp4` in `train/`, which is unidentified. Step 0 checks what it is. It joins
+  A only if its teams are disjoint from C and D.
+
+**What this costs in data protection:**
+
+- **The reserve (DRE–MTM, Vinnhorst–Potsdam) becomes training data.** That
+  breaks the split fixed on 2026-10-20 and needs your explicit go-ahead. The
+  alternative is A without them: 6 matches, 12 teams.
+- **No untouched final test remains.** The D matches are unseen by the adapter,
+  but the smart re-ID rules were tuned on several of them. A truly fresh system
+  test needs new footage (§8).
 
 ## 4. Training
 
 - **Inputs.** SportsReID ViT-B/16 embeddings of strict-masked crops, plus 2
   augmented views per crop: mirror, slight crop jitter and slight colour
-  jitter. These are computed once on the GPU, under an hour. After that,
-  training runs on cached embeddings in minutes.
+  jitter. These are computed once on the GPU. Training then runs on cached
+  embeddings.
 - **Loss.** Supervised contrastive loss within a match: a batch is one match
   with K identities × M crops. Positives are the same identity in another
   fragment at least 2 s apart. Negatives are teammates (full weight) and
   opponents (reduced weight). Plus the anchor term λ·‖f(x) − x‖² and weight
   decay.
-- **Hyperparameters fixed in advance.** Rank 16, λ, learning rate, a fixed
-  number of epochs, crop cap per identity. **No search over the evaluation
-  groups.** One pilot run on group 1 only checks that the pipeline works.
-  Changes after it are allowed only for defects, are recorded, and group 1 is
-  then trained again from scratch.
-- **5 models.** Model *k* never sees group *k*.
+- **Time blocks.** The last 1/3 of each training window is never trained on
+  (seen evaluation, §5).
+- **Hyperparameters fixed in advance:** rank 16, λ, learning rate, epochs, crop
+  cap. One pilot run, evaluated only on B and the time blocks. Changes after it
+  are allowed only for defects and are recorded. **C and D are not looked at
+  before the frozen run.**
 
 ## 5. Parity test (core)
 
@@ -105,97 +143,88 @@ in development.
 - queries are vouched fragments;
 - the gallery is same-match fragments, at least 2 s apart;
 - 8-crop aggregation;
-- synthetic unknowns (own identity removed);
-- every condition is scored with the base model and with the adapter, on
-  identical crops.
+- synthetic unknowns;
+- base model and adapter on identical crops.
 
 **Primary metric M.** Coverage at precision ≥ 0.95 and unknown false-match
-rate ≤ 3%. This measures the separation of right and wrong, which is the
-bottleneck. Teammate rank-1 is secondary.
+rate ≤ 3%, scored per team. Secondary: teammate rank-1.
 
-**Per team:**
+**Per team, Δ = M(adapter) − M(base):**
 
-- Δ_unseen = M(adapter) − M(base), measured with the model that did not see
-  this team;
-- Δ_seen = the same on the team's seen-evaluation block, measured with the
-  4 models that trained on the team (averaged);
-- **seen advantage G = Δ_seen − Δ_unseen.**
+| Group | Data | Meaning |
+| --- | --- | --- |
+| **Unseen** | D (11 teams) | the generalisation we want |
+| **Seen, new match** | the seen teams in C | memorisation would show here most strongly |
+| Seen, same match | the time blocks of A | control |
+| Training material | A's training blocks | memorisation probe, reported only |
 
-Every team is unseen exactly once, so the comparison uses all teams. The CIs
-come from a bootstrap clustered by team.
-
-**Memorisation probe.** Also report Δ on the teams' own training blocks. A
-large lead of training block over seen evaluation, or of seen over unseen,
-signals storage instead of skill.
+**Seen advantage** G = mean Δ(seen, new match) − mean Δ(unseen). The CI comes
+from a bootstrap clustered by team.
 
 ## 6. Pass bars (proposal, frozen before training)
 
 | # | Condition | Proposal |
 | --- | --- | --- |
-| P1 | Real gain on unseen teams | Δ_unseen > 0 with the lower 95% bound > 0 |
-| P2 | Parity | G ≤ max(1 percentage point, ¼·Δ_unseen) **and** the upper 95% bound of G ≤ 3 percentage points |
-| P3 | No more false names | Synthetic unknown false-match rate, adapter ≤ base + 1 percentage point, on unseen teams |
+| P1 | Real gain on unseen teams | mean Δ_unseen > 0 with the lower 95% bound > 0 |
+| P2 | Parity | G ≤ max(1 percentage point, ¼·Δ_unseen) **and** the upper 95% bound of G ≤ 4 percentage points |
+| P3 | No more false names | Synthetic unknown false-match rate, adapter ≤ base + 1 percentage point, on D |
 
-Missing any one condition means **stop**: report the result, discard the
-model, and stop the fine-tuning work.
+Missing any one condition means **stop**: report the result and discard the
+model.
 
-The limit, stated openly: with about 40 teams, gaps below about 2–3 points
-cannot be detected. "Parity passed" therefore means "no gap above that size".
+The limit, stated openly: with 11 unseen and about 9 seen teams in new
+matches, only gaps of about 3–4 points or more are detectable. That is why the
+P2 bound is 4, not 3 as in v1.
 
-## 7. System check on development (only if P1–P3 pass)
+## 7. System check (only if P1–P3 pass)
 
 - **Configuration.** The adapter is plugged into the split_v2 rule as a
   strict-embedding variant. Two variants are fixed in advance:
   - (a) adapted strict score alone;
   - (b) the mean of the raw score and the adapted strict score.
 - **Gate.** τ and the margin are recalibrated with the split_v2 calibration
-  procedure. The score scale changes, so the old gate does not fit.
-- **Clean evaluation.** Each development match is scored with the model that
-  did not see its teams (out-of-fold).
-- **Evaluation.** On the 7 Stage 2 populations, against the references
-  (your labels, then earlier assistant labels). Newly named segments without a
-  reference go into a blind assistant queue with controls, frozen before
+  procedure **on B**, whose teams are unseen by the adapter but are not test
+  teams.
+- **Evaluation.** On the Stage 2 populations of D, against the existing
+  references (your labels, then assistant labels). Newly named segments without
+  a reference go into a blind assistant queue with controls, frozen before
   scoring.
 - **Bar to lock:**
-  - newly correct player-time ≥ +25% relative to split_v2;
+  - newly correct player-time on D ≥ +25% relative to split_v2;
   - added-link precision ≥ 0.95;
   - synthetic unknown false-match rate ≤ 3%.
 
-## 8. Final test (only after the lock, with your approval)
+## 8. Fresh test (later)
 
-- **Final model.** The adapter trained on all development teams with the same
-  recipe. The parity guarantee covers the recipe, not this specific model.
-- **Test data.** The reserve, DRE–MTM and Vinnhorst–Potsdam. They are unseen by
-  construction and are spent by this test. They are processed with production
-  `process_video` first, if not done yet, at about 2–2.5 GPU hours per window.
-- **Verdict.** The established fresh-test rule:
-  - PASS / FAIL / INCONCLUSIVE;
-  - at least 5 verified added links;
-  - no added error;
-  - synthetic FM not worse.
+D is unseen by the adapter, but the smart re-ID rules were partly tuned on D.
+A truly fresh system test therefore needs **new matches** whose teams appear
+neither in A nor in B. The few videos you can still add would be best used
+here. Until then the result is "passed on development", not "tested".
 
 ## 9. Effort
 
 | Step | Work | Machine |
 | --- | --- | --- |
-| 0 | Team list, groups, data inventory | CPU, 1 h |
-| 1 | Strict crops and views encoded | GPU, < 1 h |
-| 2 | 5 adapters plus pilot | minutes |
-| 3 | Parity test → stop or continue | CPU, 1 h |
-| 4 | System check, blind queue, labels | CPU plus my labels, ½ day |
-| 5 | Reserve processing and test | GPU 5–10 h plus labels |
+| 0 | Identify `e.mp4`, final team list | CPU, < 1 h |
+| 1 | Process DRE–MTM and Vinnhorst–Potsdam, one window each, and mine them | GPU about 5 h |
+| 2 | Strict crops and views encoded | GPU, < 1 h |
+| 3 | Pilot plus frozen training | minutes |
+| 4 | Parity test → stop or continue | CPU, 1 h |
+| 5 | System check, blind queue, labels | CPU plus my labels, ½ day |
 
 ## 10. Out of scope
 
 - No production change and no merge.
-- No backbone training: LoRA or full fine-tuning would be a separate plan, only
-  if the adapter passes and the gain is too small.
-- No use of the higher bank for tuning or testing.
-- No hyperparameter search on evaluation groups.
+- No backbone training (LoRA would be a separate plan).
+- The higher bank appears only in C (Magdeburg–Wetzlar, Melsungen–Löwen) and D
+  (Stuttgart–Erlangen), never in training.
+- No hyperparameter search on C or D.
 
 ## Questions for approval
 
-1. The pass bars P1–P3 (§6) and the bar to lock (§7): accepted as written?
-2. Spend the reserve on the final test (§8)?
-3. Labels: blind assistant labels with controls from your labels, and your spot
-   check optional, as in the extra-galleries work?
+1. Is the split A–D right? In particular, may the reserve (DRE–MTM,
+   Vinnhorst–Potsdam) become training data?
+2. Balingen II–Erlangen-Bruck: excluded, or unseen (D)?
+3. The pass bars P1–P3 (§6) and the bar to lock (§7)?
+4. Labels: blind assistant labels with controls from your labels, your spot
+   check optional?
