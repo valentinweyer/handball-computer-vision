@@ -71,3 +71,66 @@ Balingen–Kiel breaks because its team-0 impostor level is low and widely sprea
 - **Small numbers.** The differences are 10 false accepts and 2 wrong names.
 - **Not lockable from this alone.** The next step would be to lock `shift` and
   test it once on development matches that played no part here.
+
+## Confirmation (2026-10-23): NOT CONFIRMED
+
+Locked first:
+
+- lock: `experiments/teammate_reid/locked/calibrate_v1.json`, sha256 `7822fb2c1e15…`;
+- tag: `smart-reid/calibrate-v1-lock`;
+- code commit: 07d8776.
+
+The shift variant and its gate were chosen on all 8 tuning matches, exactly as in
+split_v2's lock. The split_v2 gate is reproduced bit for bit by the same pipeline.
+
+**Confirmation set.** 7 development matches that played no part in split_v2 or in
+this calibration, with all mined windows (21): Kiel–Lemgo, Eisenach–Hamburg,
+Gummersbach–Löwen, Saarlouis–Münster, Bielefeld–Aurich, Würzburg–Regensburg and
+Balingen II–Erlangen. They are now spent for calibration work (user, 2026-10-23).
+Scored once: `runs/smart-reid-shadow/calibrate/confirm.json`.
+
+668 known and 1357 unknown queries.
+
+| | Raw split_v2 | Shift |
+| --- | ---: | ---: |
+| Known precision | 0.997 | 0.998 |
+| Correct names | **666** | 631 |
+| Wrong known names | 2 | 1 |
+| Unknown false accepts | **20** | 48 |
+| Unknown FMR | **0.015** | 0.035 |
+| Coverage of known queries | 0.510 | 0.483 |
+| Correct seconds | 20889 | 20257 |
+| Wrong seconds | **552** | 1783 |
+
+**Bars:**
+
+| Bar | Condition | Result |
+| --- | --- | --- |
+| C1 | FMR ≤ 0.02 | **fails** (0.035) |
+| C2 | correct names ≥ 95% of raw | **fails** (631 < 633) |
+| C3 | precision ≥ 0.97 | holds |
+
+**Per match:**
+
+| Match | Raw correct / wrong known / unknown false accepts | Shift | Unknown queries |
+| --- | --- | --- | ---: |
+| Balingen II–Erlangen | 38 / 0 / 0 | 50 / 1 / **18** | 128 |
+| Bielefeld–Aurich | 102 / 0 / 0 | 136 / 0 / **12** | 218 |
+| Eisenach–Hamburg | 111 / 0 / 0 | 120 / 0 / 2 | 226 |
+| Gummersbach–Löwen | 111 / 2 / 5 | 104 / 0 / 4 | 215 |
+| Kiel–Lemgo | 165 / 0 / 9 | 124 / 0 / 5 | 244 |
+| Saarlouis–Münster | 28 / 0 / 2 | 5 / 0 / 0 | 90 |
+| Würzburg–Regensburg | 111 / 0 / 4 | 92 / 0 / 7 | 236 |
+
+**Reading:**
+
+- **The raw shared gate already meets its target on these matches** (FMR 0.015).
+  Its overshoot in the tuning LOMO came from Pforzheim and Göppingen and did not
+  generalise.
+- **The shift moves each video's effective gate without improving separation.**
+  - It loosens it in two lower-league matches: Balingen II, 18 false accepts, and
+    Bielefeld, 12.
+  - It tightens it in others: Kiel–Lemgo loses 41 names, Saarlouis 23.
+- **The median score of co-present teammates is not a good proxy** for where a
+  video's top unknown scores sit.
+- **Verdict: per-video shift calibration is rejected.** split_v2's raw gate stays.
