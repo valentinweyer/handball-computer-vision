@@ -7,6 +7,60 @@ detail lives in `docs/team-classification-handoff.md`.
 
 ---
 
+## Court keypoint fine-tune on the halls where it fails (planned 2026-10-23)
+
+- [ ] Fine-tune our court keypoint model
+  (`rfdetr-handball-finetune/exports/court-keypoints-local/`) on frames from the
+  halls where it fails. Even after the carried-court fallback (`min_confirmed=4`),
+  Pforzheim–Bietigheim is courtless on 64.1% of frames and Altenholz–Lübeck on
+  93.0%. `process_video` pauses tracking there, so those bundles are nearly
+  empty. Würzburg–Regensburg keeps 7.5%, a fit that holds in that hall but has
+  too few keypoints that agree with the carried court.
+- [ ] First step: build labels automatically, not by hand. Take frames that
+  fit well in these and similar halls, project the fitted court back into the
+  image as keypoint labels, and add them to training. Pforzheim and Altenholz
+  have few well-fitted frames of their own, so check how many usable frames
+  exist before planning around them.
+- [ ] Acceptance: courtless share on the failing halls, re-measured with
+  `scripts/compare_court_view.py`, and no regression on the HBF clips. That
+  covers Kiel's lights-off timeout staying courtless, and the held-out goal and
+  middle-court court error from 2026-10-14. Respect the smart re-ID split: keep
+  test matches out of training.
+
+Motivation: whole lower-league matches currently produce almost no tracking,
+and a reliable court fit is also what the court test (item 2) and the bench
+constraint (item 3) wait on. See `docs/court-carried-view-2026-10-20.md`.
+
+This is a TODO only; no production change is requested here.
+
+---
+
+## Drift re-prompt repeats forever when it does not fix the mask (planned 2026-10-23)
+
+- [ ] Rule 3 in `TrackManager.checkpoint`
+  (`src/handball_cv/tracking/sam2_manager.py`, "drift") re-prompts a track
+  whose mask-to-detection IoU sits in `DRIFT_IOU_LOW..DRIFT_IOU_HIGH`
+  (0.1-0.5). Once `t.confirm("drift")` has passed, it fires at every checkpoint
+  the condition still holds, whether or not the previous re-prompt helped.
+- [ ] Evidence: on BHC-FAG through `process_video`, the orange #22 goalkeeper
+  (track 13) is masked over shirt and shorts only. His mask box sits at IoU
+  0.2-0.45 against the detector's full-body box, and he is re-prompted **103
+  times** without the mask ever recovering (`runs/sam2_throughput/pipeline/
+  track13_s1.jpg`, `docs/sam2-throughput-2026-10-20.md`). At stride 2 the
+  same player is masked whole and never re-prompted.
+- [ ] First step: count, over the processed bundles' `events.parquet`, how
+  many re-prompts follow a re-prompt of the same track at the previous
+  checkpoint, and how often IoU improved after it. Only then choose a rule,
+  for example backing off after a re-prompt that did not lift IoU above
+  `DRIFT_IOU_HIGH`. Keep the body-swap `reset` branch untouched: that one
+  is an identity safeguard, not a mask repair.
+- [ ] Acceptance: the three scored clips score no worse than
+  95.01 / 99.91 / 98.88%.
+
+This is a TODO only; no production change is requested here.
+
+---
+
 ## Small-number crops as corroboration (planned 2026-10-18)
 
 - [ ] Test whether crops below the current 400 px area gate can corroborate a
