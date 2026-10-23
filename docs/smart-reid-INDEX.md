@@ -1,8 +1,12 @@
 # Smart re-ID: index of the experiment record
 
-`prototype/smart-reid-shadow` is the permanent record of the smart re-ID work:
+`prototype/smart-reid` is the permanent record of the smart re-ID work:
 method, locks, measurements, labels and tests. It is **never merged as-is**.
 Production integration would be a clean, opt-in reimplementation in `src/`.
+
+The branch was named `prototype/smart-reid-shadow` until 2026-10-23, and the
+dated reports still name it that way. It also absorbed
+`prototype/smart-player-reid`, which was deleted the same day.
 
 This page maps each lock to its test, result and report. It also says where the
 data lives and which files cannot be regenerated.
