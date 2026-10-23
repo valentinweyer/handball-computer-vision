@@ -31,6 +31,23 @@ This is a TODO only; no production change is requested here.
 
 ---
 
+## Frame-0 seeds skip new-player confirmation (planned 2026-10-23)
+
+- [ ] Measure how often a frame-0 track is a false detection. Every frame-0
+  detection becomes a track at once via `TrackManager.seed()`, while a player
+  first seen later must match at `MIN_CONFIRM_CHECKPOINTS = 2` consecutive
+  checkpoints. A false frame-0 box therefore survives until
+  `UNMATCHED_CHECKPOINTS_MAX = 20` unmatched checkpoints (~200 frames), or
+  indefinitely if SAM2 keeps following something.
+- [ ] First step: on the scored clips, count frame-0 seeds that are never
+  matched at a later checkpoint or have no ground-truth counterpart. Only if
+  that is non-trivial, decide between confirming seeds over the first
+  checkpoints and leaving seeding as is.
+
+This is a TODO only; no production change is requested here.
+
+---
+
 ## Detection backfill after confirmation (planned 2026-10-18)
 
 - [ ] Once a new player is confirmed, backfill the short confirmation delay to
