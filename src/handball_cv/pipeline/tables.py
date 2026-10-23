@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from handball_cv.court.keypoints import KEYPOINT_TO_VERTEX
-from handball_cv.jersey.identity import segment_verdicts
+from handball_cv.jersey.identity import NumberVoter, segment_verdicts
 from handball_cv.visualization.palette import GOALKEEPER, TEAM_STATE
 
 __all__ = [
@@ -78,6 +78,34 @@ def _segments_by_player(run: dict, ocr_every: int, fold_links: bool = False) -> 
     return by_player
 
 
+def _supported_track_segments(run: dict, by_track: dict) -> set[tuple[int, int]]:
+    """Stable track-local labels independently earned on that physical track.
+
+    A final alias can join fragments with different historical numbers. Its
+    replay must not replace a stable, independently read label on one of those
+    fragments. Use only explicit source provenance: older runs with no
+    `track_id` cannot distinguish an alias's read from its owner's read.
+    """
+    reads: dict = {}
+    for row in sorted(run["number_reads"], key=lambda r: r["frame"]):
+        if row.get("track_id") is not None:
+            reads.setdefault(int(row["track_id"]), []).append(row)
+    supported = set()
+    for track_id, segments in by_track.items():
+        for segment in segments:
+            if not segment.stable or segment.verdict is None:
+                continue
+            # Reset at every identity break; earlier reads cannot vouch for a
+            # later person merely because SAM2 reused the same object handle.
+            voter = NumberVoter()
+            for row in reads.get(track_id, ()):
+                if segment.start <= int(row["frame"]) <= segment.end:
+                    voter.observe(track_id, row["value"])
+            if voter.best(track_id)[0] == segment.verdict:
+                supported.add((track_id, segment.start))
+    return supported
+
+
 def one_place_per_identity(track_ids: list[int], canonical) -> list[int]:
     """Each row's identity, never the same identity on two boxes in one frame.
 
@@ -113,7 +141,11 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
     `number` is the backfilled verdict -- the segment's settled number, reaching
     back over the frames before it was decided -- with number links folded in
     (see `_segments_by_player`): a fragment linked into an identity carries that
-    identity's number. Without links this is exactly what `--redraw` draws.
+    identity's number. A stable, independently supported source-track verdict
+    takes precedence over a conflicting family verdict, so later links cannot
+    transplant an older person's number onto that track. Partial trailing-digit
+    reads retain the supported full family number. Without links this is
+    exactly what `--redraw` draws.
     `number_live` is what the render drew at that frame: the run's own label
     replay, each number link applied from the frame it was made, as
     `--redraw --redraw-causal` draws it. Two invariants hold
@@ -127,6 +159,7 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
     canonical = canonical_resolver(run.get("player_aliases", {}))
     folded = _segments_by_player(run, ocr_every, fold_links=True)
     unfolded = _segments_by_player(run, ocr_every)
+    supported = _supported_track_segments(run, unfolded)
 
     def segment_at(by_player: dict, player_id: int, frame: int):
         return next((s for s in by_player.get(player_id, ())
@@ -150,9 +183,20 @@ def tracks_table(run: dict, geometry, fits: list, fps: float, ocr_every: int,
         player_ids = one_place_per_identity([int(t) for t in ids], canonical)
         keepers = [int(c) == GOALKEEPER for c in colors]
         numbers = []
-        for player_id in player_ids:
+        for track_id, player_id in zip(ids, player_ids):
             segment = segment_at(folded, player_id, frame)
-            numbers.append(segment.value_at(frame) if segment else None)
+            number = segment.value_at(frame) if segment else None
+            local = segment_at(unfolded, int(track_id), frame)
+            if local is not None and (int(track_id), local.start) in supported:
+                own_number = local.value_at(frame)
+                # The existing fold rule treats a trailing digit as evidence
+                # for a full number, rather than a competing single digit.
+                partial = (own_number is not None and number is not None
+                           and len(own_number) == 1 and len(number) == 2
+                           and number.endswith(own_number))
+                if own_number is not None and not partial:
+                    number = own_number
+            numbers.append(number)
         numbers = one_number_per_team(numbers, teams, keepers)
         for row, track_id in enumerate(ids):
             player_id = player_ids[row]

@@ -7,6 +7,30 @@ detail lives in `docs/team-classification-handoff.md`.
 
 ---
 
+## Small-number crops as corroboration (planned 2026-10-18)
+
+- [ ] Test whether crops below the current 400 px area gate can corroborate a
+  number independently supported by full-size reads. Small crops must not
+  establish or replace a number on their own. Keep the production gate unchanged
+  until this experiment demonstrates a safe gain.
+- [ ] Preserve source-track/identity-break boundaries, number ownership and
+  reversible verdicts. Do not let an inherited or small-crop-supported label
+  count as independent full-size evidence and confirm itself.
+- [ ] Replay known gains (#91 and #4) and failures (#28 read as 20, #51 read as
+  15), genuine identity changes and stale/conflicting inherited numbers. Treat
+  these as development cases; evaluate fresh held-out sequences too. Compare
+  correct, wrong and missing final labels, including duplicate-number abstentions,
+  rather than accepted OCR reads alone.
+
+Motivation: lowering the gate to 350 px changed a correct #28 to #20 for 141
+tracked rows (about 5.6 seconds); even the guarded 250 px / 0.95-confidence
+candidate admitted a genuine #51-to-15 error at 0.9877 confidence. See
+[the shadow comparison](docs/number-crop-shadow-2026-10-18.md).
+
+This is a TODO only; no production change is requested here.
+
+---
+
 ## Detection backfill after confirmation (planned 2026-10-18)
 
 - [ ] Once a new player is confirmed, backfill the short confirmation delay to

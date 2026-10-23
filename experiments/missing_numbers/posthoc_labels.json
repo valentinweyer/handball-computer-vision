@@ -1,0 +1,18 @@
+{
+  "purpose": "Post-hoc source-reviewed regression discovered in full-run diff",
+  "reviewer": "Codex visual review",
+  "sequences": [
+    {
+      "track_id": 109,
+      "first": 7940,
+      "last": 8080,
+      "number": "28",
+      "review_frames": [
+        7850,
+        7940,
+        8000,
+        8080
+      ]
+    }
+  ]
+}
