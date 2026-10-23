@@ -1,5 +1,30 @@
 # Cleanup plan
 
+## 2026-10-23: missing-numbers stack merged
+
+Everything stacked on `investigate/missing-jersey-numbers` that had reached a
+verdict was merged into `main`:
+
+- `investigate/missing-jersey-numbers`: the source-track number-backfill fix,
+  the small-crop gate shadow test (keep 400 px), and the 2026-10-19 tracker
+  source review. Its two open plans stay in `TODO.md`.
+- `experiment/tracker-foundation-review`, which contains
+  `investigate/box-tracker-oracle`, `experiment/arc-sort-cpu` and
+  `experiment/arc-team-repair`. Each adds its own experiments under
+  `experiments/` and docs: the box-tracker oracle study, SAM2 throughput, the
+  ARC-SORT CPU screen, ARC team repair (negative, frozen) and the
+  foundation-review harness. The only runtime change is the opt-in
+  `--sam2-stride` flag; defaults are unchanged.
+
+The combined tree passed `pytest -q tests` (566 passed, 10 skipped) and
+`experiments/arc_team_repair` (22 passed). The merged branches were then removed
+locally and on origin, along with `prototype/smart-player-reid`, which is
+wholly contained in the smart re-ID record branch. That branch was renamed
+`prototype/smart-reid-shadow` → `prototype/smart-reid`. Still open on their
+own branches: `feat/arc-pipeline` (needs a rebase onto `main`; conflicts in
+`scripts/render_full_pipeline.py` and `src/handball_cv/tracking/geometry_cache.py`)
+and `prototype/smart-reid` (never merged as-is, by its own index).
+
 ## 2026-10-23: renderer speedups and court-view fix merged
 
 `perf/fast-mask-render` (3 commits, never pushed) and `fix/court-carried-view`
