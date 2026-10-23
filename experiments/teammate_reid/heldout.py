@@ -143,7 +143,7 @@ POKAL_PILOT_WINDOWS = [
          "2016-08-28_154952_thw_kiel-vfl_fredenbeck_ev-720p-3140kbps.mp4"),
         ("Pokal16_Wetzlar_Coburg_66m00_10min", "Pokal2016-Wetzlar-Coburg",
          "2016-08-28_155037_hsg_wetzlar-hsc_2000_coburg-720p-3000kbps.mp4"),
-        ("Pokal16_Erlangen_Loewen_66m00_10min", "Pokal2016-Erlangen-Loewen",
+        ("Pokal16_Erlangen_Loewen_63m00_10min", "Pokal2016-Erlangen-Loewen",
          "2016-10-27_183756_hc_erlangen-rhein-neckar_loewen-720p-3092kbps.mp4"),
         ("Pokal19_Wetzlar_Kiel_66m00_10min", "Pokal2019-Wetzlar-Kiel",
          "2019-10-02_636411_hsg_wetzlar-thw_kiel-720p-3000kbps.mp4"),
@@ -163,7 +163,11 @@ START_OVERRIDE_S = {"Ludwigshafen_Wetzlar_67m00_10min": 67 * 60,
                     # half ends ~6.5 min in and half-time ads follow, so the window moves
                     # to the second half (live from ~84.5 min; signal lost at ~108 min).
                     # Checked on a 4-minute timeline for live play only.
-                    "Bielefeld_Aurich_86m00_10min": 86 * 60}
+                    "Bielefeld_Aurich_86m00_10min": 86 * 60,
+                    # the file has no half-time break and ends at ~73:30 (final whistle between
+                    # 73:00 and 74:00), so 66:00 + 10 min runs past the match: the latest 10 minutes
+                    # ending before the whistle (confirmed by the user, 2026-10-24)
+                    "Pokal16_Erlangen_Loewen_63m00_10min": 63 * 60}
 MANIFEST = REPO / "runs/smart-reid-shadow/heldout_windows.json"
 
 
