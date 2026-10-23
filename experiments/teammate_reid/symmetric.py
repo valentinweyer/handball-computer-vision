@@ -75,7 +75,8 @@ def rows_for(gallery: str, query_mode: str) -> tuple[list, list]:
 def results_rows(results: Path, matches: tuple, gallery: str, query_mode: str, allowed) -> tuple[list, list]:
     """(query rows, universe) of one results dir: universe = every vouched fragment with >= 3 crops.
 
-    `allowed(match)` is asserted for every match loaded, so a split cannot leak."""
+    `allowed(match)` is asserted for every match loaded, so a split cannot leak; callers own the
+    split (both tuning and final-test callers exclude the split-v1 test matches in `allowed`)."""
     after, exclude_track = GALLERIES[gallery]
     rows, universe = [], []
     crops, fragments, _ = load_reviewed(results)
@@ -87,7 +88,7 @@ def results_rows(results: Path, matches: tuple, gallery: str, query_mode: str, a
     for video in sorted({f["video"] for f in fragments if f["match"] in matches}):
         frags = [f for f in fragments if f["video"] == video and by_fragment.get(f["key"])]
         match = frags[0]["match"]
-        assert allowed(match) and match not in TEST
+        assert allowed(match), match
         ids = sorted({c for f in frags for c in by_fragment[f["key"]]})
         index = {c: i for i, c in enumerate(ids)}
         sim = emb[ids] @ emb[ids].T
