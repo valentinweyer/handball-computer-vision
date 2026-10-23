@@ -1,0 +1,69 @@
+{
+ "locked_at": "2026-10-23T14:04:54",
+ "commit": "07d8776d4447e9d2daf3a135a3f9d3c0187d3caa",
+ "base_rule": "locked/split_v2.json (gallery, query crops, aggregation, halves guard)",
+ "variant": "shift: score - median score of co-present same-team fragments on other tracks, per (video, team); margin unchanged",
+ "min_overlap_frames": 25,
+ "min_pairs": 10,
+ "fallback": "video's pooled impostor scores",
+ "target": "tight",
+ "gate_shifted": [
+  0.15699301711444197,
+  0.05001319687941978
+ ],
+ "gate_raw": [
+  0.7839630554462301,
+  0.02255046162112006
+ ],
+ "chosen_on": [
+  "Ludwigshafen-Wetzlar",
+  "RNL-SGF",
+  "Balingen-Kiel",
+  "Berlin-BHC",
+  "Lemgo-Magdeburg",
+  "Goeppingen-Leipzig",
+  "Altenholz-Luebeck",
+  "Pforzheim-Bietigheim"
+ ],
+ "confirm": {
+  "windows": [
+   "runs/smart-reid-prototype-2026-10-18/results|Kiel-Lemgo",
+   "runs/smart-reid-shadow/stage1|Eisenach-Hamburg",
+   "runs/smart-reid-shadow/stage1|Gummersbach-Loewen",
+   "runs/smart-reid-shadow/final/Saarlouis_Muenster_66m00_10min|Saarlouis-Muenster",
+   "runs/smart-reid-shadow/final/Bielefeld_Aurich_86m00_10min|Bielefeld-Aurich",
+   "runs/smart-reid-shadow/final/Wuerzburg_Regensburg_66m00_10min|Wuerzburg-Regensburg",
+   "runs/smart-reid-shadow/final/BalingenII_Erlangen_66m00_10min|BalingenII-Erlangen",
+   "runs/smart-reid-shadow/extra_dev/Kiel_Lemgo_56m00_10min|Kiel-Lemgo",
+   "runs/smart-reid-shadow/extra_dev/Kiel_Lemgo_76m00_10min|Kiel-Lemgo",
+   "runs/smart-reid-shadow/extra_dev/Eisenach_Hamburg_57m00_9min|Eisenach-Hamburg",
+   "runs/smart-reid-shadow/extra_dev/Eisenach_Hamburg_76m00_10min|Eisenach-Hamburg",
+   "runs/smart-reid-shadow/extra_dev/VfL_GM_Loewen_56m00_10min|Gummersbach-Loewen",
+   "runs/smart-reid-shadow/extra_dev/VfL_GM_Loewen_76m00_10min|Gummersbach-Loewen",
+   "runs/smart-reid-shadow/extra_dev/Saarlouis_Muenster_56m00_10min|Saarlouis-Muenster",
+   "runs/smart-reid-shadow/extra_dev/Saarlouis_Muenster_76m00_10min|Saarlouis-Muenster",
+   "runs/smart-reid-shadow/extra_dev/Bielefeld_Aurich_62m00_10min|Bielefeld-Aurich",
+   "runs/smart-reid-shadow/extra_dev/Bielefeld_Aurich_96m00_10min|Bielefeld-Aurich",
+   "runs/smart-reid-shadow/extra_dev/Wuerzburg_Regensburg_56m00_10min|Wuerzburg-Regensburg",
+   "runs/smart-reid-shadow/extra_dev/Wuerzburg_Regensburg_76m00_10min|Wuerzburg-Regensburg",
+   "runs/smart-reid-shadow/extra_dev/BalingenII_Erlangen_56m00_10min|BalingenII-Erlangen",
+   "runs/smart-reid-shadow/extra_dev/BalingenII_Erlangen_76m00_10min|BalingenII-Erlangen"
+  ],
+  "matches": [
+   "BalingenII-Erlangen",
+   "Bielefeld-Aurich",
+   "Eisenach-Hamburg",
+   "Gummersbach-Loewen",
+   "Kiel-Lemgo",
+   "Saarlouis-Muenster",
+   "Wuerzburg-Regensburg"
+  ],
+  "note": "development matches outside split_v2 tuning; spent for calibration by this run (user, 2026-10-23)"
+ },
+ "bars": {
+  "C1": "pooled unknown FMR (shift) <= 0.02 (split_v2's tight target)",
+  "C2": "correct known names (shift) >= 0.95 * correct (raw split_v2)",
+  "C3": "known precision (shift) >= 0.97",
+  "verdict": "CONFIRMED if C1-C3 hold, else NOT CONFIRMED; reported per match with n, no change after"
+ }
+}
