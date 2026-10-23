@@ -1,5 +1,22 @@
 # Cleanup plan
 
+## 2026-10-23: renderer speedups and court-view fix merged
+
+`perf/fast-mask-render` (3 commits, never pushed) and `fix/court-carried-view`
+(2 commits) both forked from `20741a0` and touch disjoint files. The court
+branch was merged into the renderer branch (`2369e03`, a merge rather than a
+rebase so the pushed court SHAs stay in history), the combined tree passed
+`pytest -q tests` (552 passed, 10 skipped; 548 before the merge), and `main`
+was fast-forwarded to it and pushed. Both worktrees under `.claude/worktrees/`,
+both local branches and `origin/fix/court-carried-view` were then removed;
+every commit is an ancestor of `main`.
+
+Known follow-up: `feat/arc-pipeline` conflicts with the renderer change in
+`scripts/render_full_pipeline.py` and
+`src/handball_cv/tracking/geometry_cache.py`; resolve those two files when it
+lands. The court fix has not had a tracking re-run under its new rule; see
+`docs/court-carried-view-2026-10-20.md`.
+
 ## 2026-10-18: retired branches archived
 
 At the initial cleanup, `main` and `feat/detector-expanded-validation` were
