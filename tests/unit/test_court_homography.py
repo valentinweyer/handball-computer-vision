@@ -298,3 +298,70 @@ class IdentityGateTests(unittest.TestCase):
         fit = tracker.update(self.keypoints(), motion=np.eye(3))
         self.assertTrue(fit.usable)
         self.assertGreaterEqual(fit.inliers, 4)
+
+
+class CarriedConfirmationTests(unittest.TestCase):
+    """A court outvoted by its own mislabelled landmarks is still a court in view.
+
+    Measured on two lower-league broadcasts: in mid-court views the keypoint
+    model put the centre-line points on a sponsor circle, the goal-area points
+    became the minority, and the tracker declared 14% of frames courtless. The
+    landmarks that were right sat exactly where the carried court put them; on
+    Kiel's lights-off timeout the carried court never matched more than three.
+    """
+
+    def setUp(self):
+        self.vertices = court_vertices()
+        self.camera = a_camera()
+        self.slots = list(range(len(KEYPOINT_TO_VERTEX)))
+        self.corners = np.array([[0.0, 0.0], [4000.0, 0.0], [4000.0, 2000.0], [0.0, 2000.0]])
+        self.truth = project(self.camera, self.corners)
+        self.rng = np.random.default_rng(0)
+
+    def true_points(self, slots):
+        image = project(self.camera, court_points(slots, self.vertices))
+        return [(s, float(x), float(y), 0.9) for s, (x, y) in zip(slots, image)]
+
+    def outvoted_frame(self, right=6, wrong=14):
+        """`right` correct landmarks, and `wrong` others placed where they are not."""
+        good = self.true_points(self.slots[:right])
+        bad = [(s, float(x), float(y), 0.9) for s, (x, y) in
+               zip(self.slots[right:right + wrong], self.rng.uniform([0, 0], IMAGE_SIZE, size=(wrong, 2)))]
+        return good + bad
+
+    def settled(self, **options):
+        tracker = CourtTracker(self.vertices, IMAGE_SIZE, **options)
+        for _ in range(3):
+            tracker.update(self.true_points(self.slots), motion=np.eye(3))
+        return tracker
+
+    def corner_error(self, fit):
+        return float(np.abs(project(fit.homography, self.corners) - self.truth).max())
+
+    def test_confirmed_landmarks_keep_the_court_in_view_and_fitted(self):
+        tracker = self.settled()
+        for _ in range(40):
+            fit = tracker.update(self.outvoted_frame(), motion=np.eye(3))
+        self.assertTrue(fit.court_in_view)
+        self.assertEqual(fit.source, "keypoints")
+        self.assertLess(self.corner_error(fit), 2.0)
+
+    def test_without_confirmation_the_same_view_is_declared_courtless(self):
+        # Guards the guard: the old rule loses this court.
+        tracker = self.settled(min_confirmed=None)
+        for _ in range(40):
+            fit = tracker.update(self.outvoted_frame(), motion=np.eye(3))
+        self.assertFalse(fit.court_in_view)
+
+    def test_a_timeout_is_still_declared_courtless(self):
+        tracker = self.settled()
+        for _ in range(40):
+            fit = tracker.update(self.outvoted_frame(right=0, wrong=18), motion=np.eye(3))
+        self.assertFalse(fit.court_in_view)
+        self.assertFalse(fit.usable)
+
+    def test_too_few_confirmed_landmarks_do_not_count(self):
+        tracker = self.settled()
+        for _ in range(40):
+            fit = tracker.update(self.outvoted_frame(right=3, wrong=14), motion=np.eye(3))
+        self.assertFalse(fit.court_in_view)
