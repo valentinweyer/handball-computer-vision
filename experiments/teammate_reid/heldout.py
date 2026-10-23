@@ -131,8 +131,29 @@ EXTRA_DEV_WINDOWS += EXTRA_DEV_WINDOWS_2
 # when the user released both as adapter TRAINING data (locked/finetune_v1.json, split A).
 # They are no longer an independent test.
 RESERVE_WINDOWS = [w for w in DEV_WINDOWS if w[0] in ("DRE_MTM_66m00_10min", "Vinnhorst_Potsdam_66m00_10min")]
+# DHB-Pokal pilot (2026-10-24): does older 720p Pokal footage (all with TV floor) yield enough
+# number-vouched identities to serve as adapter TRAINING data? Development only, never a test.
+# Full broadcasts in data/raw/pokal (absolute sources). Starts checked on 2-minute timelines for
+# live play before cutting; the 66:00 rule unless a START_OVERRIDE_S entry says otherwise.
+POKAL_DIR = REPO / "data/raw/pokal"
+POKAL_PILOT_WINDOWS = [
+    (name, match, str(POKAL_DIR / src), "detector-unseen")
+    for name, match, src in [
+        ("Pokal16_Kiel_Fredenbeck_66m00_10min", "Pokal2016-Kiel-Fredenbeck",
+         "2016-08-28_154952_thw_kiel-vfl_fredenbeck_ev-720p-3140kbps.mp4"),
+        ("Pokal16_Wetzlar_Coburg_66m00_10min", "Pokal2016-Wetzlar-Coburg",
+         "2016-08-28_155037_hsg_wetzlar-hsc_2000_coburg-720p-3000kbps.mp4"),
+        ("Pokal16_Erlangen_Loewen_66m00_10min", "Pokal2016-Erlangen-Loewen",
+         "2016-10-27_183756_hc_erlangen-rhein-neckar_loewen-720p-3092kbps.mp4"),
+        ("Pokal19_Wetzlar_Kiel_66m00_10min", "Pokal2019-Wetzlar-Kiel",
+         "2019-10-02_636411_hsg_wetzlar-thw_kiel-720p-3000kbps.mp4"),
+        ("Pokal19_Loewen_Goeppingen_66m00_10min", "Pokal2019-Loewen-Goeppingen",
+         "2019-10-02_636408_rhein-neckar_loewen-frisch_auf_goeppingen-720p-3000kbps.mp4"),
+        ("Pokal22_Flensburg_Hamburg_66m00_10min", "Pokal2022-Flensburg-Hamburg",
+         "sl_979487_2022-12-22_979487_sg_flensburg-handewitt-handball_sport_verein_hamburg_1080p30_3896kbps.mp4")]]
 WINDOW_SETS = {"test": WINDOWS, "dev": DEV_WINDOWS, "sealed": SEALED_WINDOWS, "preview": PREVIEW_WINDOWS,
-               "final": FINAL_WINDOWS, "higher": HIGHER_WINDOWS}
+               "final": FINAL_WINDOWS, "higher": HIGHER_WINDOWS,
+               "pokal_pilot": POKAL_PILOT_WINDOWS}
 MINUTES_OVERRIDE = {n: 2 for n, *_ in PREVIEW_WINDOWS}
 # The rule's one allowed nudge: step forward in whole minutes to the first live play.
 # Ludwigshafen-Wetzlar is in the half-time break at 66:00; the second-half throw-off
