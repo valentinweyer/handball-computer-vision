@@ -754,3 +754,62 @@ against an unchanged baseline, accelerations of f44956b included.
 cost (full matches). `jpeg` stays the default for the existing scripts so their
 stored results keep reproducing. Artifacts: `runs/frame_source_rescore/`
 (`score.json`, per-run dumps, events and logs).
+
+## 8.13 Box trackers with a perfect detector (2026-10-20)
+
+Question: if fast tracking means a box tracker, is the gap to SAM2 the
+detector, or association? `scripts.evaluate_tracker_identity
+--oracle-detections` feeds each box tracker the reference's own boxes (every
+identity, verified or not, confidence 1.0) instead of RF-DETR, and scores
+against the same verified spans. The reference boxes have no false positives
+and consistent geometry, so this is an upper bound: failing it is conclusive,
+passing it is not. The SAM2 row is the stored `runs/sam2_reprompt` replay
+(FelixClaar is the older 93.8% dump, not the current 95.0%) and does not use
+the detections argument, so it is identical in both arms.
+
+Correct % (player ids only), real detector -> oracle boxes; wrong-identity %
+and switches for the oracle arm:
+
+| tracker | FelixClaar | Han-Ber4 | BHC-FAG | Felix oracle wrong / sw |
+|---|---|---|---|---|
+| sort | 81.5 -> 89.4 | 90.9 -> 98.4 | 95.3 -> 99.3 | 8.9% / 6 |
+| bytetrack | 72.0 -> 90.5 | 89.3 -> 99.4 | 95.6 -> 97.6 | 8.9% / 7 |
+| botsort | 75.4 -> 80.3 | 91.1 -> 99.3 | 93.8 -> 99.9 | 19.6% / 6 |
+| ocsort | 74.4 -> 77.4 | 89.8 -> 99.0 | 93.1 -> 97.3 | 21.7% / 8 |
+| cbiou | 72.4 -> 78.7 | 89.2 -> 99.3 | 93.8 -> 96.4 | 21.2% / 11 |
+| mcbyte_masks_off | 75.5 -> 79.4 | 89.2 -> 99.5 | 93.8 -> 100.0 | 20.5% / 7 |
+| sam2_reprompt | 93.8 | 99.9 | 98.9 | 0.8% / 8 |
+
+(Han-Ber4 here is player-only; §1's Han figures divide by all reference ids.)
+
+**Han-Ber4 and BHC-FAG: the detector is the whole gap.** With perfect boxes
+every box tracker reaches 96-100%, most with zero switches, matching or
+beating SAM2.
+
+**FelixClaar: one crossing, not association in general.** Nearly all of
+SORT's and ByteTrack's oracle wrong-identity is a single event: reference ids
+1 and 6 trade tracks at frame 121 and stay traded (~210 wrong frames); every
+other error is a one-frame flicker. Pixel check
+(`runs/tracker_eval/oracle_2026-10-20/felix_1_6.jpg`): id 1 is a white
+attacker in a jump shot, id 6 the blue #15 blocking him; their boxes coincide
+at f120 and the reference keeps them apart correctly. It is a **cross-team**
+swap, the kind a colour/appearance cue separates easily -- and none of the
+box trackers measured here use appearance (`trackers`' BoTSORT is motion plus
+camera-motion compensation; MCByte runs with masks off). SAM2 keeps them
+apart.
+
+**Consequence.** On these clips a box tracker's failure has two parts: detector
+recall/geometry, and same-box crossings that motion alone cannot resolve. The
+second was a different-team pair here, so an appearance cue in association is
+the untested lever -- not evidence against box trackers. Same-team contact is
+not represented by a persistent oracle failure on these clips, so this does
+not show box trackers handle it. One hard clip, one event: too little to
+generalise. Artifacts: `runs/tracker_eval/oracle_2026-10-20/` (per-clip JSON
+for both arms).
+
+**Follow-up: `docs/box-tracker-oracle-2026-10-20.md`.** Appearance cues,
+a break-don't-swap SORT, filled-in misses and fragment stitching on the same
+clips. In brief: with perfect boxes a strict SORT matches SAM2's identity
+accuracy at 2-3.5x the fragments; with real detections the swaps come from
+one box covering two players in contact, not from missed players, and
+neither kit colour nor PRTReID fixes the hard FelixClaar contacts.

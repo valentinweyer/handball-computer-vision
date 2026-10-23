@@ -21,6 +21,12 @@ Metrics, all derived by matching tracker boxes to reference-mask boxes by IoU:
   * **coverage**          -- fraction of reference detections matched at all;
       a tracker that simply drops players would otherwise look perfect.
 
+`--oracle-detections` replaces the detector with the reference's own boxes
+(every identity, verified or not, so the tracker sees every player the
+reference has), which bounds what a perfect detector could buy each tracker.
+Those boxes are cleaner than any detector's -- no false positives, perfectly
+consistent geometry -- so a tracker failing here is conclusive, passing is not.
+
 Usage:
     python -m scripts.evaluate_tracker_identity --trackers mcbyte bytetrack sort
 """
@@ -166,8 +172,11 @@ def build_trackers(fps: float, device: str, video: Path | None = None) -> dict:
     return trackers
 
 
-def load_reference(reference_dir: Path, offset: int, valid: dict) -> dict:
-    """-> {frame_index: {reference_id: xyxy}}, restricted to verified spans."""
+def load_reference(reference_dir: Path, offset: int, valid: dict | None) -> dict:
+    """-> {frame_index: {reference_id: xyxy}}, restricted to verified spans.
+
+    `valid=None` keeps every identity on every frame (oracle detections).
+    """
     reference = {}
     for path in sorted(glob.glob(str(reference_dir / "*.npz"))):
         if not Path(path).stem.isdigit():
@@ -179,7 +188,7 @@ def load_reference(reference_dir: Path, offset: int, valid: dict) -> dict:
             if value == 0:
                 continue
             identity = int(value)
-            span = valid.get(identity)
+            span = valid.get(identity) if valid is not None else (0, None)
             if span is None:
                 continue                      # unverified or excluded
             start, stop = span
@@ -207,16 +216,37 @@ def iou_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:
     return inter / np.maximum(area_a[:, None] + area_b[None, :] - inter, 1e-9)
 
 
-def run_tracker(factory, reference: dict, video: Path, detections: Path, device: str) -> list:
-    """-> [(frame_index, tracker_id, reference_id_or_None), ...]."""
-    cache = load_detection_cache(detections)
+def oracle_frame_detections(boxes: dict, frame_index: int) -> sv.Detections:
+    """Reference boxes for one frame, shaped like a confident detector output."""
+    truth = boxes.get(frame_index, {})
+    if not truth:
+        return sv.Detections.empty()
+    xyxy = np.stack([truth[i] for i in sorted(truth)])
+    return sv.Detections(xyxy=xyxy, confidence=np.ones(len(xyxy)),
+                         class_id=np.full(len(xyxy), 2))
+
+
+def run_tracker(factory, reference: dict, video: Path, detections: Path | dict,
+                device: str) -> list:
+    """-> [(frame_index, tracker_id, reference_id_or_None), ...].
+
+    `detections` is a detection-cache path, {frame: {id: xyxy}} oracle boxes,
+    or a callable frame_index -> sv.Detections.
+    """
+    if callable(detections):
+        detections_for = detections
+    elif isinstance(detections, dict):
+        detections_for = lambda f: oracle_frame_detections(detections, f)
+    else:
+        cache = load_detection_cache(detections)
+        detections_for = lambda f: frame_detections(cache, f)
     if GlobalHydra.instance().is_initialized():
         GlobalHydra.instance().clear()
     tracker = factory()
     matches = []
     for frame_index, frame_bgr in enumerate(sv.get_video_frames_generator(str(video))):
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        tracked = tracker.update(frame_detections(cache, frame_index), frame=frame_rgb)
+        tracked = tracker.update(detections_for(frame_index), frame=frame_rgb)
         tracked = tracked[tracked.tracker_id >= 0]
         truth = reference.get(frame_index, {})
         if not len(tracked) or not truth:
@@ -287,7 +317,9 @@ def score(matches: list, keep_ids: set | None) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("video", type=Path)
-    parser.add_argument("--detections", required=True, type=Path)
+    parser.add_argument("--detections", type=Path)
+    parser.add_argument("--oracle-detections", action="store_true",
+                        help="feed the reference's own boxes instead of --detections")
     parser.add_argument("--reference", required=True, type=Path,
                         help="directory of NNNNN.npz label maps")
     parser.add_argument("--labels", required=True, type=Path,
@@ -299,6 +331,8 @@ def main() -> None:
     parser.add_argument("--offset", type=int, default=0)
     parser.add_argument("--output", type=Path, default=None)
     args = parser.parse_args()
+    if args.oracle_detections == (args.detections is not None):
+        parser.error("give exactly one of --detections and --oracle-detections")
 
     valid = parse_labels(args.labels)
     reference = load_reference(args.reference, args.offset, valid)
@@ -306,6 +340,8 @@ def main() -> None:
     info = sv.VideoInfo.from_video_path(str(args.video))
     factories = build_trackers(info.fps, args.device, args.video)
     names = args.trackers or list(factories)
+    detections = (load_reference(args.reference, args.offset, None)
+                  if args.oracle_detections else args.detections)
     keep = {i for i in valid if i not in set(args.exclude_ids)}
 
     truncated = {i: v[1] for i, v in valid.items() if v[1] is not None}
@@ -323,9 +359,13 @@ def main() -> None:
             print(f"  unknown tracker: {name}")
             continue
         matches = run_tracker(
-            factories[name], reference, args.video, args.detections, args.device
+            factories[name], reference, args.video, detections, args.device
         )
         only = score(matches, keep)
+        players = sum(sum(i in keep for i in truth) for truth in reference.values())
+        only["recall_pct"] = 100.0 * only["matched_detections"] / max(players, 1)
+        only["correct_pct"] = 100.0 * (
+            only["matched_detections"] - only["wrong_identity_frames"]) / max(players, 1)
         results[name] = {"players_only": only, "all_ids": score(matches, None)}
         print(
             f"{name:>18}  tracklets={only['tracklets']:3d}  "
@@ -333,12 +373,14 @@ def main() -> None:
             f"wrong={only['wrong_identity_pct']:5.1f}%  "
             f"switches={only['id_switches']:3d}  "
             f"frags/id={only['mean_fragments_per_reference_id']:.2f}  "
-            f"matched={only['matched_detections']:4d}"
+            f"matched={only['matched_detections']:4d}  "
+            f"recall={only['recall_pct']:5.1f}%  correct={only['correct_pct']:5.1f}%"
         )
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(
-            {"video": str(args.video), "valid_spans": {str(k): v for k, v in valid.items()},
+            {"video": str(args.video), "oracle_detections": args.oracle_detections,
+             "valid_spans": {str(k): v for k, v in valid.items()},
              "results": results}, indent=2))
 
 

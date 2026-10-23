@@ -190,6 +190,12 @@ def build_parser() -> argparse.ArgumentParser:
              "Scored equal on the three references (docs/tracking-evaluation.md 8.12)",
     )
     parser.add_argument(
+        "--sam2-stride", type=int, default=1,
+        help="sam2 only. Propagate SAM2 on every Nth frame plus every checkpoint and "
+             "read frame, interpolating the rest. 2 kept identity quality on the three "
+             "references at ~1.6-1.9x; 3 did not (docs/sam2-throughput-2026-10-20.md)",
+    )
+    parser.add_argument(
         "--no-video", action="store_true",
         help="sam2 only: track and read numbers, write the run JSON, reads and "
              "geometry, but draw and encode nothing -- the extraction pass",
@@ -789,6 +795,9 @@ def render_sam2(args: argparse.Namespace) -> dict:
         prefetch_frames=4,
         frame_source=args.frame_source,
         court_in_view=court_in_view_fn(args.court_in_view),
+        sam2_stride=args.sam2_stride,
+        # Jersey reads match number boxes to masks; keep those frames real.
+        real_mask_every=(args.ocr_every,),
     )
     registry = track_manager.registry
 
@@ -859,7 +868,9 @@ def render_sam2(args: argparse.Namespace) -> dict:
         ]
         resolver.begin_frame(player_ids)
 
-        if result.frame_idx % args.ocr_every == 0 and len(player_ids):
+        # Interpolated frames carry display geometry only, never evidence; the
+        # schedule keeps every read frame real, this is the guard if it did not.
+        if result.frame_idx % args.ocr_every == 0 and len(player_ids) and not result.interpolated:
             number_xyxy = number_detections(number_cache, result.frame_idx)
             if len(number_xyxy):
                 ocr_frames += 1
@@ -955,6 +966,7 @@ def render_sam2(args: argparse.Namespace) -> dict:
         "geometry_cache": str(geometry_path),
         "extras": str(extras_path),
         "frame_source": args.frame_source,
+        "sam2_stride": args.sam2_stride,
         "tracker": "sam2",
         "reid_embedding": args.reid_embedding,
         # Two different recognisers are both called "parseq" -- docTR's

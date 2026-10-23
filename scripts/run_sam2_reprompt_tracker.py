@@ -115,6 +115,9 @@ def main() -> None:
                               "reset_reseed discards SAM2's memory bank each time, "
                               "reproducing the pattern EdgeTAM would force. See "
                               "handball_cv.tracking.sam2_driver.drive_sam2.")
+    parser.add_argument("--sam2-stride", type=int, default=1,
+                         help="propagate SAM2 on every Nth frame (plus checkpoints), "
+                              "interpolating the rest; see drive_sam2")
     args = parser.parse_args()
 
     cache = load_detection_cache(args.detections)
@@ -133,6 +136,7 @@ def main() -> None:
         checkpoint_policy=args.checkpoint_policy,
         desc=f"SAM2 {args.checkpoint_policy} ({args.frame_source})",
         frame_source=args.frame_source,
+        sam2_stride=args.sam2_stride,
     )
 
     per_frame_boxes: dict[int, dict[int, np.ndarray]] = {0: seed_boxes}
@@ -141,7 +145,7 @@ def main() -> None:
 
     print(f"track lifecycle events: {len(track_manager.events)}")
     for e in track_manager.events:
-        print(f"  frame {e['frame']:>4}  {e['type']:<16} obj_id={e['obj_id']}")
+        print(f"  frame {e['frame']:>4}  {e['type']:<16} obj_id={e.get('obj_id')}")
 
     events_path = args.output.with_name(args.output.stem + "_events.json")
     events_path.write_text(json.dumps(track_manager.events, indent=2, default=_json_default))
