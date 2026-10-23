@@ -31,23 +31,6 @@ This is a TODO only; no production change is requested here.
 
 ---
 
-## Frame-0 seeds skip new-player confirmation (planned 2026-10-23)
-
-- [ ] Measure how often a frame-0 track is a false detection. Every frame-0
-  detection becomes a track at once via `TrackManager.seed()`, while a player
-  first seen later must match at `MIN_CONFIRM_CHECKPOINTS = 2` consecutive
-  checkpoints. A false frame-0 box therefore survives until
-  `UNMATCHED_CHECKPOINTS_MAX = 20` unmatched checkpoints (~200 frames), or
-  indefinitely if SAM2 keeps following something.
-- [ ] First step: on the scored clips, count frame-0 seeds that are never
-  matched at a later checkpoint or have no ground-truth counterpart. Only if
-  that is non-trivial, decide between confirming seeds over the first
-  checkpoints and leaving seeding as is.
-
-This is a TODO only; no production change is requested here.
-
----
-
 ## Detection backfill after confirmation (planned 2026-10-18)
 
 - [ ] Once a new player is confirmed, backfill the short confirmation delay to
@@ -708,6 +691,43 @@ checkpoints); TensorRT for its image encoder belongs to the same experiment.
 ---
 
 # Done
+
+## Frame-0 seeds need no confirmation step (measured 2026-10-23)
+
+**Leave seeding as is.** Every frame-0 detection becomes a track at once via
+`TrackManager.seed()`, while a later player must match at
+`MIN_CONFIRM_CHECKPOINTS = 2` consecutive checkpoints. The question was whether
+that asymmetry lets false tracks in. Measured on the three scored clips using the
+full-rate SAM2 dumps in `runs/sam2_throughput/full/`. Those reproduce
+95.01 / 99.91 / 98.88% and match current code: the `_v1` caches hold only classes
+1 and 2, so `9589163`'s person filter changes nothing for them. Each seed was
+matched to the frame-0 reference identity and its verification note, checked for
+a person detection at every later checkpoint, and inspected visually at frames
+0/10/20.
+
+```
+                 seeds   real players   not a court player
+FelixClaar         13        13               0
+Han-Ber4           14        12               2  (id 12 bench, id 14 referee)
+BHC-FAG window     14        14               0  (13/14: two boxes on an
+                                                  overlapping pair; 14 merged
+                                                  as a duplicate at f20)
+```
+
+The two non-players behave differently:
+
+- **Han 14, the referee** (detector conf 0.50): no detection at any of 17
+  checkpoints, retired at f170. Seed confirmation would have removed it.
+- **Han 12, a substitute bent over at the bench** (conf 0.67): detected again at
+  f10, retired at f120. Seed confirmation would have kept it. This is a court-test
+  problem (item 2), not a confirmation one.
+
+Confirming seeds also has a cost. **Han 13 is a real player** (conf 0.54) whom the
+detector misses at f10 and f20, so he would have been added only around f40.
+Net: about 170 false-track frames saved against about 40 real-player frames lost,
+on one clip of three. Pause/resume does not re-seed; play resumes through
+ordinary confirmation and re-ID. So this happens once per video, not once per
+pause, and the stakes are a few seconds per match. Not worth a code path.
 
 ## The cross-repo paths were one path, and the annotation stamps are not a bug (2026-09-14)
 
