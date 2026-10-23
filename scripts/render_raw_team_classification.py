@@ -208,7 +208,7 @@ def render(
         total=info.total_frames,
         desc=f"raw team {source.stem}",
     )):
-        detections = frame_detections(cache, frame_index)
+        detections = person_detections(cache, frame_index)
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
         annotated = frame_bgr.copy()
         counts = {key: 0 for key in totals}

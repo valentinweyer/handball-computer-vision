@@ -28,7 +28,7 @@ from tqdm import tqdm
 from trackers import McByteMaskConfig, McByteTracker
 
 from handball_cv.tracking.identity import TEAM_SWITCH_OBSERVATIONS, IdentityManager
-from scripts.render_raw_team_classification import frame_detections, load_detection_cache
+from scripts.render_raw_team_classification import load_detection_cache, person_detections
 from handball_cv.teams.model import MIN_STABLE_TEAM_CONFIDENCE, TeamModel
 
 TEAM_BGR = {0: (255, 190, 0), 1: (0, 120, 255)}
@@ -148,7 +148,7 @@ def render(source, cache_path, model_path, output_path, device, enable_masks):
         desc=f"team overlay {source.stem}",
     )):
         frame_rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-        detections = frame_detections(cache, frame_index)
+        detections = person_detections(cache, frame_index)
         tracked = tracker.update(detections, frame=frame_rgb)
         tracked = tracked[tracked.tracker_id >= 0]
         player_ids = identity.update(frame_index, frame_rgb, tracked)

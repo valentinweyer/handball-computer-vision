@@ -52,36 +52,16 @@ if not SAM2_UPSTREAM_DIR.is_dir():
 sys.path.insert(0, str(SAM2_UPSTREAM_DIR))
 
 import numpy as np
-import supervision as sv
 
 from handball_cv.teams.model import TeamModel
 from handball_cv.tracking.sam2_driver import CHECK_EVERY_DEFAULT, drive_sam2
+from scripts.render_raw_team_classification import load_detection_cache, person_detections
 
 GOALKEEPER_CLASS_ID = 1
 
 SAM2_CHECKPOINT_DEFAULT = str(
     PROJECT_ROOT / "segment-anything-2-real-time/checkpoints/sam2.1_hiera_large.pt"
 )
-
-
-def load_detection_cache(path: Path) -> dict:
-    with np.load(path, allow_pickle=False) as data:
-        return {
-            "offsets": data["offsets"],
-            "boxes": data["boxes"],
-            "confidence": data["confidence"],
-            "class_id": data["class_id"],
-        }
-
-
-def frame_detections(cache: dict, frame_index: int) -> sv.Detections:
-    start, end = cache["offsets"][frame_index:frame_index + 2]
-    start, end = int(start), int(end)
-    return sv.Detections(
-        xyxy=cache["boxes"][start:end].copy(),
-        confidence=cache["confidence"][start:end].copy(),
-        class_id=cache["class_id"][start:end].astype(int, copy=True),
-    )
 
 
 def _json_default(value):
@@ -129,7 +109,7 @@ def main() -> None:
     print(f"Tracking with SAM2 + periodic reprompting "
           f"(checkpoint every {args.check_every} frames)...")
     track_manager, seed_boxes, frames = drive_sam2(
-        args.video, lambda idx: frame_detections(cache, idx), team_model,
+        args.video, lambda idx: person_detections(cache, idx), team_model,
         checkpoint=args.checkpoint, check_every=args.check_every,
         frame_cache_dir=frame_cache_dir, max_frames=args.max_frames,
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
