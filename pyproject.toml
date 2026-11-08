@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "handball-computer-vision"
+version = "0.1.0"
+description = "Player tracking, team classification, jersey numbers and court positions from handball video"
+readme = "README.md"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [{ name = "Valentin Weyer" }]
+requires-python = ">=3.11"
+dependencies = [
+    # Install the CUDA build of torch for your system first (see README).
+    "torch>=2.5.1",
+    "torchvision>=0.20.1",
+    "numpy>=1.26",
+    # 4.10 decodes some videos with a frame offset; 5.0 matches ffmpeg.
+    "opencv-python>=5.0",
+    "scipy>=1.11",
+    "scikit-learn>=1.5",
+    "umap-learn>=0.5.9",
+    "transformers>=4.57,<5",
+    "supervision==0.30.0",
+    # pandas 3 turns missing strings into NaN, which the tables do not expect yet.
+    "pandas>=2.2,<3",
+    "pyarrow>=17",
+    "pillow>=10",
+    "pyyaml>=6",
+    "tqdm>=4.66",
+    "imageio-ffmpeg>=0.5",
+    # Court template and team-feature model (fork of roboflow/sports, MIT).
+    "sports @ git+https://github.com/valentinweyer/roboflow-sports-handball.git@1ce78943f216f960eb7903ad944275b57437e8ec",
+    # Imported by the upstream checkouts (see README): SAM2, parseq, prtreid.
+    "hydra-core>=1.3.2",
+    "iopath>=0.1.10",
+    "pytorch-lightning>=2.0",
+    "timm>=1.0",
+    "nltk>=3.9",
+    "yacs>=0.1.8",
+]
+
+[project.optional-dependencies]
+# Only for court-keypoint models exported to ONNX instead of TorchScript.
+onnx = ["onnxruntime>=1.18"]
+dev = ["pytest>=8"]
+
+[project.urls]
+Repository = "https://github.com/valentinweyer/handball-computer-vision"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/unit"]
+pythonpath = ["src", "."]
+addopts = "-ra"
+norecursedirs = [".venv", "sam2-upstream", "parseq-upstream", "prtreid-upstream"]

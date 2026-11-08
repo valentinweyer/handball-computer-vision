@@ -1,0 +1,130 @@
+"""Translate the court-keypoint model's output order into court template vertices.
+
+The court-keypoint model emits 37 landmarks in the slot order of its training
+export. The ``sports`` library's :class:`~sports.handball.CourtConfiguration`
+also lists 37 vertices, in a *different* order; ``KEYPOINT_TO_VERTEX`` is the
+translation between the two.
+
+The mapping is keyed by *slot index*, which a prediction reports as
+``class_id`` -- **not** ``class_name``. Those are two different numberings:
+``class_id`` is the slot, ``class_name`` is the label typed at annotation time.
+
+Orientation
+-----------
+A handball court is unchanged by a half turn, so a homography residual cannot
+tell a mapping from the same mapping turned through 180 degrees. The annotation
+template settles it: far sideline (court y=2000) on top, KP01 top-left, KP01-KP13
+on the left goal, as in ``draw_court`` and the broadcast camera. :func:`upright`
+measures that orientation from a set of labelled points.
+"""
+
+from __future__ import annotations
+
+from typing import Iterable, Sequence
+
+import cv2
+import numpy as np
+
+__all__ = [
+    "KEYPOINT_COUNT",
+    "KEYPOINT_TO_VERTEX",
+    "SELF_MIRRORING_SLOTS",
+    "KEYPOINT_FLIP_INDEX",
+    "vertex_indices",
+    "court_points",
+    "court_vertices",
+    "upright",
+]
+
+KEYPOINT_COUNT = 37
+
+#: ``KEYPOINT_TO_VERTEX[slot]`` is the index into ``CourtConfiguration.vertices``
+#: that the model's 0-based keypoint ``slot`` actually denotes. A permutation,
+#: oriented so the labels are :func:`upright` (see "Orientation" above).
+KEYPOINT_TO_VERTEX: tuple[int, ...] = (
+     1,  4,  7,  0,  5, 13,
+    16, 19, 32, 31, 28, 27,
+    30, 29,  2,  3, 15, 17,
+    18, 14,  6,  9, 26, 23,
+    24, 11, 12, 10, 20, 21,
+    22,  8, 25, 33, 34, 35,
+    36,
+)
+
+#: The export's left/right mirror table, verbatim from its ``data.yaml``. Kept
+#: as verification data: it is independent evidence for the mapping above, and
+#: the test that uses it needs no dataset on disk.
+KEYPOINT_FLIP_INDEX: tuple[int, ...] = (
+    10, 9, 24, 11, 8, 5, 6, 7, 4, 1, 0, 3, 15, 14, 13, 12, 17, 16, 19,
+    18, 23, 22, 21, 20, 2, 28, 29, 30, 25, 26, 27, 32, 31, 35, 36, 33, 34,
+)
+
+#: The two slots where ``KEYPOINT_FLIP_INDEX`` disagrees with a left/right
+#: mirror of the recovered mapping. Both land on the centre line, at the two
+#: goalpost offsets -- (2000, 1150) and (2000, 850) in centimetres. Mirroring
+#: the court left to right maps each to *itself*; the export swaps them, which
+#: is a vertical rather than horizontal flip. The disagreement is a quirk of
+#: how the export was annotated and constrains nothing about this mapping.
+SELF_MIRRORING_SLOTS: tuple[int, int] = (18, 19)
+
+
+def vertex_indices(slots: Iterable[int]) -> np.ndarray:
+    """Map model keypoint slots to ``CourtConfiguration.vertices`` indices."""
+    out = np.asarray(list(slots), dtype=int)
+    if out.size and (out.min() < 0 or out.max() >= KEYPOINT_COUNT):
+        raise ValueError(
+            f"keypoint slots must lie in [0, {KEYPOINT_COUNT}); got "
+            f"{out.min()}..{out.max()}"
+        )
+    return np.asarray(KEYPOINT_TO_VERTEX, dtype=int)[out]
+
+
+def court_vertices() -> np.ndarray:
+    """The IHF court's 37 template vertices in centimetres, ``(37, 2)``.
+
+    The coordinate system every court position in this project is reported in:
+    x along the 4000 cm length, y across the 2000 cm width, origin at a corner.
+    """
+    from sports import MeasurementUnit
+    from sports.handball import CourtConfiguration, League
+
+    config = CourtConfiguration(league=League.IHF, measurement_unit=MeasurementUnit.CENTIMETERS)
+    return np.asarray(config.vertices, dtype=np.float64)
+
+
+def court_points(slots: Iterable[int], vertices: Sequence[Sequence[float]]) -> np.ndarray:
+    """Court coordinates for the given model keypoint slots.
+
+    Args:
+        slots: 0-based keypoint slot indices as emitted by the keypoint model.
+        vertices: ``CourtConfiguration.vertices``, in the unit the caller wants
+            back (the configuration's ``measurement_unit`` decides that).
+
+    Returns:
+        ``(len(slots), 2)`` array of court coordinates, ready to be the target
+        of a homography whose source is the matching image points.
+    """
+    table = np.asarray(vertices, dtype=np.float64)
+    if table.shape[0] != KEYPOINT_COUNT:
+        raise ValueError(
+            f"expected {KEYPOINT_COUNT} court vertices, got {table.shape[0]}"
+        )
+    return table[vertex_indices(slots)]
+
+
+def upright(image_xy: np.ndarray, court_xy: np.ndarray) -> bool:
+    """True if labelled points see the court the way the annotation template does.
+
+    That is court +x pointing right in the image and court +y pointing up (far
+    sideline, y=2000, on top), judged through the points' homography at their
+    centroid, where it is best conditioned. A half-turned mapping fails both
+    tests; a mirrored labelling fails one.
+    """
+    court_xy = np.asarray(court_xy, dtype=np.float32)
+    matrix, _ = cv2.findHomography(court_xy, np.asarray(image_xy, dtype=np.float32))
+    if matrix is None:
+        return False
+    centre = court_xy.mean(axis=0)
+    probe = np.array([[centre, centre + (100.0, 0.0), centre + (0.0, 100.0)]], np.float32)
+    origin, along_x, along_y = cv2.perspectiveTransform(probe, matrix)[0]
+    return bool(along_x[0] > origin[0] and along_y[1] < origin[1])

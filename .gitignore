@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+.pytest_cache/
+
+# Weights, input videos and results (see README)
+/models/
+/data/
+/runs/
+
+# Upstream checkouts (see README)
+/sam2-upstream/
+/parseq-upstream/
+/prtreid-upstream/

@@ -1,0 +1,154 @@
+"""Offline inference for the RF-DETR court-keypoint model, from its ONNX or TorchScript export.
+
+The graph returns, per query, a box, class logits and a keypoint block of 37
+slots per keypoint class, each ``(x, y, visibility logit, ..., precision
+Cholesky terms)`` with x/y normalised to the input frame. Two layouts occur:
+an export with a synthetic background class first has ``Court`` at logit 1 and
+a ``(2 * 37, 8)`` block; a plain ``rfdetr`` export has ``Court`` at logit 0 and a
+``(37, 8)`` block. In both, ``Court`` is the last keypoint group,
+which is how :func:`decode_court_keypoints` tells them apart. The slot order is
+the export's, so slots go through
+:data:`~handball_cv.court.keypoints.KEYPOINT_TO_VERTEX`.
+"""
+from __future__ import annotations
+
+from pathlib import Path
+
+import cv2
+import numpy as np
+
+from .keypoints import KEYPOINT_COUNT
+
+__all__ = [
+    "OfflineCourtKeypoints", "TorchScriptCourtKeypoints", "decode_court_keypoints",
+    "load_court_keypoints",
+]
+
+_MEANS = np.asarray([0.485, 0.456, 0.406], dtype=np.float32)
+_STDS = np.asarray([0.229, 0.224, 0.225], dtype=np.float32)
+
+
+def _sigmoid(values: np.ndarray) -> np.ndarray:
+    z = np.exp(-np.abs(values))
+    return np.where(values >= 0, 1.0 / (1.0 + z), z / (1.0 + z))
+
+
+def decode_court_keypoints(
+    logits: np.ndarray, keypoints: np.ndarray, width: int, height: int
+) -> tuple[list[tuple[int, float, float, float]], float]:
+    """All 37 slots of the best ``Court`` query, in pixels.
+
+    Args:
+        logits: ``(queries, classes)`` class logits for one image.
+        keypoints: ``(queries, groups * 37, D)`` keypoint block for one image;
+            ``Court`` is the last group and its logit index (see module docstring).
+        width, height: the frame the coordinates should come back in.
+
+    Returns:
+        ``[(slot, x, y, visibility), ...]`` for every slot -- the tuple
+        ``CourtTracker.update`` consumes, unfiltered so a caller can cache the
+        whole output and choose a threshold later -- and the court score.
+    """
+    groups = keypoints.shape[1] // KEYPOINT_COUNT
+    if groups * KEYPOINT_COUNT != keypoints.shape[1] or groups > logits.shape[1]:
+        raise ValueError(f"unexpected court-keypoint layout: logits {logits.shape}, keypoints {keypoints.shape}")
+    court = groups - 1
+    query = int(np.argmax(logits[:, court]))
+    block = keypoints[query].reshape(groups, KEYPOINT_COUNT, -1)[court]
+    visibility = _sigmoid(block[:, 2].astype(np.float64))
+    points = [
+        (slot, float(block[slot, 0] * width), float(block[slot, 1] * height), float(visibility[slot]))
+        for slot in range(KEYPOINT_COUNT)
+    ]
+    return points, float(_sigmoid(np.float64(logits[query, court])))
+
+
+class OfflineCourtKeypoints:
+    """Run the exported RF-DETR court-keypoint model without network access."""
+
+    def __init__(self, weights: Path, device: str = "cuda") -> None:
+        weights = Path(weights)
+        if not weights.is_file():
+            raise FileNotFoundError(weights)
+        import onnxruntime as ort   # only the ONNX export needs it
+
+        available = set(ort.get_available_providers())
+        providers = []
+        if device.startswith("cuda") and "CUDAExecutionProvider" in available:
+            providers.append("CUDAExecutionProvider")
+        providers.append("CPUExecutionProvider")
+        options = ort.SessionOptions()
+        options.log_severity_level = 3
+        self.session = ort.InferenceSession(str(weights), providers=providers, sess_options=options)
+        model_input = self.session.get_inputs()[0]
+        self.input_name = model_input.name
+        self.height = int(model_input.shape[2])
+        self.width = int(model_input.shape[3])
+
+    def infer(self, frame_rgb: np.ndarray) -> tuple[list[tuple[int, float, float, float]], float]:
+        """Keypoints for one RGB frame; see :func:`decode_court_keypoints`."""
+        height, width = frame_rgb.shape[:2]
+        image = (frame_rgb.astype(np.float32) / 255.0 - _MEANS) / _STDS
+        # "Stretch to" the square input, as the model was trained.
+        image = cv2.resize(image, (self.width, self.height))
+        image = np.ascontiguousarray(image.transpose(2, 0, 1)[None], np.float32)
+        _, logits, keypoints = self.session.run(None, {self.input_name: image})
+        return decode_court_keypoints(logits[0], keypoints[0], width, height)
+
+
+class TorchScriptCourtKeypoints:
+    """Run the TorchScript court-keypoint export on the GPU.
+
+    The ONNX runner above is CPU-only in this venv (onnxruntime 1.21 has no
+    CUDA provider here), ~390 ms a frame for the 576 px model. This runs the
+    same export-mode graph, traced by ``scripts/export_court_keypoints.py``,
+    with plain torch: no rfdetr, which needs a transformers this project pins
+    below. Preprocessing runs on the GPU too -- resize, then normalise; the
+    order differs from the ONNX runner's, so values agree to rounding, not bit
+    for bit.
+
+    TF32 is switched off around each call. With it on, a trace of this model
+    moved visible keypoints by up to 5 px at 1080p against the ONNX output;
+    with it off, by under 1 px.
+    """
+
+    def __init__(self, weights: Path, device: str = "cuda", resolution: int = 576) -> None:
+        import torch
+
+        weights = Path(weights)
+        if not weights.is_file():
+            raise FileNotFoundError(weights)
+        self.torch = torch
+        self.device = torch.device(device)
+        self.model = torch.jit.load(str(weights), map_location=self.device).eval()
+        self.height = self.width = resolution
+        self.mean = torch.tensor(_MEANS, device=self.device).view(1, 3, 1, 1)
+        self.std = torch.tensor(_STDS, device=self.device).view(1, 3, 1, 1)
+
+    def infer(self, frame_rgb: np.ndarray) -> tuple[list[tuple[int, float, float, float]], float]:
+        """Keypoints for one RGB frame; see :func:`decode_court_keypoints`."""
+        torch = self.torch
+        height, width = frame_rgb.shape[:2]
+        matmul_tf32 = torch.backends.cuda.matmul.allow_tf32
+        torch.backends.cuda.matmul.allow_tf32 = False
+        try:
+            with torch.inference_mode(), torch.backends.cudnn.flags(enabled=True, allow_tf32=False):
+                image = torch.from_numpy(np.ascontiguousarray(frame_rgb)).to(self.device)
+                image = image.permute(2, 0, 1)[None].float() / 255.0
+                # "Stretch to" the square input, as the model was trained.
+                image = torch.nn.functional.interpolate(
+                    image, size=(self.height, self.width), mode="bilinear", align_corners=False)
+                image = (image - self.mean) / self.std
+                _, logits, keypoints = self.model(image)
+                logits, keypoints = logits[0].float().cpu().numpy(), keypoints[0].float().cpu().numpy()
+        finally:
+            torch.backends.cuda.matmul.allow_tf32 = matmul_tf32
+        return decode_court_keypoints(logits, keypoints, width, height)
+
+
+def load_court_keypoints(weights: Path, device: str = "cuda"):
+    """The runner for an export, by file type: ``.ts`` on the GPU, ``.onnx`` via onnxruntime."""
+    weights = Path(weights)
+    if weights.suffix == ".ts":
+        return TorchScriptCourtKeypoints(weights, device=device)
+    return OfflineCourtKeypoints(weights, device=device)

@@ -1,0 +1,27 @@
+# Logical model registry. Weights live under models/ and are never committed.
+#
+# The first three are process_video's defaults (handball_cv.pipeline.models): each is
+# one published version, `id` at tag `revision`, whose `file` is expected at `path`. A
+# file whose sha256 matches is recorded as `id@revision`; any other file by its path.
+models:
+  player_detector:
+    provider: huggingface
+    id: ValentinWeyer/player-detector
+    revision: expanded-v1
+    file: model.ts
+    path: models/handball_cv/detector.ts
+    sha256: 5c331ff91043215d1d6c4e24eea543aef31afeaa56ab416e78f167ed4138522e
+  court_keypoints:
+    provider: huggingface
+    id: ValentinWeyer/court-keypoints
+    revision: local-v3
+    file: model.ts
+    path: models/handball_cv/court-keypoints.ts
+    sha256: d15e910946ed480a8cb931fe4f8353fab3e8fe3ea9cb663c2b6898c0382d6252
+  number_sheets:
+    provider: huggingface
+    id: ValentinWeyer/jersey-number-detector
+    revision: sheets-v1
+    file: model.ts
+    path: models/handball_cv/number-sheets.ts
+    sha256: c12d80c44f90f031b7cc784a48240cd63fe920752a5039f4e3adbc260c298803
