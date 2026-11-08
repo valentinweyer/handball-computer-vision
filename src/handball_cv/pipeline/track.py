@@ -284,7 +284,7 @@ def track_sam2(video: Path, detections: dict, number_detections_cache: dict, tea
     track_manager, _seed_boxes, frames = drive_sam2(
         source, lambda idx: person_detections(detections, idx), team_model,
         checkpoint=checkpoint, check_every=check_every,
-        frame_cache_dir=frame_cache_dir or (ROOT / "data/cache/frames" / source.stem),
+        frame_cache_dir=frame_cache_dir or (ROOT / "runs/cache/frames" / source.stem),
         goalkeeper_class_id=GOALKEEPER_CLASS_ID,
         desc=f"full pipeline sam2 {source.stem}",
         reid_encoder=reid_encoder,

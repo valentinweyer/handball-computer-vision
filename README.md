@@ -109,7 +109,7 @@ python -m scripts.render_result runs/bundles/match  # -> runs/bundles/match/rend
 ```
 
 `process_video` runs in stages (`prepare`, `scan`, `teams`, `numbers`, `track`,
-`bundle`) and keeps each stage's output under `data/interim/<video>/`. An
+`bundle`) and keeps each stage's output under `runs/interim/<video>/`. An
 interrupted run resumes where it stopped, and `--force STAGE` reruns that stage
 and everything after it. Both commands list their options with `--help`.
 

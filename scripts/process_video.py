@@ -191,7 +191,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("video", type=Path)
     parser.add_argument("--out", type=Path, default=None, help="bundle; defaults to runs/bundles/<stem>")
-    parser.add_argument("--work", type=Path, default=None, help="defaults to data/interim/<stem>")
+    parser.add_argument("--work", type=Path, default=None, help="defaults to runs/interim/<stem>")
     parser.add_argument("--force", choices=STAGES, default=None,
                         help="rerun this stage and every stage after it")
     parser.add_argument("--detector", type=Path, default=default_model("player_detector").path)
@@ -218,7 +218,7 @@ def main() -> None:
     args = parser.parse_args()
 
     source = args.video.resolve()
-    work = (args.work or ROOT / "data/interim" / source.stem).resolve()
+    work = (args.work or ROOT / "runs/interim" / source.stem).resolve()
     out = (args.out or ROOT / "runs/bundles" / source.stem).resolve()
     work.mkdir(parents=True, exist_ok=True)
     detection_stride_guard(args.detect_stride, args.check_every, args.ocr_every)
